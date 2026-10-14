@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { MapShell, MapSkeleton } from "../../../component/common/skeleton/Skeleton";
+import { useMapThemeStyles } from "../../../shared/theme/mapStyles";
 import {
   GoogleMap,
   useJsApiLoader,
   Marker,
   InfoWindow,
 } from "@react-google-maps/api";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const loaderOptions = {
   id: "google-map-script",
@@ -157,6 +160,8 @@ function makeDotIcon(color) {
 
 const AllEmployeeLocation = () => {
   const { isLoaded } = useJsApiLoader(loaderOptions);
+  const [tilesReady, setTilesReady] = useState(false);
+  const mapStyles = useMapThemeStyles(MAP_STYLE);
   const [employees, setEmployees] = useState(RAW_LOCATIONS);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -281,6 +286,7 @@ const AllEmployeeLocation = () => {
             Updated {lastUpdated.toLocaleTimeString()}
           </span>
           <button
+            data-testid="employee-map-refresh-button"
             onClick={refresh}
             disabled={loading}
             style={{
@@ -336,32 +342,21 @@ const AllEmployeeLocation = () => {
             }}
           >
             {!isLoaded ? (
-              <div
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#6b7280",
-                  fontSize: "13px",
-                  background: "#fff",
-                }}
-              >
-                Loading map...
-              </div>
+              <MapSkeleton testId="employee-locations-map-loading-skeleton" />
             ) : (
+              <MapShell ready={tilesReady} testId="employee-locations-map-loading-skeleton">
               <GoogleMap
                 mapContainerStyle={{ width: "100%", height: "100%" }}
                 center={indiaCenter}
                 zoom={13}
                 onLoad={onMapLoad}
+                onTilesLoaded={() => setTilesReady(true)}
                 options={{
                   streetViewControl: false,
                   fullscreenControl: false,
                   mapTypeControl: false,
                   zoomControl: true,
-                  styles: MAP_STYLE,
+                  styles: mapStyles,
                 }}
               >
                 {points.map((p) => (
@@ -382,6 +377,7 @@ const AllEmployeeLocation = () => {
                   />
                 ))}
               </GoogleMap>
+              </MapShell>
             )}
           </div>
 
@@ -447,6 +443,7 @@ const AllEmployeeLocation = () => {
 
           {employees.map((e) => (
             <button
+              data-testid={testId("employee-map-gps", itemTestKey(e), "button")}
               key={e.employee_id}
               onClick={() => {
                 setSelectedId(e.employee_id);

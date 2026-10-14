@@ -7,10 +7,6 @@ import {
   CardHeader,
   Col,
   Container,
-  Input,
-  Modal,
-  ModalBody,
-  ModalHeader,
   Row,
 } from "reactstrap";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
@@ -21,8 +17,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 import { GetCustomField } from "../../common/js/GetCustomField";
-import { Badge, Button, UncontrolledTooltip } from "reactstrap";
-import { Link } from "react-router-dom";
+import { UncontrolledTooltip } from "reactstrap";
+import {
+  ApvChip,
+  ApvDepartment,
+  ApvEmployee,
+  ApvEmpty,
+  ApvStatus,
+} from "../../component/common/approval/ApprovalCells";
 import Swal from "sweetalert2";
 
 import {
@@ -45,6 +47,7 @@ import { previousDateFormat } from "../../common/js/ConvertDateFormat";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../common/api/Api";
 import { SimpleRadialbar } from "./SimpleRadialbar";
+import ReportingManagerPicker from "./ReportingManagerPicker";
 import { GetApi } from "../../common/api/GetApi";
 import { setTodayAttendanceProgressBar } from "../../redux/reducers/ChildReducer/EmployeeProgressBarReducer";
 
@@ -56,10 +59,6 @@ const Employee = () => {
   const [rmSearch, setRmSearch] = useState("");
 
   const { employee_data } = useSelector((state) => state.EmployeeReducer);
-  const todayAttendance = useSelector(
-    (state) => state.EmployeeProgressBarReducer,
-  );
-
   const { version } = useSelector((state) => state.MetaReducer);
 
   const EmployeeData = GetLocalStorageData("employee") || [];
@@ -166,6 +165,8 @@ const Employee = () => {
 
   const CustomFieldsForThisForm = GetCustomField("employee") || [];
   const DepartmentData = GetLocalStorageData("department") || [];
+  const RoleData = GetLocalStorageData("role");
+  const WorkSchedule = GetLocalStorageData("work_schedule");
 
   const viewEmployee = (obj) => {
     dispatch(setFormTitle("Employee Details"));
@@ -197,102 +198,13 @@ const Employee = () => {
       accessor: "first_name",
       filterable: false,
       id: "first_name",
-      accessor: (obj) => {
-        // Find this employee's attendance data
-
-        const employeeAttendance = todayAttendance.today_attendance.find(
-          (emp) => emp.employee?.id === obj.id,
-        );
-
-        const totalWorkDuration = employeeAttendance?.total_work_duration ?? 0;
-        const totalTimeWorked = employeeAttendance?.total_time_worked ?? 0;
-
-        const progress =
-          totalWorkDuration > 0
-            ? Math.min(
-                100,
-                Math.round((totalTimeWorked / totalWorkDuration) * 100),
-              )
-            : 0;
-
-        return (
-          <div className="d-flex gap-2 align-items-center">
-            {/* Profile Image / Initial */}
-            <div className="flex-shrink-0">
-              {obj.profile_url ? (
-                <img
-                  src={obj.profile_url}
-                  alt=""
-                  className="avatar-xs rounded-circle"
-                  style={{ objectFit: "cover" }}
-                />
-              ) : (
-                <div
-                  className="avatar-xs rounded-circle"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background: "#0ab39c",
-                  }}
-                  data-bs-toggle="tooltip"
-                  title={obj.first_name}
-                >
-                  <span className="first_letter" style={{ color: "white" }}>
-                    {obj?.first_name?.charAt(0) || ""}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Employee Info */}
-            <div className="flex-grow-1">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  <h5 className="fs-14 mb-1">
-                    <span>{obj.first_name}</span>
-                    <span style={{ color: "#a29797", fontSize: "smaller" }}>
-                      {" "}
-                      #{obj.emp_id}
-                    </span>
-                  </h5>
-                </Link>
-              </div>
-              <div>{obj.email}</div>
-
-              {/* Show progress bar only if employee is active */}
-              {/* {obj.is_active && (
-                <div
-                  className="progress mt-1"
-                  style={{
-                    height: "4px",
-                    backgroundColor: "#e9ecef", // gray background
-                    borderRadius: "4px",
-                  }}
-                >
-                  <div
-                    className="progress-bar"
-                    role="progressbar"
-                    style={{
-                      width: `${progress}%`,
-                      backgroundColor: progress >= 100 ? "#28a745" : "#28a745", // green if complete or on time
-                      borderRadius: "4px",
-                      transition: "width 0.5s ease",
-                    }}
-                    aria-valuenow={progress}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                  ></div>
-                </div>
-              )} */}
-            </div>
-          </div>
-        );
-      },
+      accessor: (obj) => (
+        <ApvEmployee
+          employee={obj}
+          tag={obj.emp_id ? `#${obj.emp_id}` : null}
+          onClick={() => viewEmployee(obj)}
+        />
+      ),
     },
 
     // {
@@ -325,20 +237,8 @@ const Employee = () => {
       id: "role_id",
       filterable: false,
       accessor: (obj) => {
-        // console.log("obj", obj);
-
-        const RoleData = GetLocalStorageData("role");
-
-        let thisRole = RoleData
-          ? RoleData.filter((data) => obj.role?.id === data.id)
-          : [];
-        return (
-          <>
-            {thisRole.map((d) => (
-              <React.Fragment>{d.name}</React.Fragment>
-            ))}
-          </>
-        );
+        const thisRole = RoleData ? RoleData.find((data) => obj.role?.id === data.id) : null;
+        return <ApvChip icon="ri-shield-user-line">{thisRole?.name}</ApvChip>;
       },
     },
     {
@@ -346,71 +246,18 @@ const Employee = () => {
       id: "department",
       filterable: false,
       accessor: (obj) => {
-        let thisDepartment = DepartmentData
-          ? DepartmentData.filter((data) =>
-              obj.primary_department_id_list.includes(data.id),
-            )
+        const thisDepartment = DepartmentData
+          ? DepartmentData.filter((data) => obj.primary_department_id_list?.includes(data.id))
           : [];
-
-        let firstDep_name = thisDepartment?.length
-          ? thisDepartment[0].name
-          : "";
-
-        let subDepList = thisDepartment?.length
-          ? thisDepartment.filter((datas, index) => {
-              if (index !== 0) {
-                return datas;
-              }
-            })
-          : [];
-
-        return (
-          <span>
-            <Button
-              color="light"
-              id={`depListRef-${obj.id}`}
-              className="position-relative"
-            >
-              <React.Fragment>{firstDep_name}</React.Fragment>
-              {subDepList.length > 0 ? (
-                <span>
-                  <Badge
-                    //id="tooltipwithHtml"
-                    pill
-                    color="success"
-                    className="position-absolute top-0 start-100 translate-middle"
-                  >
-                    +{subDepList.length}
-                    <span className="visually-hidden">Departments</span>
-                  </Badge>
-
-                  <UncontrolledTooltip
-                    placement="bottom"
-                    target={`depListRef-${obj.id}`}
-                  >
-                    {" "}
-                    <div className="mt-1">
-                      {subDepList.map((item, key) => (
-                        <p className="mb-1">{item.name}</p>
-                      ))}
-                    </div>{" "}
-                  </UncontrolledTooltip>
-                </span>
-              ) : (
-                ""
-              )}
-            </Button>
-          </span>
-        );
+        return <ApvDepartment departments={thisDepartment} refId={obj.id} />;
       },
     },
     {
       Header: "Work Schedule",
       id: "work-schedule",
       filterable: false,
+      truncate: false,
       accessor: (obj) => {
-        const WorkSchedule = GetLocalStorageData("work_schedule");
-
         // Ensure WorkSchedule is always an array
         const workScheduleList = Array.isArray(WorkSchedule)
           ? WorkSchedule
@@ -467,11 +314,7 @@ const Employee = () => {
           return (
             <React.Fragment key={day.id}>
               <span
-                className={
-                  thisDayTimeObj?.is_day_on
-                    ? "fw-bold me-1"
-                    : "fw-normal fw-lighter me-1"
-                }
+                className={`apv-week-day ${thisDayTimeObj?.is_day_on ? "is-on" : ""}`}
                 id={tooltipId}
               >
                 {day.name}
@@ -499,13 +342,13 @@ const Employee = () => {
           <>
             {workscheduleData.length > 0 ? (
               workscheduleData.map((d) => (
-                <div key={d.id}>
-                  {d.name}
-                  <div>{htmltag}</div>
+                <div key={d.id} className="apv-schedule">
+                  <span className="apv-schedule-name">{d.name}</span>
+                  <span className="apv-week">{htmltag}</span>
                 </div>
               ))
             ) : (
-              <div>-</div>
+              <ApvEmpty />
             )}
           </>
         );
@@ -535,84 +378,28 @@ const Employee = () => {
         // 🚫 Not Assigned
         if (!rm_obj) {
           return (
-            <div className="d-flex gap-2 align-items-center text-muted">
-              <div
-                className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
-                style={{
-                  background: "#E9ECEF",
-                  width: "30px",
-                  height: "30px",
-                  color: "#6C757D",
-                }}
-              >
-                <i className="fas fa-user-slash" />
-              </div>
-              <span className="fw-semibold">Not Assigned</span>
-            </div>
+            <span className="apv-emp apv-emp-empty">
+              <span className="apv-avatar is-text">
+                <i className="ri-user-unfollow-line"></i>
+              </span>
+              <span className="apv-emp-mail">Not assigned</span>
+            </span>
           );
         }
 
-        // ✅ Assigned RM — avatar + name + email ALL clickable
-        return (
-          <div
-            className="d-flex gap-2 align-items-center"
-            role="button"
-            style={{ cursor: "pointer" }}
-            onClick={handleRMClick}
-          >
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              {rm_obj.profile_url ? (
-                <img
-                  src={rm_obj.profile_url}
-                  alt="Profile"
-                  className="avatar-xs rounded-circle"
-                  style={{ objectFit: "cover" }}
-                />
-              ) : (
-                <div
-                  className="avatar-xs rounded-circle d-flex justify-content-center align-items-center"
-                  style={{
-                    background: "#0ab39c",
-                    width: "30px",
-                    height: "30px",
-                  }}
-                  title={rm_obj.first_name}
-                >
-                  <span className="text-white fw-bold">
-                    {rm_obj.first_name?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Name + Email */}
-            <div className="flex-grow-1">
-              <h5 className="fs-14 mb-1 link-body-emphasis">
-                {rm_obj.first_name} {rm_obj.last_name}
-              </h5>
-              <div className="text-muted">{rm_obj.email}</div>
-            </div>
-          </div>
-        );
+        return <ApvEmployee employee={rm_obj} onClick={handleRMClick} />;
       },
     },
     {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.is_active ? "Active" : "Inactive";
-        let statusClass = obj.is_active ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) =>
+        obj.is_active ? (
+          <ApvStatus tone="success" icon="ri-checkbox-circle-line" label="Active" />
+        ) : (
+          <ApvStatus tone="secondary" icon="ri-forbid-line" label="Inactive" />
+        ),
     },
   ];
 
@@ -685,105 +472,16 @@ const Employee = () => {
         import_width_per={"50%"}
         initialActiveTab={"2"}
       />
-      <Modal
+      <ReportingManagerPicker
         isOpen={rmModalOpen}
-        toggle={handleCloseRmModal}
-        centered
-        size="lg"
-      >
-        <ModalHeader toggle={handleCloseRmModal}>
-          Select Reporting Manager
-        </ModalHeader>
-
-        <ModalBody style={{ maxHeight: "400px", overflowY: "auto" }}>
-          {/* 🔍 Search */}
-          <div className="input-group mb-3">
-            <span className="input-group-text bg-white">
-              <i className="bx bx-search-alt"></i>
-            </span>
-            <Input
-              type="text"
-              placeholder="Search employee name..."
-              value={rmSearch}
-              onChange={(e) => setRmSearch(e.target.value)}
-            />
-          </div>
-
-          {/* ✅ Filter + Sort */}
-          {(() => {
-            const currentRmId =
-              selectedEmployee?.reporting_manager_info?.id ?? currentRM;
-
-            const filteredEmployees = employee_data
-              ?.filter(
-                (emp) =>
-                  emp.is_active === true &&
-                  emp.id !== selectedEmployee?.id &&
-                  `${emp.first_name} ${emp.last_name} ${emp.email}`
-                    ?.toLowerCase()
-                    .includes(rmSearch.toLowerCase()),
-              )
-              .sort((a, b) => {
-                if (a.id === currentRmId) return -1;
-                if (b.id === currentRmId) return 1;
-                return 0;
-              });
-
-            return filteredEmployees && filteredEmployees.length > 0 ? (
-              filteredEmployees.map((emp) => {
-                const isSelected = emp.id === currentRmId;
-
-                return (
-                  <div
-                    key={emp.id}
-                    className={`d-flex align-items-center p-2 mb-2 rounded cursor-pointer ${
-                      isSelected
-                        ? "bg-success-subtle border border-success"
-                        : "hover-bg"
-                    }`}
-                    onClick={() => handleChangeReportingManager(emp)}
-                  >
-                    <div className="avatar-xs me-2">
-                      {emp.profile_url ? (
-                        <img
-                          src={emp.profile_url}
-                          alt=""
-                          className="rounded-circle"
-                          style={{ width: 32, height: 32, objectFit: "cover" }}
-                        />
-                      ) : (
-                        <div
-                          className="rounded-circle bg-success text-white d-flex justify-content-center align-items-center"
-                          style={{ width: 32, height: 32 }}
-                        >
-                          {emp.first_name?.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="fw-semibold">
-                        {emp.first_name} {emp.last_name}
-                      </div>
-                      <small className="text-muted">{emp.email}</small>
-                    </div>
-
-                    {isSelected && (
-                      <Badge color="success" className="ms-auto">
-                        Selected
-                      </Badge>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center text-muted py-3">
-                No Reporting Managers Available
-              </div>
-            );
-          })()}
-        </ModalBody>
-      </Modal>
+        onClose={handleCloseRmModal}
+        employees={employee_data || []}
+        employee={selectedEmployee}
+        currentManagerId={selectedEmployee?.reporting_manager_info?.id ?? currentRM}
+        search={rmSearch}
+        onSearch={setRmSearch}
+        onSelect={handleChangeReportingManager}
+      />
     </React.Fragment>
   );
 };

@@ -4,10 +4,11 @@ import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
   Col, Row, Label, Button, Input, Badge,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, day, isBlank, runChecks } from "./validators";
+import { testId } from "../../../shared/testing/testId";
 
 const LOP_METHOD_OPTIONS = [
   { value: "calendar_days", label: "Calendar Days" },
@@ -39,7 +40,7 @@ const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span style={{
       display: "inline-block", width: 36, height: 20, borderRadius: 12,
-      background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0,
+      background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0,
     }}>
       <span style={{
         position: "absolute", top: 3, left: checked ? 18 : 3,
@@ -159,7 +160,7 @@ const LopPolicySettings = () => {
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
               Define how Loss of Pay is calculated for your employees.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="lop-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
             </Button>
           </div>
@@ -180,10 +181,10 @@ const LopPolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
+              <Button data-testid="lop-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}>
+              <Button data-testid="lop-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
                 <i className="ri-add-line fs-14"></i> New Version
               </Button>
             </>
@@ -222,7 +223,7 @@ const LopPolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
-              <Input type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
+              <Input data-testid="lop-policy-effective-date-input" type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
             ) : (
               <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>
             )}
@@ -230,7 +231,7 @@ const LopPolicySettings = () => {
           <SettingRow label="Status">
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
+                <Input data-testid="lop-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
                 <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{form.is_active ? "Active" : "Inactive"}</Label>
               </div>
             ) : (
@@ -241,6 +242,7 @@ const LopPolicySettings = () => {
             {isEditing ? (
               <div>
                 <Select
+                  testId="lop-policy-active"
                   options={LOP_METHOD_OPTIONS}
                   value={LOP_METHOD_OPTIONS.find(o => o.value === form.lop_calculation_method)}
                   onChange={(e) => {
@@ -277,6 +279,7 @@ const LopPolicySettings = () => {
               <SettingRow label="Fixed Days" last>
                 {isEditing ? (
                   <Select
+                    testId="lop-policy-fixed-days"
                     options={DAY_OPTIONS}
                     value={DAY_OPTIONS.find(o => o.value === form.fixed_days)}
                     onChange={(e) => handleChange("fixed_days", e.value)}
@@ -301,7 +304,7 @@ const LopPolicySettings = () => {
                 <SettingRow key={key} label={label} last={i === arr.length - 1}>
                   {isEditing ? (
                     <div className="form-check form-switch mb-0">
-                      <Input className="form-check-input" type="checkbox" checked={!!form[key]} onChange={() => handleToggle(key)} />
+                      <Input className="form-check-input" type="checkbox" data-testid={testId("lop-policy", key, "checkbox")} checked={!!form[key]} onChange={() => handleToggle(key)} />
                     </div>
                   ) : (
                     <ViewToggle checked={!!data[key]} />
@@ -317,7 +320,7 @@ const LopPolicySettings = () => {
           <SettingRow label="Prioritise Leave Over LOP">
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.prioritise_leave_over_lop} onChange={() => handleToggle("prioritise_leave_over_lop")} />
+                <Input data-testid="lop-policy-prioritise-leave-over-lop-checkbox" className="form-check-input" type="checkbox" checked={!!form.prioritise_leave_over_lop} onChange={() => handleToggle("prioritise_leave_over_lop")} />
               </div>
             ) : (
               <ViewToggle checked={!!data.prioritise_leave_over_lop} />
@@ -326,6 +329,7 @@ const LopPolicySettings = () => {
           <SettingRow label="Max LOP Days Per Month" last>
             {isEditing ? (
               <Input
+                data-testid="lop-policy-no-limit-input"
                 type="number" min="0" max="31"
                 value={form.max_lop_days_per_month ?? ""}
                 placeholder="No limit"
@@ -345,8 +349,8 @@ const LopPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="lop-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
+            <Button data-testid="lop-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line align-middle me-1"></i>
               {loading ? "Saving…" : "Save Changes"}
             </Button>

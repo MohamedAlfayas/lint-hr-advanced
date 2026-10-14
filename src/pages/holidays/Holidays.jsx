@@ -120,6 +120,7 @@ const Holiday = () => {
         >
           <NavItem>
             <NavLink
+              data-testid="holidays-legacy-list-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: !showCalendar })}
               onClick={() => setShowCalendar(false)}
@@ -129,6 +130,7 @@ const Holiday = () => {
           </NavItem>
           <NavItem>
             <NavLink
+              data-testid="holidays-legacy-calendar-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: showCalendar })}
               onClick={() => setShowCalendar(true)}

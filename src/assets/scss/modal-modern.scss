@@ -1,0 +1,633 @@
+//
+// Modern skin for Bootstrap / reactstrap modals and SweetAlert2 popups.
+// No overflow:hidden on .modal-content so in-modal dropdowns are never clipped.
+//
+
+$mm-radius: 16px;
+
+// Backdrop: dimmed + blurred
+.modal-backdrop {
+  background-color: rgb(15, 23, 42);
+
+  &.show {
+    opacity: 0.5;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+// Entrance: rise + scale
+.modal.fade .modal-dialog {
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+.modal-content {
+  border: 1px solid var(--vz-border-color);
+  border-radius: $mm-radius;
+  background: var(--vz-secondary-bg);
+  box-shadow: 0 30px 80px -24px rgba(15, 23, 42, 0.45), 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+// Accent line across the top edge, painted by the box itself so it is clipped
+// by the same rounded corners (a child element can't line up with the border).
+.modal-content:has(> .modal-header):not(:has(> .modal-header > .modal-title:empty)) {
+  border-top-color: transparent;
+  background:
+    linear-gradient(90deg, var(--vz-primary), var(--vz-info)) top / 100% 3px no-repeat border-box,
+    var(--vz-secondary-bg);
+}
+
+// Edge-to-edge Google Maps are square; clip them to the modal's rounded corners.
+.modal-content:has(.gm-style) {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.modal-header {
+  position: relative;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--vz-border-color);
+  border-top-left-radius: $mm-radius;
+  border-top-right-radius: $mm-radius;
+
+  &:not([class*="bg-"]) {
+    background: linear-gradient(135deg, rgba(var(--vz-primary-rgb), 0.07), rgba(var(--vz-info-rgb), 0.03) 55%, transparent);
+  }
+
+  // Thin accent line across the top edge
+
+  .modal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    color: var(--vz-heading-color);
+
+    &::before {
+      content: "";
+      flex: 0 0 4px;
+      width: 4px;
+      height: 18px;
+      border-radius: 4px;
+      background: linear-gradient(180deg, var(--vz-primary), var(--vz-info));
+    }
+  }
+
+  .btn-close {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    margin: 0 0 0 auto;
+    padding: 0;
+    border-radius: 10px;
+    opacity: 0.7;
+    background-size: 10px;
+    background-color: var(--vz-secondary-bg);
+    box-shadow: inset 0 0 0 1px var(--vz-border-color);
+    transition: all 0.15s ease;
+
+    &:hover {
+      opacity: 1;
+      background-color: rgba(var(--vz-danger-rgb), 0.1);
+      box-shadow: inset 0 0 0 1px rgba(var(--vz-danger-rgb), 0.35);
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.2);
+    }
+  }
+}
+
+.modal-body {
+  padding: 20px 22px;
+}
+
+.modal-footer {
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--vz-border-color);
+  background: var(--vz-tertiary-bg);
+  border-bottom-left-radius: $mm-radius;
+  border-bottom-right-radius: $mm-radius;
+
+  > * {
+    margin: 0;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 10px;
+    padding-inline: 16px;
+    font-weight: 500;
+
+    i {
+      line-height: 1;
+    }
+  }
+
+  // Velzon .btn-label buttons keep room for their absolutely-positioned icon block
+  .btn.btn-label {
+    padding-left: 46px;
+    overflow: hidden;
+
+    .label-icon {
+      margin: 0 !important;
+      border-radius: 10px 0 0 10px;
+    }
+  }
+
+  .btn-primary,
+  .btn-success,
+  .btn-danger {
+    box-shadow: 0 6px 14px -8px currentColor;
+  }
+}
+
+// Full-screen modals keep square corners
+.modal-fullscreen {
+  .modal-content,
+  .modal-header,
+  .modal-header::before,
+  .modal-footer {
+    border-radius: 0;
+  }
+}
+
+// Inputs inside modals
+.modal-body {
+  .form-control,
+  .form-select {
+    border-radius: 10px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      border-color: rgba(var(--vz-primary-rgb), 0.6);
+      box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.15);
+    }
+  }
+
+  .form-label {
+    font-weight: 500;
+    color: var(--vz-heading-color);
+  }
+}
+
+// ── Patterns used across existing modals ───────────────────────────────────
+
+// <ModalHeader><h5 className="modal-title" style={{fontSize:"smaller"}}>…</h5></ModalHeader>
+// renders a title inside a title: keep one accent bar and a readable size.
+.modal-header .modal-title .modal-title {
+  margin: 0;
+  font-size: inherit !important;
+  font-weight: inherit;
+  color: inherit;
+
+  &::before {
+    display: none;
+  }
+}
+
+// Plain grey header utilities get the standard gradient header
+.modal-header.bg-light,
+.modal-header.surface-muted {
+  background: linear-gradient(135deg, rgba(var(--vz-primary-rgb), 0.07), rgba(var(--vz-info-rgb), 0.03) 55%, transparent) !important;
+}
+
+// Tinted headers (bg-danger-subtle, bg-success-subtle…) keep their colour but lose the hard edge
+.modal-header[class*="-subtle"] {
+  border-bottom-color: transparent;
+}
+
+// Close-button-only headers (confirmation popups): no strip, floating ×
+.modal-header:has(> .modal-title:empty) {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  padding: 12px;
+  border: 0;
+  background: transparent !important;
+
+  &::before,
+  .modal-title {
+    display: none;
+  }
+
+  + .modal-body {
+    padding-top: 32px !important;
+    border-radius: $mm-radius;
+    background: radial-gradient(120% 60% at 50% 0%, rgba(var(--vz-primary-rgb), 0.08), transparent 70%);
+  }
+}
+
+// Buttons that live inside the body (many modals have no footer)
+.modal-body .btn:not(.btn-link):not(.btn-icon):not(.btn-sm) {
+  border-radius: 10px;
+}
+
+.modal-body .btn:not(.btn-link) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  i {
+    line-height: 1;
+  }
+}
+
+.modal-body .d-flex.justify-content-center.mt-4,
+.modal-body .hstack.justify-content-end {
+  gap: 10px !important;
+}
+
+// Tables inside modals (IN/OUT timelines, member lists, slabs…).
+// Bordered tables (payslips) are left alone.
+.modal-body .table:not(.table-bordered) {
+  --vz-table-bg: transparent;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--vz-border-color);
+  border-radius: 12px;
+  overflow: hidden;
+
+  > thead > tr > th {
+    background: var(--vz-tertiary-bg);
+    color: var(--vz-secondary-color);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--vz-border-color);
+    padding: 10px 12px;
+  }
+
+  > tbody > tr {
+    > td {
+      padding: 10px 12px;
+      vertical-align: middle;
+      border-color: var(--vz-border-color);
+    }
+
+    &:last-child > td {
+      border-bottom: 0;
+    }
+
+    &:hover > td {
+      background: rgba(var(--vz-primary-rgb), 0.03);
+    }
+  }
+}
+
+// IN/OUT timeline tables (the only ones with check-in/out arrow icons)
+.modal-body .table:has(.arrow-icon) {
+  .arrow-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    margin-left: 4px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  > thead > tr > th:nth-child(1) .arrow-icon {
+    color: var(--vz-success);
+    background: rgba(var(--vz-success-rgb), 0.14);
+  }
+
+  > thead > tr > th:nth-child(2) .arrow-icon {
+    color: var(--vz-danger);
+    background: rgba(var(--vz-danger-rgb), 0.14);
+  }
+
+  > tbody > tr > td {
+    padding: 12px;
+
+    img {
+      box-shadow: 0 0 0 2px var(--vz-secondary-bg), 0 0 0 3px var(--vz-border-color);
+      transition: transform 0.18s ease;
+
+      &:hover {
+        transform: scale(1.08);
+      }
+    }
+
+    p.text-muted {
+      color: var(--vz-heading-color) !important;
+    }
+
+    small a {
+      color: var(--vz-primary);
+    }
+  }
+
+  > tbody > tr > td:last-child > p {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 !important;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    white-space: nowrap;
+    color: var(--vz-primary) !important;
+    background: rgba(var(--vz-primary-rgb), 0.1);
+  }
+}
+
+// Neutral "Close" button at the bottom of footer-less modals, set apart like a footer
+.modal-body :has(> .modal-dismiss-btn) {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px;
+  margin: 16px -22px -20px !important;
+  padding: 14px 22px;
+  border-top: 1px solid var(--vz-border-color);
+  background: var(--vz-tertiary-bg);
+  border-radius: 0 0 16px 16px;
+}
+
+.modal-body .btn.modal-dismiss-btn {
+  min-width: 104px;
+  height: 38px;
+  font-weight: 600;
+  color: var(--vz-body-color);
+  background: var(--vz-secondary-bg);
+  border: 1px solid var(--vz-border-color);
+
+  &:hover,
+  &:focus {
+    color: var(--vz-heading-color);
+    background: var(--vz-tertiary-bg);
+    border-color: var(--vz-secondary-color);
+  }
+}
+
+// Labels and helper text inside modal forms
+.modal-body {
+  textarea.form-control {
+    min-height: 80px;
+  }
+
+  .form-check-input {
+    cursor: pointer;
+  }
+
+  .alert {
+    border-radius: 12px;
+  }
+}
+
+
+// ── SweetAlert2 ─────────────────────────────────────────────────────────────
+// Matches the in-app confirm dialog: soft round icon, centred text, tinted
+// footer strip. Colours / icons are normalised in src/common/js/swalTheme.js.
+.swal2-container.swal2-backdrop-show {
+  background: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.swal2-container .swal2-popup:not(.swal2-toast) {
+  width: 28rem;
+  max-width: calc(100vw - 32px);
+  padding: 28px 0 0 !important;
+  border-radius: 18px !important;
+  background: var(--vz-secondary-bg) !important;
+  color: var(--vz-body-color) !important;
+  border: 1px solid var(--vz-border-color);
+  box-shadow: 0 30px 80px -24px rgba(15, 23, 42, 0.45) !important;
+  overflow: hidden;
+
+  &:has(> .swal2-actions[style*="display: none"]) {
+    padding-bottom: 26px !important;
+  }
+
+  .swal2-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 14px !important;
+    border: 0 !important;
+    background: color-mix(in srgb, currentColor 12%, transparent);
+
+    .swal2-icon-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px !important;
+      line-height: 1;
+    }
+  }
+
+  .swal2-title {
+    padding: 0 24px !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.35;
+    color: var(--vz-heading-color) !important;
+  }
+
+  .swal2-html-container {
+    margin: 8px 24px 0 !important;
+    padding: 0 !important;
+    font-size: 13.5px !important;
+    line-height: 1.55;
+    color: var(--vz-secondary-color) !important;
+  }
+
+  .swal2-input-label {
+    justify-self: stretch;
+    justify-content: flex-start;
+    margin: 20px 24px 0 !important;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-align: left;
+    color: var(--vz-heading-color);
+
+    + .swal2-input,
+    + .swal2-textarea,
+    + .swal2-select {
+      margin-top: 6px !important;
+    }
+  }
+
+  .swal2-input,
+  .swal2-textarea,
+  .swal2-select {
+    justify-self: stretch;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
+    margin: 16px 24px 0 !important;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
+    border-radius: 10px;
+    color: var(--vz-body-color);
+    background: var(--vz-body-bg);
+    border: 1px solid var(--vz-border-color);
+    box-shadow: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+
+    &:hover {
+      border-color: rgba(var(--vz-primary-rgb), 0.45);
+    }
+
+    &:focus {
+      border-color: var(--vz-primary);
+      box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.15);
+      background: var(--vz-secondary-bg);
+    }
+  }
+
+  // Native date/time inputs: leading calendar glyph, value left-aligned,
+  // chevron pinned to the right edge (the whole field opens the picker —
+  // see swalTheme.js).
+  .swal2-input:is([type="date"], [type="datetime-local"], [type="time"], [type="month"], [type="week"]) {
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 42px;
+    cursor: pointer;
+    font-weight: 500;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23878a99'%3E%3Cpath d='M9 1v2h6V1h2v2h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4V1h2zm11 10H4v8h16v-8zM7 5H4v4h16V5h-3v2h-2V5H9v2H7V5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 14px center;
+    background-size: 17px;
+
+    &::-webkit-datetime-edit {
+      flex: 1;
+      padding: 0;
+    }
+    &::-webkit-datetime-edit-fields-wrapper {
+      padding: 0;
+    }
+    &::-webkit-calendar-picker-indicator {
+      margin-left: auto;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      color: transparent;
+      opacity: 1;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23878a99'%3E%3Cpath d='M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z'/%3E%3C/svg%3E")
+        center / 18px no-repeat;
+      transition: background-color 0.15s;
+    }
+    &:hover::-webkit-calendar-picker-indicator {
+      background-color: rgba(var(--vz-primary-rgb), 0.1);
+    }
+    &:focus {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23405189'%3E%3Cpath d='M9 1v2h6V1h2v2h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4V1h2zm11 10H4v8h16v-8zM7 5H4v4h16V5h-3v2h-2V5H9v2H7V5z'/%3E%3C/svg%3E");
+    }
+  }
+
+  .swal2-textarea {
+    height: auto;
+    min-height: 90px;
+    padding: 10px 12px;
+  }
+
+  .swal2-validation-message {
+    margin: 12px 24px 0 !important;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--vz-danger);
+    background: rgba(var(--vz-danger-rgb), 0.08);
+  }
+
+  .swal2-actions {
+    width: 100%;
+    margin: 22px 0 0 !important;
+    padding: 14px 20px;
+    gap: 10px;
+    justify-content: center;
+    background: var(--vz-tertiary-bg);
+    border-top: 1px solid var(--vz-border-color);
+  }
+
+  .swal2-styled {
+    margin: 0 !important;
+    min-width: 96px;
+    height: 40px;
+    padding: 0 20px !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+
+    &:focus,
+    &:focus-visible {
+      box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.2) !important;
+    }
+  }
+
+  .swal2-confirm {
+    box-shadow: 0 8px 18px -10px rgba(15, 23, 42, 0.6) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      background-image: none !important;
+    }
+  }
+
+  .swal2-cancel {
+    background: transparent !important;
+    color: var(--vz-heading-color) !important;
+
+    &:hover {
+      background: var(--vz-secondary-bg) !important;
+      background-image: none !important;
+    }
+  }
+
+  .swal2-loader {
+    border-color: var(--vz-primary) transparent var(--vz-primary) transparent;
+  }
+
+  .swal2-footer {
+    margin: 0;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--vz-secondary-color);
+    border-top: 1px solid var(--vz-border-color);
+  }
+
+  .swal2-close {
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 22px;
+    color: var(--vz-secondary-color);
+
+    &:hover {
+      color: var(--vz-danger);
+      background: var(--vz-tertiary-bg);
+    }
+  }
+
+  .swal2-timer-progress-bar {
+    background: rgba(var(--vz-primary-rgb), 0.5);
+  }
+}
+[data-bs-theme="dark"] .swal2-popup .swal2-input {
+  color-scheme: dark;
+}

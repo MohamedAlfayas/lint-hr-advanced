@@ -6,9 +6,6 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import {
   Badge,
   Button,
-  Card,
-  CardBody,
-  Col,
   Container,
   DropdownItem,
   DropdownMenu,
@@ -18,17 +15,12 @@ import {
   Modal,
   ModalBody,
   ModalHeader,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
   TabContent,
   TabPane,
   Table,
   UncontrolledDropdown,
 } from "reactstrap";
-import classnames from "classnames";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import Flatpickr from "react-flatpickr";
 import { Link } from "react-router-dom";
@@ -58,18 +50,24 @@ import {
   setEarnings,
 } from "../../redux/reducers/ChildReducer/SalaryComponentsReducer";
 import { location_edit_form_component_name } from "../../common/constant/Constants";
-import GeneralConfiguration from "./GeneralConfiguration";
 import LocationsAndPoliciesConfig from "./LocationsAndPoliciesConfig";
 import QrcodeConfig from "./QRcodeConfig";
 import CustomStatus from "../organization/CustomStatus";
 import TrackingConfigForm from "../organization/TrackingConfigForm";
 
+import SettingsLayout from "../../shared/ui/SettingsLayout";
+
 // register lottie and define custom element
 defineElement(loadAnimation);
 
+const ATTENDANCE_CONFIG_TABS = [
+  { id: "4", label: "Custom Status", hint: "Away, meeting & break states", icon: "ri-user-smile-line", tone: "info" },
+  { id: "5", label: "Tracking Configuration", hint: "Location & activity tracking", icon: "ri-map-pin-time-line", tone: "success" },
+];
+
 const AttendanceConfig = () => {
   // Vertical Nav Tabs
-  const [verticalTab, setverticalTab] = useState("1");
+  const [verticalTab, setverticalTab] = useState("4");
   const toggleVertical = (tab) => {
     if (verticalTab !== tab) {
       setverticalTab(tab);
@@ -86,123 +84,36 @@ const AttendanceConfig = () => {
 
   return (
     <React.Fragment>
-      <Card>
-        <CardBody>
-          <h5 className="mb-3">Attendance Configuration</h5>
+      <SettingsLayout
+        title="Attendance Configuration"
+        subtitle="Statuses & tracking rules"
+        tabs={ATTENDANCE_CONFIG_TABS}
+        active={verticalTab}
+        onChange={toggleVertical}
+      >
+        <TabContent
+          activeTab={verticalTab}
+          className="text-muted mt-4 mt-md-0"
+          id="v-pills-tabContent"
+        >
+          {/* Locations and Policies Tab Start */}
+          <TabPane tabId="2" id="v-pills-profile">
+            <LocationsAndPoliciesConfig />
+          </TabPane>
+          {/* Locations and Policies Tab End */}
 
-          <Row>
-            <Col md={2} className="border-end">
-              <Nav pills className="flex-column text-left" id="v-pills-tab">
-                {/* <NavItem>
-                  <NavLink
-                    style={{ cursor: "pointer" }}
-                    className={classnames({
-                      "mb-2": true,
-                      active: verticalTab === "1",
-                    })}
-                    onClick={() => {
-                      toggleVertical("1");
-                    }}
-                    id="v-pills-home-tab"
-                  >
-                    General
-                  </NavLink>
-                </NavItem> */}
-                {/* <NavItem>
-                          <NavLink
-                            style={{ cursor: "pointer" }}
-                            className={classnames({
-                              "mb-2": true,
-                              active: verticalTab === "2",
-                            })}
-                            onClick={() => {
-                              toggleVertical("2");
-                            }}
-                            id="v-pills-profile-tab"
-                          >
-                            Location and Policies
-                          </NavLink>
-                        </NavItem> */}
-                 {/* <NavItem>
-                  <NavLink
-                    style={{ cursor: "pointer" }}
-                    className={classnames({
-                      "mb-2": true,
-                      active: verticalTab === "3",
-                    })}
-                    onClick={() => {
-                      toggleVertical("3");
-                    }}
-                    id="v-pills-messages-tab"
-                  >
-                    QR Code
-                  </NavLink>
-                </NavItem>  */}
-                <NavItem>
-                  <NavLink
-                    style={{ cursor: "pointer" }}
-                    className={classnames({
-                      "mb-2": true,
-                      active: verticalTab === "4",
-                    })}
-                    onClick={() => {
-                      toggleVertical("4");
-                    }}
-                    id="v-pills-messages-tab"
-                  >
-                    Custom Status
-                  </NavLink>
-                </NavItem> 
-                <NavItem>
-                  <NavLink
-                    style={{ cursor: "pointer" }}
-                    className={classnames({
-                      "mb-2": true,
-                      active: verticalTab === "5",
-                    })}
-                    onClick={() => {
-                      toggleVertical("5");
-                    }}
-                    id="v-pills-messages-tab"
-                  >
-                    Tracking Configuration
-                  </NavLink>
-                </NavItem>
-              </Nav>
-            </Col>
-            <Col md={10}>
-              <TabContent
-                activeTab={verticalTab}
-                className="text-muted mt-4 mt-md-0"
-                id="v-pills-tabContent"
-              >
-                {/* General Tab Start */}
-                <TabPane tabId="1" id="v-pills-home">
-                  <GeneralConfiguration />
-                </TabPane>
-                {/* General Tab End */}
-
-                {/* Locations and Policies Tab Start */}
-                <TabPane tabId="2" id="v-pills-profile">
-                  <LocationsAndPoliciesConfig />
-                </TabPane>
-                {/* Locations and Policies Tab End */}
-
-                {/* QR Code Tab Start */}
-                <TabPane TabPane tabId="3" id="v-pills-messages">
-                  <QrcodeConfig />
-                </TabPane>
-                <TabPane TabPane tabId="4" id="v-pills-messages">
-                  <CustomStatus />
-                </TabPane>
-                <TabPane TabPane tabId="5" id="v-pills-messages">
-                  <TrackingConfigForm />
-                </TabPane>
-              </TabContent>
-            </Col>
-          </Row>
-        </CardBody>
-      </Card>
+          {/* QR Code Tab Start */}
+          <TabPane TabPane tabId="3" id="v-pills-messages">
+            <QrcodeConfig />
+          </TabPane>
+          <TabPane TabPane tabId="4" id="v-pills-messages">
+            <CustomStatus />
+          </TabPane>
+          <TabPane TabPane tabId="5" id="v-pills-messages">
+            <TrackingConfigForm />
+          </TabPane>
+        </TabContent>
+      </SettingsLayout>
     </React.Fragment>
   );
 };

@@ -17,6 +17,7 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import { ButtonToolbar, IconButton, Table } from "rsuite";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { ApvAvatar } from "../../component/common/approval/ApprovalCells";
 import { MonthFormat } from "../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -27,11 +28,14 @@ import { Api } from "../../common/api/Api";
 import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
 const ExcelJs = require("exceljs");
 import "../../common/css/lc_style.css";
+import "./reports.scss";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
+import { testId } from "../../shared/testing/testId";
 
 const { Column, HeaderCell, Cell, ColumnGroup } = Table;
 
-const DEFAULT_PAGE_SIZE = 20; // API default (max 100)
-const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const DEFAULT_PAGE_SIZE = 10; // API max 100
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const SEARCH_DEBOUNCE_MS = 400;
 
 // builds [1, "...", 4, 5, 6, "...", 20]
@@ -288,53 +292,29 @@ const BreakReport = () => {
   //   );
   // };
 
-  const FixedColumns = ({ rowData, index, ...props }) => {
+  const FixedColumns = ({ rowData, ...props }) => {
     const emp = rowData.employee || {};
     const departmentNames = Array.isArray(emp.departments)
       ? emp.departments.map((d) => d.name).join(", ")
       : "";
 
     const html_tag = (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          {emp.profile_url ? (
-            <img
-              src={emp.profile_url}
-              alt={emp.first_name}
-              className="avatar-xs rounded-circle"
-            />
-          ) : (
-            <div
-              className="avatar-xs rounded-circle"
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#0ab39c",
-              }}
-              title={emp.first_name}
-            >
-              <span className="first_letter" style={{ color: "white" }}>
-                {emp.first_name?.charAt(0) || ""}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="flex-grow-1">
-          <Link to="#" className="link-body-emphasis mb-0">
-            <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
-              {emp.first_name} {emp.last_name}
-            </h5>
-          </Link>
-          <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
-            {emp.email}
-          </div>
+      <div className="apv-emp">
+        <ApvAvatar url={emp.profile_url} name={emp.first_name} />
+        <span className="apv-emp-text">
+          <span className="apv-emp-name">
+            <span className="apv-emp-name-text">
+              {[emp.first_name, emp.last_name].filter(Boolean).join(" ")}
+            </span>
+          </span>
+          {emp.email && <span className="apv-emp-mail">{emp.email}</span>}
           {departmentNames && (
-            <div className="fs-12 text-muted" style={{ textAlign: "left" }}>
+            <span className="apv-emp-mail">
+              <i className="ri-building-line me-1"></i>
               {departmentNames}
-            </div>
+            </span>
           )}
-        </div>
+        </span>
       </div>
     );
 
@@ -342,12 +322,12 @@ const BreakReport = () => {
       <Cell
         {...props}
         style={{
-          backgroundColor:
-            index % 2 === 0
-              ? layoutModeType === "dark" ? "#1a1a1a" : "white"
-              : layoutModeType === "dark" ? "#242933" : "#e6f7ff",
-          alignItems: "flex-start",
+          backgroundColor: layoutModeType === "dark" ? "#242933" : "#e6f7ff",
+          display: "flex",
+          alignItems: "center",
           justifyContent: "flex-start",
+          paddingTop: 0,
+          paddingBottom: 0,
           paddingRight: "10px",
         }}
       >
@@ -376,6 +356,7 @@ const BreakReport = () => {
 
             {hasLog && (
               <Link
+                data-testid="break-report-view-link"
                 to="#"
                 className="mt-1"
                 style={{ color: "#0AB39C", fontSize: "12px" }}
@@ -469,6 +450,7 @@ const BreakReport = () => {
       >
         <ButtonToolbar>
           <IconButton
+            data-testid={testId("break-report-row", rowData?.emp_id ?? rowData?.employee_id, "download-button")}
             appearance="subtle"
             onClick={exportEmp}
             icon={
@@ -671,7 +653,7 @@ const BreakReport = () => {
         align="center"
         header={<span style={{ fontWeight: "bold" }}>{formatDate(date)}</span>}
       >
-        <Column width={110} align="center">
+        <Column flexGrow={1} minWidth={110} align="center">
           <HeaderCell style={{ fontWeight: "bold", background: bgColor }}>
             Break
           </HeaderCell>
@@ -683,7 +665,7 @@ const BreakReport = () => {
 
   const summaryColumns = [
     ...breakTypes.map((bt) => (
-      <Column width={140} align="center" key={`bt_${bt.id}`}>
+      <Column flexGrow={1} minWidth={140} align="center" key={`bt_${bt.id}`}>
         <HeaderCell
           style={{ background: headerBgColor, fontWeight: "bold", padding: 18 }}
         >
@@ -692,7 +674,7 @@ const BreakReport = () => {
         <BreakTypeCell typeId={bt.id} style={{ background: headerBgColor }} />
       </Column>
     )),
-    <Column width={140} align="center" key="total-break">
+    <Column flexGrow={1} minWidth={140} align="center" key="total-break">
       <HeaderCell
         style={{ background: headerBgColor, fontWeight: "bold", padding: 18 }}
       >
@@ -703,7 +685,9 @@ const BreakReport = () => {
       </Cell>
     </Column>,
     <Column width={80} fixed="right" key="download">
-      <HeaderCell style={{ fontWeight: "bold", padding: 18 }}>Down</HeaderCell>
+      <HeaderCell style={{ fontWeight: "bold", padding: 18 }}>
+        <i className="ri-download-2-line" style={{ fontSize: 16 }} title="Download" />
+      </HeaderCell>
       <DownloadCell />
     </Column>,
   ];
@@ -734,6 +718,7 @@ const BreakReport = () => {
         <button
           type="button"
           className={linkClass}
+          data-testid={testId("break-report-page", p, "button")}
           onClick={() => handlePageChange(p)}
         >
           {p}
@@ -743,7 +728,7 @@ const BreakReport = () => {
   });
 
   const pageSizeOptions = PAGE_SIZE_OPTIONS.map((size) => (
-    <option key={size} value={size}>
+    <option key={size} value={size} data-testid={testId("break-report-page-size-option", size)}>
       {"Show " + size}
     </option>
   ));
@@ -766,10 +751,19 @@ const BreakReport = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <Card>
-            <CardHeader className="border-0 rounded">
+          <Card className="rpt-card">
+            <CardHeader className="rpt-head border-0">
+              <div className="rpt-title">
+                <span className="rpt-title-icon">
+                  <i className="ri-cup-line"></i>
+                </span>
+                <div className="rpt-title-text">
+                  <h5>Break Report</h5>
+                  <p>Monthly break time for your team, day by day.</p>
+                </div>
+              </div>
               <Row className="g-2 align-items-center">
-                <Col xl={2}>
+                <Col xs={12} sm={5} md={4} xl={3} xxl={2}>
                   <div className="form-icon right">
                     <DatePicker
                       value={dayjs(filterKeys?.month, MonthFormat)}
@@ -783,9 +777,10 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={3}>
+                <Col xs={12} sm={7} md={8} xl={4} xxl={3}>
                   <div className="position-relative">
                     <Input
+                      data-testid="break-report-search-employee-input"
                       type="text"
                       className="form-control"
                       placeholder="Search employee..."
@@ -831,25 +826,21 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={3}>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="badge bg-info-subtle text-info fs-12 p-2">
+                <Col xs={12} md={7} xl={5} xxl={3}>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <span className="rpt-chip is-info">
                       Employees: <b>{totalCount}</b>
                     </span>
                   </div>
                 </Col>
 
-                <Col xl={4} className="text-end">
-                  <div className="d-flex justify-content-end gap-2">
+                <Col xs={12} md={5} xl={12} xxl={4} className="text-end">
+                  <div className="rpt-actions d-flex justify-content-end gap-2">
                     <Button
+                      data-testid="break-report-export-button"
                       type="button"
-                      className="btn btn-info"
+                      className="btn rpt-btn is-soft"
                       onClick={() => openExportModal("page")}
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        fontSize: "0.75rem",
-                        width: "80px",
-                      }}
                     >
                       <i className="ri-file-download-line align-bottom me-1"></i>
                       Export
@@ -857,14 +848,10 @@ const BreakReport = () => {
 
                     <Button
                       type="button"
-                      className="btn btn-success"
+                      className="btn rpt-btn is-primary"
+                      data-testid="break-report-download-all-button"
                       onClick={() => openExportModal("all")}
                       disabled={exportingAll}
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        fontSize: "0.75rem",
-                        width: "100px",
-                      }}
                     >
                       {exportingAll ? (
                         <Spinner size="sm" />
@@ -878,8 +865,8 @@ const BreakReport = () => {
                   </div>
                 </Col>
 
-                <Modal isOpen={showModal} toggle={toggleModal} centered>
-                  <ModalHeader toggle={toggleModal}></ModalHeader>
+                <Modal data-testid="break-report-show-dialog" isOpen={showModal} toggle={toggleModal} centered>
+                  <ModalHeader close={<ModalCloseButton onClick={toggleModal} testId="break-report-show-close-button" />} toggle={toggleModal}></ModalHeader>
                   <ModalBody className="py-3 px-5">
                     <div className="mt-2 text-center">
                       <lord-icon
@@ -895,6 +882,7 @@ const BreakReport = () => {
                     </div>
                     <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                       <Button
+                        data-testid="break-report-show-footer-close-button"
                         type="button"
                         className="btn w-sm btn-light"
                         onClick={toggleModal}
@@ -902,6 +890,7 @@ const BreakReport = () => {
                         Close
                       </Button>
                       <Button
+                        data-testid="break-report-show-download-button"
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
@@ -932,7 +921,8 @@ const BreakReport = () => {
           rowHeight={60}
           autoHeight
           loading={loading}
-          className="mb-3"
+          className="mb-3 rpt-table"
+          affixHeader={70}
           affixHorizontalScrollbar
         >
           <Column width={250} fixed="left" align="center">
@@ -968,6 +958,7 @@ const BreakReport = () => {
               <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
                 <li className={prevClass}>
                   <button
+                    data-testid="break-report-previous-button"
                     type="button"
                     className="page-link"
                     disabled={prevDisabled}
@@ -979,6 +970,7 @@ const BreakReport = () => {
                 {pageItems}
                 <li className={nextClass}>
                   <button
+                    data-testid="break-report-next-button"
                     type="button"
                     className="page-link"
                     disabled={nextDisabled}
@@ -992,6 +984,7 @@ const BreakReport = () => {
 
             <div className="col-sm-auto">
               <select
+                testId="break-report-page-size"
                 className="form-select custom-select-medium text-muted my-select"
                 value={pageSize}
                 onChange={handlePageSizeChange}
@@ -1004,12 +997,13 @@ const BreakReport = () => {
 
         {/* status_log detail modal */}
         <Modal
+          data-testid="break-report-date-dialog"
           isOpen={detailModal}
           toggle={() => setDetailModal(false)}
           centered
           className="custom-modal"
         >
-          <ModalHeader toggle={() => setDetailModal(false)}>
+          <ModalHeader close={<ModalCloseButton onClick={() => setDetailModal(false)} testId="break-report-date-close-button" />} toggle={() => setDetailModal(false)}>
             <h5 className="modal-title" style={{ fontSize: "smaller" }}>
               Date: {detailData.date}
             </h5>
@@ -1041,7 +1035,8 @@ const BreakReport = () => {
             </SimpleBar>
             <div className="text-center mt-3">
               <Button
-                className="btn btn-warning"
+                data-testid="break-report-date-footer-close-button"
+                className="btn btn-light modal-dismiss-btn"
                 onClick={() => setDetailModal(false)}
               >
                 Close

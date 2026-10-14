@@ -2,8 +2,10 @@ import React, { useMemo, useRef, useCallback, useEffect } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col, Row, Input, Label, Button } from "reactstrap";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
-import Select from "react-select";
-import AsyncSelect from "react-select/async";
+import Select, {
+  components,
+  TestableAsyncSelect as AsyncSelect,
+} from "../../../shared/ui/TestableSelect";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setTaskListFilterKeys,
@@ -11,6 +13,8 @@ import {
 } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 import { Api } from "../../../common/api/Api";
 import { useState } from "react";
+import { createPortal } from "react-dom";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 // ── Date helpers (local time, no UTC shift) ──────────────────────────────────
 const MONTHS = [
@@ -67,12 +71,60 @@ const getPresets = () => {
   ];
 };
 
+// Narrow filter columns can't fit several chips, so show the first + a "+N" count
+const CompactMultiValue = (props) => {
+  const { index, getValue } = props;
+  const selected = getValue();
+
+  if (index === 0) return <components.MultiValue {...props} />;
+  if (index !== 1) return null;
+
+  return (
+    <span
+      title={selected.slice(1).map((s) => s.label).join(", ")}
+      style={{
+        flexShrink: 0,
+        margin: 2,
+        padding: "2px 7px",
+        borderRadius: 6,
+        fontSize: 12,
+        fontWeight: 600,
+        color: "var(--vz-success)",
+        background: "color-mix(in srgb, var(--vz-success) 14%, transparent)",
+      }}
+    >
+      +{selected.length - 1}
+    </span>
+  );
+};
+
 // ── Date range filter (reactstrap) ───────────────────────────────────────────
 const DateRangeFilter = ({ startDate, endDate, onApply }) => {
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const wrapperRef = useRef(null);
+  const panelRef = useRef(null);
+
+  // keep the portal panel anchored under the trigger
+  useEffect(() => {
+    if (!open) return undefined;
+    const PANEL_WIDTH = 300;
+    const update = () => {
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - PANEL_WIDTH - 8));
+      setPos({ top: rect.bottom + 4, left });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open]);
 
   // sync draft with applied values whenever the panel opens
   useEffect(() => {
@@ -86,7 +138,11 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
   useEffect(() => {
     if (!open) return undefined;
     const onMouseDown = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target) &&
+        !panelRef.current?.contains(e.target)
+      ) {
         setOpen(false);
       }
     };
@@ -133,8 +189,7 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
       <div
         role="button"
         tabIndex={0}
-        className="form-control d-flex align-items-center justify-content-between"
-        style={{ cursor: "pointer", height: 38, userSelect: "none" }}
+        className={`form-control tf-range-trigger${hasValue ? " is-active" : ""}${open ? " is-open" : ""}`}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -143,64 +198,60 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
           }
         }}
       >
-        <span
-          className={hasValue ? "" : "text-muted"}
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <i className="ri-calendar-line me-2 text-muted" />
+        <i className="ri-calendar-2-line tf-range-icon" />
+        <span className="tf-range-text">
           {hasValue ? label : "Start Date – End Date"}
         </span>
 
         {hasValue && (
           <button
+            data-testid="task-filter-clear-dates-button"
             type="button"
             title="Clear dates"
-            className="btn btn-sm p-0 border-0 text-muted ms-2"
-            style={{ lineHeight: 1, fontSize: 18 }}
+            className="tf-range-clear"
             onClick={(e) => {
               e.stopPropagation();
               clear();
             }}
           >
-            ×
+            <i className="ri-close-line" />
           </button>
         )}
+        {!hasValue && <i className="ri-arrow-down-s-line tf-range-caret" />}
       </div>
 
       {/* Panel */}
-      {open && (
+      {open && createPortal(
         <div
-          className="bg-body border rounded shadow p-3"
+          ref={panelRef}
+          className="tf-pop"
           style={{
-            position: "absolute",
-            top: "calc(100% + 4px)",
-            left: 0,
+            position: "fixed",
+            top: pos.top,
+            left: pos.left,
             width: 300,
-            zIndex: 1050,
+            zIndex: 1400,
           }}
         >
-          <div className="d-flex flex-wrap gap-1 mb-3">
+          <div className="tf-pop-title">Quick ranges</div>
+          <div className="tf-presets">
             {getPresets().map((preset) => (
-              <Button
+              <button
+                data-testid={testId("task-filter", itemTestKey(preset), "button")}
                 key={preset.label}
                 type="button"
-                size="sm"
-                color="light"
-                className="border"
+                className="tf-preset"
                 onClick={() => {
                   onApply(preset.range[0], preset.range[1]);
                   setOpen(false);
                 }}
               >
                 {preset.label}
-              </Button>
+              </button>
             ))}
           </div>
 
+          <div className="tf-pop-title">Custom range</div>
           <Row className="g-2">
             <Col xs={6}>
               <Label
@@ -210,6 +261,7 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
                 Start Date
               </Label>
               <Input
+                data-testid="task-filter-from-date-input"
                 type="date"
                 id="task_filter_from_date"
                 bsSize="sm"
@@ -226,6 +278,7 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
                 End Date
               </Label>
               <Input
+                data-testid="task-filter-to-date-input"
                 type="date"
                 id="task_filter_to_date"
                 bsSize="sm"
@@ -236,11 +289,12 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
             </Col>
           </Row>
 
-          <div className="d-flex justify-content-between mt-3">
-            <Button type="button" size="sm" color="light" onClick={clear}>
+          <div className="tf-pop-foot">
+            <Button data-testid="task-filter-clear-button" type="button" size="sm" color="light" className="modal-dismiss-btn" onClick={clear}>
               Clear
             </Button>
             <Button
+              data-testid="task-filter-apply-button"
               type="button"
               size="sm"
               color="primary"
@@ -250,7 +304,8 @@ const DateRangeFilter = ({ startDate, endDate, onApply }) => {
               Apply
             </Button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -409,6 +464,37 @@ const TaskListFilter = () => {
       ...base,
       zIndex: 9999,
     }),
+    valueContainer: (base) => ({
+      ...base,
+      flexWrap: "nowrap",
+      overflow: "hidden",
+    }),
+    multiValue: (base) => ({
+      ...base,
+      minWidth: 0,
+      maxWidth: "100%",
+      flexShrink: 1,
+      borderRadius: 6,
+      backgroundColor: "color-mix(in srgb, var(--vz-success) 14%, transparent)",
+    }),
+    multiValueLabel: (base) => ({
+      ...base,
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      whiteSpace: "nowrap",
+      fontSize: 12,
+      fontWeight: 600,
+      color: "var(--vz-success)",
+    }),
+    multiValueRemove: (base) => ({
+      ...base,
+      color: "var(--vz-success)",
+      borderRadius: "0 6px 6px 0",
+      ":hover": {
+        backgroundColor: "color-mix(in srgb, var(--vz-success) 24%, transparent)",
+        color: "var(--vz-success)",
+      },
+    }),
   };
 
   const task_type_options = [
@@ -420,6 +506,7 @@ const TaskListFilter = () => {
     <React.Fragment>
       <Col md={2}>
         <Select
+          testId="task-filter-task-type-filter"
           id="task_type_filter"
           noOptionsMessage={() => "No options"}
           name="task_type_filter"
@@ -444,6 +531,7 @@ const TaskListFilter = () => {
       {/* Assigned To */}
       <Col md={2}>
         <Select
+          testId="task-filter-assigned-to-filter"
           id="assigned_to_filter"
           noOptionsMessage={() => "No options"}
           filterOption={(option, inputValue) =>
@@ -474,6 +562,7 @@ const TaskListFilter = () => {
       {/* Collaborators — async multi select */}
       <Col md={2}>
         <AsyncSelect
+          testId="task-filter-collaborator-filter"
           id="collaborator_filter"
           noOptionsMessage={() => "No options"}
           filterOption={(option, inputValue) =>
@@ -485,7 +574,8 @@ const TaskListFilter = () => {
           cacheOptions
           defaultOptions={defaultCollaboratorOptions}
           loadOptions={loadCollaboratorOptions}
-          components={{ Option: EmployeeDisplayInSelect }}
+          components={{ Option: EmployeeDisplayInSelect, MultiValue: CompactMultiValue }}
+          closeMenuOnSelect={false}
           placeholder="Collaborators"
           className="basic-multi-select"
           getOptionValue={(option) => String(option.id)}
@@ -504,6 +594,7 @@ const TaskListFilter = () => {
       {/* Status */}
       <Col md={2}>
         <Select
+          testId="task-filter-task-status-filter"
           id="task_status_filter"
           noOptionsMessage={() => "No options"}
           filterOption={(option, inputValue) =>
@@ -532,6 +623,7 @@ const TaskListFilter = () => {
       {/* Priority */}
       <Col md={2}>
         <Select
+          testId="task-filter-task-priority-filter"
           id="task_priority_filter"
           noOptionsMessage={() => "No options"}
           filterOption={(option, inputValue) =>

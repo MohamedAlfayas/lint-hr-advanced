@@ -12,6 +12,8 @@ import {
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
 import { releaseSummary } from "./statusHelpers";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 const fmt = (val) =>
   Number(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -136,15 +138,15 @@ const PayslipPaymentModal = ({ isOpen, toggle, payslips = [], onDone }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} toggle={busy ? undefined : toggle} centered size="lg" scrollable>
-      <ModalHeader toggle={busy ? undefined : toggle}>Pay partial balance</ModalHeader>
+    <Modal data-testid="payslip-payment-pay-partial-balance-dialog" isOpen={isOpen} toggle={busy ? undefined : toggle} centered size="lg" scrollable>
+      <ModalHeader close={<ModalCloseButton onClick={busy ? undefined : toggle} testId="payslip-payment-pay-partial-balance-close-button" />} toggle={busy ? undefined : toggle}>Pay partial balance</ModalHeader>
       <ModalBody className="p-0">
         <p className="text-muted px-3 pt-3 mb-2" style={{ fontSize: 12 }}>
           Enter the amount to pay now. Leave a row blank to skip it. An amount equal to the balance pays the payslip in full.
         </p>
         <div style={{ maxHeight: "60vh", overflow: "auto" }}>
           <Table className="align-middle mb-0" style={{ fontSize: 13 }}>
-            <thead className="table-light text-muted text-uppercase" style={{ fontSize: 11 }}>
+            <thead className="table-surface text-muted text-uppercase" style={{ fontSize: 11 }}>
               <tr>
                 <th className="ps-3">Employee</th>
                 <th>Net Pay</th>
@@ -173,6 +175,7 @@ const PayslipPaymentModal = ({ isOpen, toggle, payslips = [], onDone }) => {
                     <td>
                       <div className="d-flex align-items-center gap-1">
                         <Input
+                          data-testid={testId("payslip-payment-pay-partial-balance-0-00", itemTestKey(payslip), "input")}
                           bsSize="sm"
                           type="number"
                           min="0"
@@ -184,6 +187,7 @@ const PayslipPaymentModal = ({ isOpen, toggle, payslips = [], onDone }) => {
                           onChange={(e) => setAmount(payslip.id, e.target.value)}
                         />
                         <Button
+                          data-testid={testId("payslip-payment-pay-partial-balance-max", itemTestKey(payslip), "button")}
                           color="link"
                           size="sm"
                           className="p-0 text-nowrap"
@@ -205,8 +209,8 @@ const PayslipPaymentModal = ({ isOpen, toggle, payslips = [], onDone }) => {
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button color="secondary" outline onClick={toggle} disabled={busy}>Cancel</Button>
-        <Button color="primary" onClick={submit} disabled={busy || !payslips.length}>
+        <Button data-testid="payslip-payment-pay-partial-balance-cancel-button" color="secondary" outline onClick={toggle} disabled={busy}>Cancel</Button>
+        <Button data-testid="payslip-payment-pay-partial-balance-record-payment-button" color="primary" onClick={submit} disabled={busy || !payslips.length}>
           {busy ? <Spinner size="sm" /> : "Record payment"}
         </Button>
       </ModalFooter>

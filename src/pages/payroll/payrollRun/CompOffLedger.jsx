@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  Card, CardHeader, CardBody, CardTitle, Table, Spinner, Badge, Row, Col, Input,
+  Card, CardHeader, CardBody, CardTitle, Row, Col,
 } from "reactstrap";
+import {
+  ApvDate,
+  ApvHours,
+  ApvStatus,
+} from "../../../component/common/approval/ApprovalCells";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import AppTable from "../../../shared/ui/table/AppTable";
 
 // Read-only view of comp-off DEBIT (pending) and CREDIT (compensated) rows.
 // GET payroll/comp-off-ledger/?employee_id=&month=&year=
@@ -39,17 +45,50 @@ const CompOffLedger = ({ employeeId, employeeName, month, year }) => {
 
   useEffect(() => { load(); }, [employeeId, month, year]);
 
-  if (loading) {
-    return (
-      <div className="text-center py-4">
-        <Spinner color="primary" size="sm" />
-      </div>
-    );
-  }
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "date",
+        header: "Date",
+        Cell: ({ cell }) => <ApvDate value={cell.getValue()} />,
+      },
+      {
+        id: "entry_type",
+        accessorFn: (e) => (e.entry_type === "debit" ? "Pending" : "Compensated"),
+        header: "Type",
+        filterVariant: "select",
+        Cell: ({ row, cell }) =>
+          row.original.entry_type === "debit" ? (
+            <ApvStatus tone="danger" icon="ri-time-line" label={cell.getValue()} />
+          ) : (
+            <ApvStatus tone="success" icon="ri-checkbox-circle-line" label={cell.getValue()} />
+          ),
+      },
+      {
+        id: "hours",
+        accessorFn: (e) => Number(secondsToHrs(e.seconds)),
+        header: "Hours",
+        filterVariant: "range",
+        Cell: ({ row }) => <ApvHours value={secondsToHrs(row.original.seconds)} strong />,
+      },
+      {
+        id: "remaining",
+        accessorFn: (e) => (e.entry_type === "debit" ? secondsToHrs(e.balance_seconds) : "—"),
+        header: "Remaining (debit)",
+      },
+      {
+        id: "offsets",
+        accessorFn: (e) => (e.offsets ? `debit #${e.offsets}` : "—"),
+        header: "Offsets",
+        Cell: ({ cell }) => <span className="text-muted">{cell.getValue()}</span>,
+      },
+    ],
+    []
+  );
 
   return (
     <Card className="shadow-none border">
-      <CardHeader className="bg-light">
+      <CardHeader className="surface-muted">
         <CardTitle tag="h6" className="mb-0">
           Comp-Off Ledger {employeeName ? `— ${employeeName}` : ""}
         </CardTitle>
@@ -85,38 +124,15 @@ const CompOffLedger = ({ employeeId, employeeName, month, year }) => {
           </Col>
         </Row>
 
-        <div className="table-responsive" style={{ maxHeight: "50vh", overflow: "auto" }}>
-          <Table className="table-bordered align-middle mb-0" style={{ fontSize: 13 }}>
-            <thead className="table-light text-muted text-uppercase" style={{ fontSize: 11 }}>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Hours</th>
-                <th>Remaining (debit)</th>
-                <th>Offsets</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.length === 0 ? (
-                <tr><td colSpan={5} className="text-center text-muted py-4">No comp-off activity.</td></tr>
-              ) : entries.map((e, i) => (
-                <tr key={i}>
-                  <td>{e.date}</td>
-                  <td>
-                    {e.entry_type === "debit"
-                      ? <Badge color="danger">Pending</Badge>
-                      : <Badge color="success">Compensated</Badge>}
-                  </td>
-                  <td>{secondsToHrs(e.seconds)}</td>
-                  <td>{e.entry_type === "debit" ? secondsToHrs(e.balance_seconds) : "—"}</td>
-                  <td className="text-muted">
-                    {e.offsets ? `debit #${e.offsets}` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </div>
+        <AppTable
+          columns={columns}
+          data={entries}
+          isLoading={loading}
+          onRefresh={load}
+          exportFileName={`comp-off-ledger-${month}-${year}`}
+          emptyMessage="No comp-off activity."
+          muiTableContainerProps={{ sx: { maxHeight: "50vh" } }}
+        />
       </CardBody>
     </Card>
   );

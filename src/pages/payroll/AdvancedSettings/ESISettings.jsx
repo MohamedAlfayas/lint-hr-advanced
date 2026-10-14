@@ -6,6 +6,7 @@ import {
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, range, percent, min, runChecks } from "./validators";
+import { testId } from "../../../shared/testing/testId";
 
 const SectionLabel = ({ children }) => (
   <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
@@ -32,7 +33,7 @@ const ViewToggle = ({ checked, label }) => (
         width: 36,
         height: 20,
         borderRadius: 12,
-        background: checked ? "#0ab39c" : "#ced4da",
+        background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)",
         position: "relative",
         flexShrink: 0,
       }}
@@ -145,7 +146,8 @@ const ESISettings = () => {
               </CardSubtitle>
             </div>
             {!isEditing && (
-              <Button size="sm" color="primary" outline onClick={() => setIsEditing(true)}
+              <Button
+                data-testid="esi-settings-edit-settings-button" size="sm" color="primary" outline onClick={() => setIsEditing(true)}
                 className="d-flex align-items-center gap-1">
                 <i className="ri-edit-line fs-14"></i> Edit Settings
               </Button>
@@ -207,7 +209,8 @@ const ESISettings = () => {
               <SettingRow label="ESI Status">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                    <Input className="form-check-input" type="checkbox"
+                    <Input
+                      data-testid="esi-settings-is-active-checkbox" className="form-check-input" type="checkbox"
                       checked={!!form.is_active}
                       onChange={() => handleToggle("is_active")} />
                     <Label className="form-check-label mb-0" style={{ fontSize: 13 }}>
@@ -221,7 +224,8 @@ const ESISettings = () => {
 
               <SettingRow label="Effective Date">
                 {isEditing ? (
-                  <Input type="date" value={form.effective_date || ""}
+                  <Input
+                    data-testid="esi-settings-active-input" type="date" value={form.effective_date || ""}
                     onChange={(e) => handleChange("effective_date", e.target.value)}
                     style={{ width: 180 }} />
                 ) : (
@@ -231,7 +235,8 @@ const ESISettings = () => {
 
               <SettingRow label="Max Monthly Gross for ESI">
                 {isEditing ? (
-                  <Input type="number" step="0.01"
+                  <Input
+                    data-testid="esi-settings-statutory-max-monthly-gross-input" type="number" step="0.01"
                     value={form.statutory_max_monthly_gross || ""}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -252,7 +257,8 @@ const ESISettings = () => {
 
               <SettingRow label="Employee Contribution (%)">
                 {isEditing ? (
-                  <Input type="number" step="0.01"
+                  <Input
+                    data-testid="esi-settings-employee-contribution-percentage-input" type="number" step="0.01"
                     value={form.employee_contribution_percentage || ""}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -272,7 +278,8 @@ const ESISettings = () => {
 
               <SettingRow label="Employer Contribution (%)" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01"
+                  <Input
+                    data-testid="esi-settings-employer-contribution-percentage-input" type="number" step="0.01"
                     value={form.employer_contribution_percentage || ""}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -307,7 +314,7 @@ const ESISettings = () => {
                       <Col xs={4} className="text-end">
                         {isEditing ? (
                           <div className="form-check form-switch mb-0 d-flex justify-content-end">
-                            <Input className="form-check-input" type="checkbox"
+                            <Input className="form-check-input" type="checkbox" data-testid={testId("esi-settings", key, "checkbox")}
                               checked={!!form[key]}
                               onChange={() => handleToggle(key)} />
                           </div>
@@ -336,7 +343,7 @@ const ESISettings = () => {
                       <Col xs={4} className="text-end">
                         {isEditing ? (
                           <div className="form-check form-switch mb-0 d-flex justify-content-end">
-                            <Input className="form-check-input" type="checkbox"
+                            <Input className="form-check-input" type="checkbox" data-testid={testId("esi-settings", key, "checkbox")}
                               checked={!!form[key]}
                               onChange={() => handleToggle(key)} />
                           </div>
@@ -371,10 +378,10 @@ const ESISettings = () => {
 
             {isEditing && (
               <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-                <Button color="light" className="border" onClick={handleCancel} disabled={loading}>
+                <Button data-testid="esi-settings-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>
                   Cancel
                 </Button>
-                <Button color="success" onClick={handleSave} disabled={loading}>
+                <Button data-testid="esi-settings-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
                   <i className="ri-check-double-line align-middle me-1"></i>
                   {loading ? "Saving…" : "Save Changes"}
                 </Button>

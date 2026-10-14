@@ -1,18 +1,5 @@
 import React, { useEffect } from "react";
-import Select from "react-select";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Input,
-  Form,
-  Label,
-  Row,
-  Col,
-  FormGroup,
-} from "reactstrap";
+import { Modal, Form } from "reactstrap";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { useDispatch } from "react-redux";
@@ -24,18 +11,8 @@ import {
   addRecurring,
   editRecurring,
 } from "../../../../redux/reducers/ChildReducer/RecurringReducer";
-
-/* Toggle */
-const Toggle = ({ value, onChange }) => (
-  <div className="form-check form-switch m-0">
-    <Input
-      type="checkbox"
-      className="form-check-input"
-      checked={value}
-      onChange={(e) => onChange(e.target.checked)}
-    />
-  </div>
-);
+import "./componentModal.scss";
+import { testId } from "../../../../shared/testing/testId";
 
 /* Options */
 const COMPONENT_TYPE_OPTIONS = [
@@ -202,197 +179,242 @@ const RecurringModal = ({ isOpen, toggle, component, onSaved }) => {
 
   const isBalancing = formik.values.is_balancing_component;
   const isBasic = formik.values.is_basic;
+  const isDeduction = formik.values.component_type === "deduction";
+  const isPct = formik.values.calculation_type === "percentage";
+  const basedOnOptions = isBasic ? CALC_BASED_ON_CTC_ONLY : CALC_BASED_ON_OPTIONS;
+  const basedOnLabel = getOption(CALC_BASED_ON_OPTIONS, formik.values.calculation_based_on)?.label || "Basic";
+  const rawValue = formik.values.calculation_value;
+  const previewValue = rawValue === "" || rawValue == null
+    ? null
+    : isPct
+      ? `${rawValue}% of ${basedOnLabel}`
+      : `₹${Number(rawValue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })} per month`;
+
+  const settings = [
+    ["is_included_in_ctc", "Included in CTC", "Counts towards cost to company", "ri-money-dollar-box-line"],
+    ["is_proof_required", "Proof required", "Employee must submit proof", "ri-file-shield-2-line"],
+    isDeduction
+      ? ["remove_from_taxable", "Remove from taxable", "Reduces taxable income", "ri-subtract-line"]
+      : ["is_taxable", "Taxable", "Added to taxable income", "ri-percent-line"],
+    ["is_individual_override", "Individual override", "Amount editable per employee", "ri-user-settings-line"],
+    ["is_lop_dependant", "LOP dependant", "Reduced for loss-of-pay days", "ri-calendar-event-line"],
+    ["is_esi_applicable", "ESI applicable", "Included in ESI wages", "ri-heart-pulse-line"],
+  ];
+  const enabledCount = settings.filter(([key]) => formik.values[key]).length;
+
+  const title = isBasic
+    ? "Basic Salary Component"
+    : isBalancing
+      ? "Balancing Component"
+      : isNew ? "Create Recurring Component" : "Edit Recurring Component";
+  const subtitle = isBasic
+    ? "Define how basic pay is calculated"
+    : isBalancing
+      ? "Absorbs the remaining CTC after other components"
+      : "Paid or deducted every month with salary";
+
+  const nameError = formik.touched.name && formik.errors.name;
+  const valueError = formik.touched.calculation_value && formik.errors.calculation_value;
+
+  const nameField = (
+    <div className="cmp-field">
+      <label className="cmp-label" htmlFor="cmp-name">Component name <span className="cmp-req">*</span></label>
+      <div className={`cmp-input ${nameError ? "is-invalid" : ""}`}>
+        <i className="ri-price-tag-3-line"></i>
+        <input
+          data-testid="recurring-pay-name-input"
+          id="cmp-name"
+          name="name"
+          value={formik.values.name}
+          onChange={handleNoNumberChange(formik, "name")}
+          onBlur={formik.handleBlur}
+          placeholder="e.g. House Rent Allowance"
+          autoComplete="off"
+        />
+      </div>
+      {nameError && <div className="cmp-error"><i className="ri-error-warning-line"></i>{nameError}</div>}
+    </div>
+  );
+
+  const calculationSection = (
+    <div className="cmp-section">
+      <div className="cmp-section-head">
+        <span><i className="ri-calculator-line"></i>Calculation</span>
+      </div>
+      <div className="cmp-calc">
+        <div className="cmp-field">
+          <label className="cmp-label">Type</label>
+          <div className="cmp-seg">
+            {CALCULATION_TYPE_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                data-testid={testId("recurring-pay-calculation-type", o.value, "button")}
+                type="button"
+                className={formik.values.calculation_type === o.value ? "is-active" : ""}
+                onClick={() => formik.setFieldValue("calculation_type", o.value)}
+              >
+                <i className={o.value === "fixed" ? "ri-hashtag" : "ri-percent-line"}></i>{o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {isPct && (
+          <div className="cmp-field">
+            <label className="cmp-label">Based on</label>
+            <div className="cmp-seg">
+              {basedOnOptions.map((o) => (
+                <button
+                  key={o.value}
+                  data-testid={testId("recurring-pay-based-on", o.value, "button")}
+                  type="button"
+                  className={formik.values.calculation_based_on === o.value ? "is-active" : ""}
+                  onClick={() => formik.setFieldValue("calculation_based_on", o.value)}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="cmp-field cmp-value">
+          <label className="cmp-label" htmlFor="cmp-value">Value <span className="cmp-req">*</span></label>
+          <div className={`cmp-input ${valueError ? "is-invalid" : ""}`}>
+            <span className="cmp-affix">{isPct ? "%" : "₹"}</span>
+            <input
+              data-testid="recurring-pay-calculation-value-input"
+              id="cmp-value"
+              type="number"
+              min="0"
+              max={isPct ? 100 : undefined}
+              name="calculation_value"
+              value={formik.values.calculation_value}
+              onChange={handleCalculationValueChange(formik)}
+              onBlur={formik.handleBlur}
+              placeholder={isPct ? "0 – 100" : "0.00"}
+            />
+          </div>
+          {valueError && <div className="cmp-error"><i className="ri-error-warning-line"></i>{valueError}</div>}
+        </div>
+      </div>
+
+      <div className={`cmp-preview ${previewValue ? "is-ready" : ""}`}>
+        <i className="ri-eye-line"></i>
+        {previewValue ? (
+          <span>
+            <b>{formik.values.name || "This component"}</b> will {isDeduction ? "deduct" : "pay"} <b>{previewValue}</b>
+          </span>
+        ) : (
+          <span>Enter a value to preview the calculation</span>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
-      <ModalBody>
-        <Form onSubmit={formik.handleSubmit}>
+    <Modal data-testid="recurring-pay-dialog" isOpen={isOpen} toggle={toggle} size="lg" centered className="cmp-modal" contentClassName="cmp-content">
+      <Form onSubmit={formik.handleSubmit}>
+        <div className={`cmp-hero ${isDeduction ? "is-deduction" : "is-allowance"}`}>
+          <span className="cmp-hero-icon">
+            <i className={isBasic ? "ri-scales-3-line" : isBalancing ? "ri-scales-3-line" : "ri-repeat-2-line"}></i>
+          </span>
+          <div className="cmp-hero-text">
+            <h5>{title}</h5>
+            <p>{subtitle}</p>
+          </div>
+          <button data-testid="recurring-pay-close-button" type="button" className="cmp-close" onClick={toggle} aria-label="Close">
+            <i className="ri-close-line"></i>
+          </button>
+        </div>
+
+        <div className="cmp-body">
           {isBalancing ? (
-            <FormGroup>
-              <Label>Component Name *</Label>
-              <Input
-                name="name"
-                value={formik.values.name}
-                onChange={handleNoNumberChange(formik, "name")}
-              />
-              {formik.touched.name && formik.errors.name && (
-                <div className="text-danger small mt-1">{formik.errors.name}</div>
-              )}
-            </FormGroup>
+            nameField
           ) : isBasic ? (
             <>
-              <div className="text-center mb-3">
-                <Label className="fw-bold">Component Name</Label>
-                <h5>{formik.values.name}</h5>
+              <div className="cmp-basic-name">
+                <span>Component</span>
+                <b>{formik.values.name}</b>
               </div>
-
-              <hr />
-
-              <Row className="g-3 justify-content-center">
-                <Col md={4}>
-                  <Label>Calculation Type</Label>
-                  <Select
-                    options={CALCULATION_TYPE_OPTIONS}
-                    value={getOption(
-                      CALCULATION_TYPE_OPTIONS,
-                      formik.values.calculation_type
-                    )}
-                    onChange={(opt) =>
-                      formik.setFieldValue("calculation_type", opt.value)
-                    }
-                  />
-                </Col>
-
-                {formik.values.calculation_type === "percentage" && (
-                  <Col md={4}>
-                    <Label>Based On</Label>
-                    <Select
-                      options={CALC_BASED_ON_CTC_ONLY}
-                      value={getOption(
-                        CALC_BASED_ON_CTC_ONLY,
-                        formik.values.calculation_based_on
-                      )}
-                      onChange={(opt) =>
-                        formik.setFieldValue("calculation_based_on", opt.value)
-                      }
-                    />
-                  </Col>
-                )}
-
-                <Col md={4}>
-                  <Label>Value</Label>
-                  <Input
-                    type="number"
-                    name="calculation_value"
-                    value={formik.values.calculation_value}
-                    onChange={handleCalculationValueChange(formik)}
-                  />
-                  {formik.touched.calculation_value && formik.errors.calculation_value && (
-                    <div className="text-danger small mt-1">{formik.errors.calculation_value}</div>
-                  )}
-                </Col>
-              </Row>
+              {calculationSection}
             </>
           ) : (
             <>
-              <FormGroup>
-                <Label>Component Name *</Label>
-                <Input
-                  name="name"
-                  value={formik.values.name}
-                  onChange={handleNoNumberChange(formik, "name")}
-                />
-                {formik.touched.name && formik.errors.name && (
-                  <div className="text-danger small mt-1">{formik.errors.name}</div>
-                )}
-              </FormGroup>
+              {nameField}
 
-              <FormGroup>
-                <Label>Component Type</Label>
-                <Select
-                  options={COMPONENT_TYPE_OPTIONS}
-                  value={getOption(
-                    COMPONENT_TYPE_OPTIONS,
-                    formik.values.component_type
-                  )}
-                  onChange={(opt) =>
-                    formik.setFieldValue("component_type", opt.value)
-                  }
-                />
-              </FormGroup>
+              <div className="cmp-field">
+                <label className="cmp-label">Component type</label>
+                <div className="cmp-types" role="radiogroup">
+                  {COMPONENT_TYPE_OPTIONS.map((o) => {
+                    const active = formik.values.component_type === o.value;
+                    return (
+                      <button
+                        data-testid={testId("recurring-pay-component-type", o.value, "button")}
+                        key={o.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        className={`cmp-type is-${o.value} ${active ? "is-active" : ""}`}
+                        onClick={() => formik.setFieldValue("component_type", o.value)}
+                      >
+                        <span className="cmp-type-icon">
+                          <i className={o.value === "allowance" ? "ri-add-circle-line" : "ri-indeterminate-circle-line"}></i>
+                        </span>
+                        <span className="cmp-type-text">
+                          <b>{o.label}</b>
+                          <small>{o.value === "allowance" ? "Adds to employee earnings" : "Deducted from salary"}</small>
+                        </span>
+                        <i className="ri-checkbox-circle-fill cmp-type-check"></i>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <hr />
+              <div className="cmp-section">
+                <div className="cmp-section-head">
+                  <span><i className="ri-settings-3-line"></i>Behaviour</span>
+                  <em>{enabledCount} of {settings.length} enabled</em>
+                </div>
+                <div className="cmp-toggles">
+                  {settings.map(([key, label, hint, icon]) => {
+                    const on = !!formik.values[key];
+                    return (
+                      <button
+                        key={key}
+                        data-testid={testId("recurring-pay", key, "switch")}
+                        type="button"
+                        role="switch"
+                        aria-checked={on}
+                        className={`cmp-toggle ${on ? "is-on" : ""}`}
+                        onClick={() => formik.setFieldValue(key, !on)}
+                      >
+                        <span className="cmp-toggle-icon"><i className={icon}></i></span>
+                        <span className="cmp-toggle-text">
+                          <b>{label}</b>
+                          <small>{hint}</small>
+                        </span>
+                        <span className="cmp-switch"><span></span></span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <Row className="g-3">
-                {[
-                  ["is_included_in_ctc", "Included In CTC"],
-                  ["is_proof_required", "Proof Required"],
-
-                  formik.values.component_type === "deduction"
-                    ? ["remove_from_taxable", "Remove from taxable income"]
-                    : ["is_taxable", "Taxable"],
-
-                  ["is_individual_override", "Individual Override"],
-                  ["is_lop_dependant", "LOP Dependant"],
-                  ["is_esi_applicable", "ESI Applicable"],
-                ].map(([key, label]) => (
-                  <Col sm={6} key={key}>
-                    <FormGroup className="d-flex justify-content-between">
-                      <Label className="mb-0">{label}</Label>
-                      <Toggle
-                        value={formik.values[key]}
-                        onChange={(v) => formik.setFieldValue(key, v)}
-                      />
-                    </FormGroup>
-                  </Col>
-                ))}
-              </Row>
-
-              <hr />
-
-              <Row className="g-3">
-                <Col md={4}>
-                  <Label>Calculation Type</Label>
-                  <Select
-                    options={CALCULATION_TYPE_OPTIONS}
-                    value={getOption(
-                      CALCULATION_TYPE_OPTIONS,
-                      formik.values.calculation_type
-                    )}
-                    onChange={(opt) =>
-                      formik.setFieldValue("calculation_type", opt.value)
-                    }
-                  />
-                </Col>
-
-                {formik.values.calculation_type === "percentage" && (
-                  <Col md={4}>
-                    <Label>Based On</Label>
-                    <Select
-                      options={CALC_BASED_ON_OPTIONS}
-                      value={getOption(
-                        CALC_BASED_ON_OPTIONS,
-                        formik.values.calculation_based_on
-                      )}
-                      onChange={(opt) =>
-                        formik.setFieldValue("calculation_based_on", opt.value)
-                      }
-                    />
-                  </Col>
-                )}
-
-                <Col md={4}>
-                  <Label>Value</Label>
-                  <Input
-                    type="number"
-                    name="calculation_value"
-                    value={formik.values.calculation_value}
-                    onChange={handleCalculationValueChange(formik)}
-                  />
-                  {formik.touched.calculation_value && formik.errors.calculation_value && (
-                    <div className="text-danger small mt-1">{formik.errors.calculation_value}</div>
-                  )}
-                </Col>
-              </Row>
+              {calculationSection}
             </>
           )}
-        </Form>
-      </ModalBody>
+        </div>
 
-      <ModalFooter>
-        <Button className="btn btn-danger" onClick={toggle}>
-          Cancel
-        </Button>
-
-        <Button
-          className="btn-label btn btn-success"
-          onClick={formik.handleSubmit}
-          disabled={formik.isSubmitting}
-        >
-          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-          {formik.isSubmitting ? "Saving..." : isNew ? "Create" : "Update"}
-        </Button>
-      </ModalFooter>
+        <div className="cmp-footer">
+          <button data-testid="recurring-pay-cancel-button" type="button" className="it-btn is-soft" onClick={toggle}>Cancel</button>
+          <button data-testid="recurring-pay-create-button" type="submit" className="it-btn is-primary" disabled={formik.isSubmitting}>
+            <i className="ri-check-double-line"></i>
+            {formik.isSubmitting ? "Saving..." : isNew ? "Create" : "Update"}
+          </button>
+        </div>
+      </Form>
     </Modal>
   );
 };

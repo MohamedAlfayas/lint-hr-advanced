@@ -1,13 +1,9 @@
-import React, { useState } from "react";
-import {
-  Card,
-  CardBody,
-  Modal,
-  ModalHeader,
-  ModalBody,
-  Table,
-} from "reactstrap";
+import React, { useMemo, useState } from "react";
+import { MapShell, MapSkeleton } from "../../component/common/skeleton/Skeleton";
+import { Card, CardBody, Modal, ModalHeader, ModalBody } from "reactstrap";
 import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
+import AppTable from "../../shared/ui/table/AppTable";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
 
 // Dummy data with inTime and outTime
 const employeeLocations = [
@@ -65,6 +61,21 @@ const calculateTotalTime = (inTime, outTime) => {
 const LocationMap = () => {
   const [selectedState, setSelectedState] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tilesReady, setTilesReady] = useState(false);
+
+  const employeeColumns = useMemo(
+    () => [
+      { accessorKey: "name", header: "Name" },
+      { accessorKey: "inTime", header: "In Time" },
+      { accessorKey: "outTime", header: "Out Time" },
+      {
+        id: "totalTime",
+        accessorFn: (emp) => calculateTotalTime(emp.inTime, emp.outTime),
+        header: "Total Time",
+      },
+    ],
+    [],
+  );
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -92,10 +103,12 @@ const LocationMap = () => {
       <Card className="mb-3">
         <CardBody>
           {isLoaded ? (
+            <MapShell ready={tilesReady} style={{ height: 300 }}>
             <GoogleMap
               mapContainerStyle={containerStyle}
               center={center}
               zoom={6}
+              onTilesLoaded={() => setTilesReady(true)}
             >
               {employeeLocations.map((loc, index) => (
                 <Marker
@@ -105,8 +118,9 @@ const LocationMap = () => {
                 />
               ))}
             </GoogleMap>
+            </MapShell>
           ) : (
-            <p>Loading Map...</p>
+            <MapSkeleton style={{ height: 300 }} />
           )}
         </CardBody>
       </Card>
@@ -149,31 +163,18 @@ const LocationMap = () => {
 
       {/* Modal for Employee Details */}
       {selectedState && (
-        <Modal isOpen={isModalOpen} toggle={closeModal} size="lg">
-          <ModalHeader toggle={closeModal}>
+        <Modal data-testid="location-map-employee-details-dialog" isOpen={isModalOpen} toggle={closeModal} size="lg">
+          <ModalHeader close={<ModalCloseButton onClick={closeModal} testId="location-map-employee-details-close-button" />} toggle={closeModal}>
             {selectedState.state} - Employee Details
           </ModalHeader>
           <ModalBody>
-            <Table bordered responsive>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>In Time</th>
-                  <th>Out Time</th>
-                  <th>Total Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedState.employees.map((emp, idx) => (
-                  <tr key={idx}>
-                    <td>{emp.name}</td>
-                    <td>{emp.inTime}</td>
-                    <td>{emp.outTime}</td>
-                    <td>{calculateTotalTime(emp.inTime, emp.outTime)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+            <AppTable
+              columns={employeeColumns}
+              data={selectedState.employees}
+              enablePagination={false}
+              enableRowSelection={false}
+              initialState={{ density: "compact" }}
+            />
           </ModalBody>
         </Modal>
       )}

@@ -1,33 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
   Col,
   Row,
   Button,
-  Progress,
   Modal, ModalHeader, ModalBody, ModalFooter,
 } from "reactstrap";
 import ReactApexChart from "react-apexcharts";
 import SimpleBar from "simplebar-react";
 import "simplebar-react/dist/simplebar.min.css";
+import dayjs from "dayjs";
 import { useDispatch, useSelector } from "react-redux";
 import { GetApi } from "../../../common/api/GetApi";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
-import getChartColorsArray from "../../../component/common/dynamicColor/ChartsDynamicColor";
-// import { setFormObj, toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
-import {
-  setComponentToShow,
-  setFormObj,
-  setFormTitle,
-  setFormWidthPercentage,
-  toggleRSBView,
-} from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { project_component_name } from "../../../common/constant/Constants";
 import { EDIT_PROJECT_ACCESS_KEY } from "../../../common/constant/RoleConstants";
-import AsyncSelect from "react-select/async";
+import { ApvColorTag, ApvEmployee } from "../../../component/common/approval/ApprovalCells";
+import { TestableAsyncSelect as AsyncSelect } from "../../../shared/ui/TestableSelect";
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
 import { PutApi } from "../../../common/api/PutApi";
@@ -36,11 +24,11 @@ import {
   editProject,
   setProjects,
 } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
-const LIST_MAX_HEIGHT = 240; // Project Timeline's inner scroll area
-const ACTIVITY_MAX_HEIGHT = 260; // recent activity feed
+const ACTIVITY_MAX_HEIGHT = 300;
 const RECENT_TASK_LIMIT = 15;
-const COMPACT_LIST_MAX_HEIGHT = 130; // Project Progress / Task Status / Members lists — kept short so those 3 cards stay small
+const COMPACT_LIST_MAX_HEIGHT = 168;
 
 const displayValue = (val, fallback = "-") => {
   if (val == null) return fallback;
@@ -61,70 +49,53 @@ const buildEmployeeOption = (emp) => ({
 
 const toId = (v) => (v && typeof v === "object" ? v.id : v);
 
-const ChartSquare = ({ max = 130, children }) => (
-  <div
-    style={{
-      width: "100%",
-      maxWidth: max,
-      aspectRatio: "1 / 1",
-      margin: "0 auto",
-    }}
-  >
-    {children}
-  </div>
-);
-
-// ─────────────────────────────────────────────
-// PROJECT PROGRESS DONUT (single value, green ring)
-// ─────────────────────────────────────────────
+// Chart text, track and slice-border colours are themed in ProjectDetail.scss (.pdx-chart).
 const ProgressRadial = ({ percentage }) => {
-  const series = [percentage ?? 0];
   const options = {
     chart: { type: "radialBar", sparkline: { enabled: true } },
     plotOptions: {
       radialBar: {
-        hollow: { size: "68%" },
-        track: { background: "#eef0f4", strokeWidth: "100%" },
+        hollow: { size: "66%" },
+        track: { strokeWidth: "100%" },
         dataLabels: {
-          name: {
-            show: true,
-            offsetY: 24,
-            fontSize: "13px",
-            fontWeight: 500,
-            color: "#878a99",
-          },
+          name: { show: true, offsetY: 22, fontSize: "12px", fontWeight: 500 },
           value: {
             show: true,
-            offsetY: -8,
-            fontSize: "26px",
+            offsetY: -10,
+            fontSize: "24px",
             fontWeight: 700,
-            color: "#212529",
             formatter: (val) => `${parseInt(val)}%`,
           },
         },
       },
     },
-    fill: { colors: ["#22c55e"] },
+    fill: {
+      type: "gradient",
+      gradient: {
+        shade: "light",
+        type: "horizontal",
+        gradientToColors: ["#0ab39c"],
+        stops: [0, 100],
+      },
+    },
+    colors: ["#3ecf8e"],
     stroke: { lineCap: "round" },
     labels: ["Completed"],
   };
 
   return (
-    <ChartSquare>
+    <div className="pdx-chart">
       <ReactApexChart
         options={options}
-        series={series}
+        series={[percentage ?? 0]}
         type="radialBar"
         width="100%"
         height="100%"
       />
-    </ChartSquare>
+    </div>
   );
 };
 
-// ─────────────────────────────────────────────
-// TASK STATUS DONUT (multi-color, center total)
-// ─────────────────────────────────────────────
 const TaskStatusDonut = ({ series, labels, colors, total }) => {
   const options = {
     labels: labels || [],
@@ -132,20 +103,16 @@ const TaskStatusDonut = ({ series, labels, colors, total }) => {
     plotOptions: {
       pie: {
         donut: {
-          size: "68%",
+          size: "70%",
           labels: {
             show: true,
+            name: { fontSize: "12px", offsetY: 18 },
+            value: { fontSize: "24px", fontWeight: 700, offsetY: -12 },
             total: {
               show: true,
               label: "Tasks",
-              fontSize: "13px",
-              color: "#878a99",
+              fontSize: "12px",
               formatter: () => total,
-            },
-            value: {
-              fontSize: "26px",
-              fontWeight: 700,
-              color: "#212529",
             },
           },
         },
@@ -153,12 +120,12 @@ const TaskStatusDonut = ({ series, labels, colors, total }) => {
     },
     dataLabels: { enabled: false },
     legend: { show: false },
-    stroke: { width: 2, colors: ["#fff"] },
-    colors: colors,
+    stroke: { width: 3 },
+    colors,
   };
 
   return (
-    <ChartSquare>
+    <div className="pdx-chart">
       <ReactApexChart
         options={options}
         series={series}
@@ -166,39 +133,87 @@ const TaskStatusDonut = ({ series, labels, colors, total }) => {
         width="100%"
         height="100%"
       />
-    </ChartSquare>
+    </div>
   );
 };
 
-// ─────────────────────────────────────────────
-// SMALL STAT CARD (Total / Completed / In Progress / Pending / Overdue)
-// ─────────────────────────────────────────────
-const StatCard = ({ icon, label, value, tone }) => {
-  const tones = {
-    primary: { bg: "#eaf1ff", color: "#431ee7" },
-    success: { bg: "#e8f9ef", color: "#22c55e" },
-    info: { bg: "#e8f4fd", color: "#0d6efd" },
-    warning: { bg: "#fff6e5", color: "#f59e0b" },
-    danger: { bg: "#fdeceb", color: "#dc3545" },
-  };
-  const c = tones[tone] || tones.primary;
-
+const StatCard = ({ icon, label, value, tone, total }) => {
+  const pct = total ? Math.round((value / total) * 100) : null;
   return (
-    <Card className="h-100 mb-0">
-      <CardBody className="d-flex align-items-center gap-3 flex-wrap">
-        <div
-          className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-          style={{ width: 44, height: 44, background: c.bg, color: c.color, fontSize: 35 }}
-        >
-          <i className={icon}></i>
-        </div>
-        <div>
-          <p className="text-muted mb-0" style={{ fontSize: 13 }}>{label}</p>
-          <h4 className="mb-0">{value}</h4>
-        </div>
-      </CardBody>
-    </Card>
+    <div className={`pdx-stat is-${tone}`}>
+      <span className="pdx-stat-icon">
+        <i className={icon}></i>
+      </span>
+      <div className="pdx-stat-body">
+        <span className="pdx-stat-label">{label}</span>
+        <b className="pdx-stat-value">{value}</b>
+      </div>
+      {pct != null && <span className="pdx-stat-pct">{pct}%</span>}
+      <span className="pdx-stat-bar">
+        <span style={{ width: `${pct ?? 100}%` }} />
+      </span>
+    </div>
   );
+};
+
+const Panel = ({ icon, tone = "primary", title, sub, action, className = "", children }) => (
+  <div className={`pdx-panel ${className}`}>
+    <div className="pdx-panel-head">
+      <span className={`pdx-panel-icon is-${tone}`}>
+        <i className={icon}></i>
+      </span>
+      <div className="pdx-panel-title">
+        <h6>{title}</h6>
+        {sub && <small>{sub}</small>}
+      </div>
+      {action && <div className="ms-auto">{action}</div>}
+    </div>
+    <div className="pdx-panel-body">{children}</div>
+  </div>
+);
+
+const LegendRow = ({ color, label, value, total }) => {
+  const pct = total ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="pdx-legend-row" style={{ "--c": color }}>
+      <span className="pdx-legend-dot" />
+      <span className="pdx-legend-label" title={label}>
+        {label}
+      </span>
+      <b>{value}</b>
+      <span className="pdx-legend-pct">{pct}%</span>
+      <span className="pdx-legend-bar">
+        <span style={{ width: `${pct}%` }} />
+      </span>
+    </div>
+  );
+};
+
+const EmptyState = ({ icon, text, children }) => (
+  <div className="pdx-empty">
+    <span>
+      <i className={icon}></i>
+    </span>
+    <p>{text}</p>
+    {children}
+  </div>
+);
+
+const timeAgo = (ts) => {
+  if (!ts) return "-";
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return dayjs(ts).format("DD MMM YYYY");
+};
+
+const fmtDate = (value) => {
+  const d = dayjs(value);
+  return value && d.isValid() ? d.format("DD MMM YYYY") : "Not set";
 };
 
 // ─────────────────────────────────────────────
@@ -215,7 +230,6 @@ const ProjectOverview = ({ projectId }) => {
   const [donutSeries, setDonutSeries] = useState([]);
   const [donutLabels, setDonutLabels] = useState([]);
   const [donutColors, setDonutColors] = useState([]);
-  const [activeTab, setActiveTab] = useState("overview");
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMembers, setNewMembers] = useState([]);
   const [savingMembers, setSavingMembers] = useState(false);
@@ -365,29 +379,6 @@ const ProjectOverview = ({ projectId }) => {
   };
 
   // ─────────────────────────────────────────
-  // EDIT PROJECT — opens the RightSideBar form pre-filled with the raw
-  // project entity from redux (matches what ProjectForm expects: id,
-  // title, type, client, description, start_date, deadline, price,
-  // status). Do NOT pass the local `project` state here — that's a
-  // display-only object transformed for this page's cards/timeline.
-  // ─────────────────────────────────────────
-  const handleEditProject = () => {
-    // Redux first; fall back to localStorage if the page was opened directly / refreshed
-    const projectToEdit =
-      reduxProject ||
-      (GetLocalStorageData("projects") || []).find(
-        (p) => Number(p.id) === Number(projectId),
-      );
-
-    if (!projectToEdit) return;
-
-    dispatch(setFormTitle(project_component_name));
-    dispatch(setFormObj(projectToEdit));
-    dispatch(setFormWidthPercentage("30%"));   // same width_per Projects.jsx passes
-    dispatch(setComponentToShow(project_component_name));
-    dispatch(toggleRSBView(true));
-  };
-  // ─────────────────────────────────────────
   // SHARED: build chart/table data from task_status_details
   // ─────────────────────────────────────────
   const processTaskStatusDetails = (details) => {
@@ -494,23 +485,10 @@ const ProjectOverview = ({ projectId }) => {
     }
   };
 
-  const getInitials = (name = "") =>
-    name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-
-  const avatarColors = [
-    { bg: "#fce8e6", color: "#dc3545" },
-    { bg: "#e8f4fd", color: "#0d6efd" },
-    { bg: "#e8f9ef", color: "#198754" },
-    { bg: "#fff8e1", color: "#f59e0b" },
-    { bg: "#f3e8fd", color: "#6f42c1" },
-    { bg: "#fde8f4", color: "#d63384" },
-  ];
-
-  
   const stats = useMemo(() => {
     const total = taskStatusRows.reduce((sum, r) => sum + r.count, 0);
     const completed = taskStatusRows
-      .filter((r) => r.category === "done") // ← fixed: was "completed"
+      .filter((r) => r.category === "done")
       .reduce((s, r) => s + r.count, 0);
     const inProgress = taskStatusRows
       .filter((r) => r.category === "in_progress")
@@ -520,56 +498,28 @@ const ProjectOverview = ({ projectId }) => {
       .reduce((s, r) => s + r.count, 0);
     const overdue =
       taskStatusDetails?.overdue_task_count ??
-      taskStatusDetails?.overdue_count ??   // keeps working if the API ever renames it
+      taskStatusDetails?.overdue_count ??
       0;
-      return { total, completed, inProgress, pending, overdue };
+    return { total, completed, inProgress, pending, overdue };
   }, [taskStatusRows, taskStatusDetails]);
 
   const legendItems = [
-    { label: "Completed", value: stats.completed, color: "#22c55e" },
-    { label: "In Progress", value: stats.inProgress, color: "#0d6efd" },
-    { label: "To Do", value: stats.pending, color: "#f59e0b" },
-    { label: "Overdue", value: stats.overdue, color: "#dc3545" },
+    { label: "Completed", value: stats.completed, color: "var(--vz-success)" },
+    { label: "In Progress", value: stats.inProgress, color: "var(--vz-info)" },
+    { label: "To Do", value: stats.pending, color: "var(--vz-warning)" },
+    { label: "Overdue", value: stats.overdue, color: "var(--vz-danger)" },
   ];
-
-  const statusBadge = (status) => {
-    const map = {
-      in_progress: { text: "In Progress", cls: "bg-success-subtle text-success" },
-      completed: { text: "Completed", cls: "bg-primary-subtle text-primary" },
-      on_hold: { text: "On Hold", cls: "bg-warning-subtle text-warning" },
-    };
-    return map[status] || map.in_progress;
-  };
-
-  const formatDate = (d) => {
-    if (!d) return "-";
-    try {
-      return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    } catch {
-      return d;
-    }
-  };
 
   const getTaskTime = (t) =>
     new Date(t?.updated_on ?? t?.created_on ?? 0).getTime() || 0;
-    // new Date(t?.created_at ?? t?.created_on ?? t?.updated_at ?? t?.start_time ?? 0).getTime() || 0;
-    
-
-  const formatDateTime = (ts) => {
-    if (!ts) return "-";
-    const d = new Date(ts);
-    const date = d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-    const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-    return `${date}, ${time}`;
-  };
 
   const recentTasks = useMemo(() => {
     const statuses = GetLocalStorageData("task_status") || [];
     const employees = GetLocalStorageData("employee") || [];
 
     return [...projectTasks]
-      .sort((a, b) => getTaskTime(b) - getTaskTime(a) || Number(b.id) - Number(a.id)) // newest first
-      .slice(0, RECENT_TASK_LIMIT) // 15 max – a new task pushes the oldest one out
+      .sort((a, b) => getTaskTime(b) - getTaskTime(a) || Number(b.id) - Number(a.id))
+      .slice(0, RECENT_TASK_LIMIT)
       .map((t) => {
         const status = statuses.find((s) => Number(s.id) === Number(t.task_status));
         const emp = employees.find((e) => Number(e.id) === Number(t.assigned_to));
@@ -577,296 +527,278 @@ const ProjectOverview = ({ projectId }) => {
           id: t.id,
           title: t.title,
           statusName: status?.name || "-",
-          statusColor: status?.color || "#808080",
+          statusColor: status?.color || "#878a99",
           assignee: emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() : "Unassigned",
           time: getTaskTime(t),
         };
       });
   }, [projectTasks]);
 
-  const badge = statusBadge(project?.status);
-  const percentComplete = taskStatusDetails?.project_completed_percentage ?? 0;
+  const percentComplete = Math.round(taskStatusDetails?.project_completed_percentage ?? 0);
+
+  const timeline = useMemo(() => {
+    const start = dayjs(currentProject?.start_date ?? project?.createdAt ?? currentProject?.created_on);
+    const due = dayjs(currentProject?.deadline ?? project?.dueDate);
+    const today = dayjs().startOf("day");
+    const hasRange = start.isValid() && due.isValid() && due.isAfter(start);
+    const timePct = hasRange
+      ? Math.min(100, Math.max(0, Math.round((today.diff(start, "day") / due.diff(start, "day")) * 100)))
+      : null;
+    const daysLeft = due.isValid() ? due.startOf("day").diff(today, "day") : null;
+    return { start, due, timePct, daysLeft };
+  }, [currentProject, project]);
+
+  const health = (() => {
+    if (stats.total && percentComplete >= 100) {
+      return { tone: "success", icon: "ri-checkbox-circle-line", text: "All tasks completed" };
+    }
+    if (timeline.daysLeft != null && timeline.daysLeft < 0) {
+      return { tone: "danger", icon: "ri-alarm-warning-line", text: `Past due by ${-timeline.daysLeft} day${timeline.daysLeft === -1 ? "" : "s"}` };
+    }
+    if (timeline.timePct != null && timeline.timePct - percentComplete > 15) {
+      return { tone: "warning", icon: "ri-error-warning-line", text: "Behind schedule" };
+    }
+    return { tone: "success", icon: "ri-thumb-up-line", text: "On track" };
+  })();
+
+  const daysLeftLabel =
+    timeline.daysLeft == null
+      ? "No due date"
+      : timeline.daysLeft < 0
+        ? `${-timeline.daysLeft}d overdue`
+        : timeline.daysLeft === 0
+          ? "Due today"
+          : `${timeline.daysLeft}d left`;
 
   return (
-    <div className="pb-4 mb-2">
-      {/* ───── EDIT PROJECT BUTTON — Overview-only, lives here so it never
-              renders on the Task List or Files tabs ───── */}
-      {canEditProject && (
-        <div className="d-flex justify-content-end mb-3">
-          <Button type="button" color="primary" size="sm" onClick={handleEditProject}>
-            <i className="ri-edit-line align-middle me-1"></i>
-            Edit Project
-          </Button>
-        </div>
-      )}
-
-      {/* ───── STAT CARDS ─────
-              xxl: 5 across, xl/lg: 3 across (wraps to 2 rows), md: 2 across, xs: 1 across */}
+    <div className="pdx-overview">
       <Row className="g-3 mb-3">
-        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-list-check-2" label="Total Tasks" value={stats.total} tone="primary" /></Col>
-        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-checkbox-circle-fill" label="Completed" value={stats.completed} tone="success" /></Col>
-        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-time-line" label="In Progress" value={stats.inProgress} tone="info" /></Col>
-        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-todo-line" label="To Do" value={stats.pending} tone="warning" /></Col>
-        <Col xxl xl={4} lg={4} md={6} xs={12}><StatCard icon="ri-alarm-warning-line" label="Overdue" value={stats.overdue} tone="danger" /></Col>
-      </Row>
-
-      <Row className="g-3 mb-3">
-        <Col xl={4} lg={6} md={12}>
-          <Card className="h-100">
-            <CardBody className="py-3">
-              <h5 className="mb-2" style={{ fontSize: 15 }}>Project Progress</h5>
-              <Row className="align-items-center g-2">
-                <Col sm={5} xs={12}>
-                  <ProgressRadial percentage={percentComplete} />
-                </Col>
-                <Col sm={7} xs={12}>
-                  <p className="text-muted mb-1" style={{ fontSize: 12 }}>
-                    {stats.completed} of {stats.total} tasks completed
-                  </p>
-                  <Progress value={percentComplete} color="success" className="mb-2" style={{ height: 5 }} />
-                  <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
-                    <div className="pe-2">
-                      {legendItems.map((item) => (
-                        <div key={item.label} className="d-flex align-items-center justify-content-between mb-1" style={{ fontSize: 12 }}>
-                          <span className="d-flex align-items-center gap-2">
-                            <span className="rounded-circle d-inline-block" style={{ width: 8, height: 8, background: item.color }}></span>
-                            {item.label}
-                          </span>
-                          <span className="fw-semibold">{item.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </SimpleBar>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
+        <Col xxl xl={4} md={6} xs={12}>
+          <StatCard icon="ri-list-check-2" label="Total Tasks" value={stats.total} tone="primary" />
         </Col>
-
-        <Col xl={4} lg={6} md={12}>
-          <Card className="h-100">
-            <CardBody className="py-3">
-              <h5 className="mb-2" style={{ fontSize: 15 }}>Task Status</h5>
-              <Row className="align-items-center g-2">
-                <Col sm={5} xs={12}>
-                  {donutSeries.length > 0 ? (
-                    <TaskStatusDonut series={donutSeries} labels={donutLabels} colors={donutColors} total={stats.total} />
-                  ) : (
-                    <div className="text-center text-muted py-4">No data</div>
-                  )}
-                </Col>
-                <Col sm={7} xs={12}>
-                  <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
-                    <div className="pe-2">
-                      {taskStatusRows.map((row) => (
-                        <div key={row.id} className="d-flex align-items-center justify-content-between mb-1" style={{ fontSize: 12 }}>
-                          <span className="d-flex align-items-center gap-2">
-                            <span className="rounded-circle d-inline-block" style={{ width: 8, height: 8, background: row.color }}></span>
-                            {row.name}
-                          </span>
-                          <span className="fw-semibold">{row.count}</span>
-                        </div>
-                      ))}
-                      {taskStatusRows.length === 0 && <div className="text-muted">No task data available</div>}
-                    </div>
-                  </SimpleBar>
-                </Col>
-              </Row>
-            </CardBody>
-          </Card>
+        <Col xxl xl={4} md={6} xs={12}>
+          <StatCard icon="ri-checkbox-circle-line" label="Completed" value={stats.completed} total={stats.total} tone="success" />
         </Col>
-
-        <Col xl={4} lg={12} md={12}>
-          <Card className="h-100">
-            <CardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
-              <h5 className="mb-0" style={{ fontSize: 15 }}><i className="ri-team-line me-2"></i>Project Members</h5>
-              {canEditProject && (
-                <Button type="button" size="sm" color="primary" onClick={openAddMember}>
-                  <i className="ri-add-line me-1"></i>Add Member
-                </Button>
-              )}
-            </CardHeader>
-            <CardBody className="py-2">
-              <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
-                <div className="pe-2">
-                  {members.length > 0 ? (
-                    members.map((member, index) => {
-                      const colorSet = avatarColors[index % avatarColors.length];
-                      return (
-                        <div key={member?.id} className="d-flex align-items-center justify-content-between py-1 flex-wrap gap-2">
-                          <div className="d-flex align-items-center gap-2">
-                            {member?.profile_url ? (
-                              <img src={member.profile_url} alt="" className="rounded-circle" style={{ width: 34, height: 34, objectFit: "cover" }} />
-                            ) : (
-                              <div
-                                className="rounded-circle d-flex align-items-center justify-content-center"
-                                style={{ width: 34, height: 34, background: colorSet.bg, color: colorSet.color, fontWeight: 600, fontSize: 12 }}
-                              >
-                                {getInitials(member?.first_name || member?.name)}
-                              </div>
-                            )}
-                            <div>
-                              <p className="mb-0 fw-semibold" style={{ fontSize: 13 }}>
-                                {`${member?.first_name || ""} ${member?.last_name || ""}`.trim() || member?.name || "-"}
-                              </p>
-                              <p className="mb-0 text-muted" style={{ fontSize: 11 }}>
-                                {displayValue(member?.designation) !== "-" ? displayValue(member?.designation) : displayValue(member?.role, "Member")}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="d-flex align-items-center gap-2">
-                            <span className="text-muted" style={{ fontSize: 11 }}>{member.taskCount} Tasks</span>
-                            <i className="ri-more-2-fill text-muted" style={{ cursor: "pointer" }}></i>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center text-muted py-4">No members found</div>
-                  )}
-                </div>
-              </SimpleBar>
-            </CardBody>
-          </Card>
+        <Col xxl xl={4} md={6} xs={12}>
+          <StatCard icon="ri-loader-4-line" label="In Progress" value={stats.inProgress} total={stats.total} tone="info" />
+        </Col>
+        <Col xxl xl={6} md={6} xs={12}>
+          <StatCard icon="ri-todo-line" label="To Do" value={stats.pending} total={stats.total} tone="warning" />
+        </Col>
+        <Col xxl xl={6} md={12} xs={12}>
+          <StatCard icon="ri-alarm-warning-line" label="Overdue" value={stats.overdue} total={stats.total} tone="danger" />
         </Col>
       </Row>
 
       <Row className="g-3 mb-3">
-        <Col lg={6} xs={12}>
-          <Card className="h-100">
-            <CardBody>
-              <h5 className="mb-3" style={{ fontSize: 15 }}><i className="ri-calendar-2-line me-2"></i>Project Timeline</h5>
-
-              <div className="position-relative px-1 mb-3" style={{ height: 62 }}>
-                <div
-                  className="position-absolute rounded-pill"
-                  style={{ top: 9, left: "9%", right: "9%", height: 4, background: "#eef0f4", zIndex: 0 }}
-                >
-                  <div
-                    className="rounded-pill"
-                    style={{
-                      width: `${Math.min(Math.max(percentComplete, 0), 100)}%`,
-                      height: "100%",
-                      background: "linear-gradient(90deg, #22c55e, #16a34a)",
-                      transition: "width .4s ease",
-                    }}
-                  ></div>
-                </div>
-
-                <div className="d-flex align-items-start justify-content-between position-relative" style={{ zIndex: 1 }}>
-                  <div className="d-flex flex-column align-items-center" style={{ width: 76 }}>
-                    <span
-                      className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                      style={{ width: 20, height: 20, background: "#22c55e", color: "#fff", fontSize: 12 }}
-                    >
-                      <i className="ri-check-line"></i>
-                    </span>
-                    <span className="mt-2 fw-semibold text-truncate" style={{ fontSize: 12, maxWidth: 76 }}>{formatDate(project?.createdAt)}</span>
-                    <span className="text-muted" style={{ fontSize: 11 }}>Start Date</span>
-                  </div>
-
-                  <div className="d-flex flex-column align-items-center" style={{ width: 90 }}>
-                    <span
-                      className="rounded-circle d-inline-block flex-shrink-0"
-                      style={{ width: 20, height: 20, background: "#0d6efd", border: "3px solid #fff", boxShadow: "0 0 0 3px rgba(13,110,253,0.25)" }}
-                    ></span>
-                    <span className="mt-2 fw-semibold text-primary" style={{ fontSize: 12 }}>Today · {percentComplete}%</span>
-                    <span className="text-muted text-truncate" style={{ fontSize: 11, maxWidth: 90 }}>{badge.text}</span>
-                  </div>
-
-                  <div className="d-flex flex-column align-items-center" style={{ width: 76 }}>
-                    <span
-                      className="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                      style={
-                        percentComplete >= 100
-                          ? { width: 20, height: 20, background: "#22c55e", color: "#fff", fontSize: 12 }
-                          : { width: 20, height: 20, background: "#fff", border: "3px solid #ced4da" }
-                      }
-                    >
-                      {percentComplete >= 100 && <i className="ri-check-line"></i>}
-                    </span>
-                    <span className="mt-2 fw-semibold text-truncate" style={{ fontSize: 12, maxWidth: 76 }}>{formatDate(project?.dueDate)}</span>
-                    <span className="text-muted" style={{ fontSize: 11 }}>Due Date</span>
-                  </div>
-                </div>
+        <Col xl={4} lg={6} xs={12}>
+          <Panel
+            icon="ri-pie-chart-2-line"
+            tone="success"
+            title="Project Progress"
+            sub={`${stats.completed} of ${stats.total} tasks completed`}
+          >
+            <div className="pdx-split">
+              <ProgressRadial percentage={percentComplete} />
+              <div className="pdx-legend">
+                {legendItems.map((item) => (
+                  <LegendRow key={item.label} {...item} total={stats.total} />
+                ))}
               </div>
-
-              <SimpleBar style={{ maxHeight: LIST_MAX_HEIGHT }}>
-                <div className="pe-2">
-                  <div className="d-flex align-items-center justify-content-between p-2 rounded flex-wrap gap-2" style={{ background: "#f8f9fa" }}>
-                    <span className="text-success" style={{ fontSize: 13 }}>
-                      <i className="ri-checkbox-circle-fill me-1"></i>{percentComplete}% completed
-                    </span>
-                    {stats.overdue > 0 && (
-                      <span className="text-danger" style={{ fontSize: 13 }}>
-                        <i className="ri-error-warning-fill me-1"></i>{stats.overdue} overdue
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </SimpleBar>
-            </CardBody>
-          </Card>
+            </div>
+          </Panel>
         </Col>
 
-        <Col lg={6} xs={12} className="recent-activity-col">
-          <style>{`
-            .recent-activity-col { position: relative; }
-            @media (min-width: 992px) {
-              .recent-activity-col > .card { position: absolute; inset: 0; }
+        <Col xl={4} lg={6} xs={12}>
+          <Panel
+            icon="ri-donut-chart-line"
+            tone="info"
+            title="Task Status"
+            sub={`${taskStatusRows.length} status${taskStatusRows.length === 1 ? "" : "es"} in use`}
+          >
+            {donutSeries.length > 0 ? (
+              <div className="pdx-split">
+                <TaskStatusDonut series={donutSeries} labels={donutLabels} colors={donutColors} total={stats.total} />
+                <SimpleBar className="pdx-legend" style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT }}>
+                  {taskStatusRows.map((row) => (
+                    <LegendRow key={row.id} color={row.color} label={row.name} value={row.count} total={stats.total} />
+                  ))}
+                </SimpleBar>
+              </div>
+            ) : (
+              <EmptyState icon="ri-donut-chart-line" text="No tasks in this project yet" />
+            )}
+          </Panel>
+        </Col>
+
+        <Col xl={4} xs={12}>
+          <Panel
+            icon="ri-team-line"
+            tone="primary"
+            title="Project Members"
+            sub={`${members.length} member${members.length === 1 ? "" : "s"}`}
+            action={
+              canEditProject && (
+                <button data-testid="project-overview-add-button" type="button" className="btn btn-soft-primary btn-sm" onClick={openAddMember}>
+                  <i className="ri-user-add-line me-1"></i>Add
+                </button>
+              )
             }
-          `}</style>
-
-          <Card className="h-100 d-flex flex-column mb-0">
-            <CardHeader className="d-flex align-items-center justify-content-between flex-shrink-0">
-              <h5 className="mb-0"><i className="ri-history-line me-2"></i>Recent Activity</h5>
-            </CardHeader>
-
-            <CardBody className="flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
-              <SimpleBar style={{ height: "100%", maxHeight: ACTIVITY_MAX_HEIGHT }}>
-                <div className="pe-2">
-                  {recentTasks.length > 0 ? (
-                    recentTasks.map((task) => (
-                      <div key={task.id} className="d-flex align-items-start gap-2 mb-3">
-                        <span
-                          className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                          style={{ width: 30, height: 30, background: "#f3f6f9", color: task.statusColor }}
-                        >
-                          <i className="ri-task-line" style={{ fontSize: 14 }}></i>
-                        </span>
-
-                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                          <p className="mb-0 fw-semibold text-truncate" style={{ fontSize: 13 }} title={task.title}>
-                            {task.title}
-                          </p>
-                          <p className="mb-0 text-muted d-flex align-items-center gap-2 flex-wrap" style={{ fontSize: 12 }}>
-                            <span className="d-inline-flex align-items-center gap-1">
-                              <span className="rounded-circle d-inline-block" style={{ width: 8, height: 8, background: task.statusColor }}></span>
-                              {task.statusName}
-                            </span>
-                            <span>· {task.assignee}</span>
-                          </p>
-                        </div>
-
-                        <span className="text-muted flex-shrink-0" style={{ fontSize: 11 }}>
-                          {formatDateTime(task.time)}
+          >
+            {members.length > 0 ? (
+              <SimpleBar style={{ maxHeight: COMPACT_LIST_MAX_HEIGHT + 24 }}>
+                <div className="pdx-members">
+                  {members.map((member) => {
+                    const designation = displayValue(member?.designation);
+                    return (
+                      <div key={member.id} className="pdx-member">
+                        <ApvEmployee
+                          employee={{
+                            ...member,
+                            first_name: member.first_name || member.name,
+                          }}
+                          sub={designation !== "-" ? designation : displayValue(member?.role, "Member")}
+                        />
+                        <span className="pdx-member-tasks" title={`${member.taskCount} tasks`}>
+                          <i className="ri-task-line"></i>
+                          {member.taskCount}
                         </span>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-muted py-4">No recent tasks yet</div>
-                  )}
+                    );
+                  })}
                 </div>
               </SimpleBar>
-            </CardBody>
-          </Card>
+            ) : (
+              <EmptyState icon="ri-group-line" text="No members assigned yet">
+                {canEditProject && (
+                  <Button data-testid="project-overview-add-member-button" type="button" size="sm" color="primary" onClick={openAddMember}>
+                    <i className="ri-user-add-line me-1"></i>Add Member
+                  </Button>
+                )}
+              </EmptyState>
+            )}
+          </Panel>
         </Col>
       </Row>
-      <Modal isOpen={showAddMember} toggle={() => setShowAddMember(false)} centered>
-        <ModalHeader toggle={() => setShowAddMember(false)}>Add Members</ModalHeader>
+
+      <Row className="g-3">
+        <Col lg={6} xs={12}>
+          <Panel
+            icon="ri-calendar-2-line"
+            tone="warning"
+            title="Project Timeline"
+            action={
+              <span className={`apv-status is-${health.tone}`}>
+                <i className={health.icon}></i>
+                {health.text}
+              </span>
+            }
+          >
+            <div className="pdx-track">
+              <div className="pdx-track-line">
+                <span style={{ width: `${timeline.timePct ?? 0}%` }} />
+              </div>
+              <div className="pdx-track-node is-start">
+                <span className="pdx-track-dot is-done">
+                  <i className="ri-play-fill"></i>
+                </span>
+                <b>{fmtDate(timeline.start)}</b>
+                <small>Start</small>
+              </div>
+              {timeline.timePct != null && (
+                <div className="pdx-track-today" style={{ left: `${timeline.timePct}%`, "--p": timeline.timePct / 100 }}>
+                  <span>Today</span>
+                </div>
+              )}
+              <div className="pdx-track-node is-end">
+                <span className={`pdx-track-dot${percentComplete >= 100 ? " is-done" : ""}`}>
+                  <i className="ri-flag-fill"></i>
+                </span>
+                <b>{fmtDate(timeline.due)}</b>
+                <small>Due</small>
+              </div>
+            </div>
+
+            <div className="pdx-metrics">
+              <div className="pdx-metric">
+                <small>Time elapsed</small>
+                <b>{timeline.timePct != null ? `${timeline.timePct}%` : "—"}</b>
+                <span className="apv-progress is-warning">
+                  <span style={{ width: `${timeline.timePct ?? 0}%` }} />
+                </span>
+              </div>
+              <div className="pdx-metric">
+                <small>Tasks done</small>
+                <b>{percentComplete}%</b>
+                <span className="apv-progress is-success">
+                  <span style={{ width: `${percentComplete}%` }} />
+                </span>
+              </div>
+              <div className={`pdx-metric${timeline.daysLeft != null && timeline.daysLeft < 0 ? " is-danger" : ""}`}>
+                <small>Deadline</small>
+                <b>{daysLeftLabel}</b>
+                <span className="pdx-metric-note">
+                  {stats.overdue > 0 ? (
+                    <span className="text-danger">
+                      <i className="ri-error-warning-line me-1"></i>
+                      {stats.overdue} overdue task{stats.overdue === 1 ? "" : "s"}
+                    </span>
+                  ) : (
+                    <span>No overdue tasks</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </Panel>
+        </Col>
+
+        <Col lg={6} xs={12}>
+          <Panel
+            icon="ri-history-line"
+            tone="secondary"
+            title="Recent Activity"
+            sub={recentTasks.length ? `Last ${recentTasks.length} updated tasks` : undefined}
+          >
+            {recentTasks.length > 0 ? (
+              <SimpleBar style={{ maxHeight: ACTIVITY_MAX_HEIGHT }}>
+                <div className="pdx-feed">
+                  {recentTasks.map((task) => (
+                    <div key={task.id} className="pdx-feed-item" style={{ "--c": task.statusColor }}>
+                      <span className="pdx-feed-dot">
+                        <i className="ri-task-line"></i>
+                      </span>
+                      <div className="pdx-feed-body">
+                        <div className="pdx-feed-top">
+                          <b title={task.title}>{task.title}</b>
+                          <small title={task.time ? dayjs(task.time).format("DD MMM YYYY, hh:mm A") : undefined}>
+                            {timeAgo(task.time)}
+                          </small>
+                        </div>
+                        <div className="pdx-feed-meta">
+                          <ApvColorTag color={task.statusColor} label={task.statusName} />
+                          <span>
+                            <i className="ri-user-3-line"></i>
+                            {task.assignee}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SimpleBar>
+            ) : (
+              <EmptyState icon="ri-history-line" text="No recent activity yet" />
+            )}
+          </Panel>
+        </Col>
+      </Row>
+
+      <Modal data-testid="project-overview-add-members-dialog" isOpen={showAddMember} toggle={() => setShowAddMember(false)} centered>
+        <ModalHeader close={<ModalCloseButton onClick={() => setShowAddMember(false)} testId="project-overview-add-members-close-button" />} toggle={() => setShowAddMember(false)}>Add Members</ModalHeader>
         <ModalBody>
           <label className="form-label">Members</label>
           <AsyncSelect
+            testId="project-overview-add-members-search-members"
             key={existingMemberIds.join(",")}
             isMulti
             isClearable
@@ -888,8 +820,8 @@ const ProjectOverview = ({ projectId }) => {
           <div className="form-text">Select or search employees to add to this project.</div>
         </ModalBody>
         <ModalFooter>
-          <Button color="light" onClick={() => setShowAddMember(false)}>Cancel</Button>
-          <Button color="success" onClick={handleSaveMembers} disabled={savingMembers || newMembers.length === 0}>
+          <Button data-testid="project-overview-add-members-cancel-button" color="light" onClick={() => setShowAddMember(false)}>Cancel</Button>
+          <Button data-testid="project-overview-add-members-add-button" color="success" onClick={handleSaveMembers} disabled={savingMembers || newMembers.length === 0}>
             {savingMembers ? "Saving..." : "Add"}
           </Button>
         </ModalFooter>

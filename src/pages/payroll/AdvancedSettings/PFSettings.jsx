@@ -3,10 +3,11 @@ import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
   Col, Row, Label, Button, Input, Badge
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, range, percent, min, runChecks } from "./validators";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const PF_CONTRIBUTION_TYPE_OPTIONS = [
   { value: "percentage", label: "Percentage" },
@@ -40,7 +41,7 @@ const ViewToggle = ({ checked, label }) => (
         width: 36,
         height: 20,
         borderRadius: 12,
-        background: checked ? "#0ab39c" : "#ced4da",
+        background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)",
         position: "relative",
         flexShrink: 0,
       }}
@@ -71,8 +72,8 @@ const ViewRadio = ({ options, value }) => (
             width: 16,
             height: 16,
             borderRadius: "50%",
-            border: `2px solid ${value === opt.value ? "#405189" : "#ced4da"}`,
-            background: value === opt.value ? "#405189" : "#fff",
+            border: `2px solid ${value === opt.value ? "var(--vz-primary)" : "rgba(var(--vz-secondary-rgb), .35)"}`,
+            background: value === opt.value ? "var(--vz-primary)" : "var(--vz-secondary-bg)",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -217,7 +218,8 @@ const PFSettings = () => {
               </CardSubtitle>
             </div>
             {!isEditing && (
-              <Button size="sm" color="primary" outline onClick={() => setIsEditing(true)}
+              <Button
+                data-testid="pf-settings-edit-settings-button" size="sm" color="primary" outline onClick={() => setIsEditing(true)}
                 className="d-flex align-items-center gap-1">
                 <i className="ri-edit-line fs-14"></i> Edit Settings
               </Button>
@@ -284,7 +286,8 @@ const PFSettings = () => {
               <SettingRow label="PF Status">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0 d-flex align-items-center gap-2">
-                    <Input className="form-check-input" type="checkbox"
+                    <Input
+                      data-testid="pf-settings-is-active-checkbox" className="form-check-input" type="checkbox"
                       checked={!!form.is_active}
                       onChange={() => handleToggle("is_active")} />
                     <Label className="form-check-label mb-0" style={{ fontSize: 13 }}>
@@ -299,7 +302,8 @@ const PFSettings = () => {
               {/* Effective Date */}
               <SettingRow label="Effective Date">
                 {isEditing ? (
-                  <Input type="date" value={form.effective_date || ""}
+                  <Input
+                    data-testid="pf-settings-active-input" type="date" value={form.effective_date || ""}
                     onChange={(e) => handleChange("effective_date", e.target.value)}
                     style={{ width: 180 }} />
                 ) : (
@@ -310,7 +314,8 @@ const PFSettings = () => {
               {/* Min Eligibility Amount */}
               <SettingRow label="Min Monthly Amount for PF Eligibility">
                 {isEditing ? (
-                  <Input type="number"
+                  <Input
+                    data-testid="pf-settings-minimum-monthly-amount-for-input" type="number"
                     value={form.minimum_monthly_amount_for_pf_calculation || ""}
                     onChange={(e) => handleChange("minimum_monthly_amount_for_pf_calculation", Number(e.target.value))}
                     style={{ width: 180 }} />
@@ -327,6 +332,7 @@ const PFSettings = () => {
               <SettingRow label="PF Wage Ceiling (Statutory)">
                 {isEditing ? (
                   <Input
+                    data-testid="pf-settings-pf-wage-ceiling-input"
                     type="number"
                     value={form.pf_wage_ceiling || ""}
                     onChange={(e) => handleChange("pf_wage_ceiling", Number(e.target.value))}
@@ -347,7 +353,8 @@ const PFSettings = () => {
                   <div className="d-flex gap-3">
                     {PF_CONTRIBUTION_TYPE_OPTIONS.map((opt) => (
                       <div className="form-check" key={opt.value}>
-                        <Input className="form-check-input" type="radio"
+                        <Input
+                          data-testid={testId("pf-settings-pf-contribution-calculation-type-option", itemTestKey(opt))} className="form-check-input" type="radio"
                           name="pf_contribution_calculation_type"
                           checked={form.pf_contribution_calculation_type === opt.value}
                           onChange={() => handleChange("pf_contribution_calculation_type", opt.value)} />
@@ -363,7 +370,9 @@ const PFSettings = () => {
               {/* Contribution Based On */}
               <SettingRow label="Contribution Based On">
                 {isEditing ? (
-                  <Select isMulti options={salaryComponents}
+                  <Select
+                    testId="pf-settings-pf-contribution-calculation-based"
+                    isMulti options={salaryComponents}
                     isLoading={componentsLoading}
                     isDisabled={componentsLoading}
                     placeholder={componentsLoading ? "Loading components…" : "Select components…"}
@@ -390,7 +399,8 @@ const PFSettings = () => {
               {/* Contribution Value */}
               <SettingRow label={`Contribution Value ${data.pf_contribution_calculation_type === "percentage" ? "(%)" : "(Fixed Amount)"}`} last>
                 {isEditing ? (
-                  <Input type="number" step="0.01"
+                  <Input
+                    data-testid="pf-settings-pf-contribution-calculation-value-input" type="number" step="0.01"
                     value={form.pf_contribution_calculation_value || ""}
                     onChange={(e) => {
                       let val = e.target.value;
@@ -426,7 +436,7 @@ const PFSettings = () => {
                       <Col xs={4} className="text-end">
                         {isEditing ? (
                           <div className="form-check form-switch mb-0 d-flex justify-content-end">
-                            <Input className="form-check-input" type="checkbox"
+                            <Input className="form-check-input" type="checkbox" data-testid={testId("pf-settings", key, "checkbox")}
                               checked={!!form[key]}
                               onChange={() => handleToggle(key)} />
                           </div>
@@ -456,7 +466,7 @@ const PFSettings = () => {
                       <Col xs={4} className="text-end">
                         {isEditing ? (
                           <div className="form-check form-switch mb-0 d-flex justify-content-end">
-                            <Input className="form-check-input" type="checkbox"
+                            <Input className="form-check-input" type="checkbox" data-testid={testId("pf-settings", key, "checkbox")}
                               checked={!!form[key]}
                               onChange={() => handleToggle(key)} />
                           </div>
@@ -487,10 +497,10 @@ const PFSettings = () => {
             {/* Save / Cancel */}
             {isEditing && (
               <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-                <Button color="light" className="border" onClick={handleCancel} disabled={loading}>
+                <Button data-testid="pf-settings-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>
                   Cancel
                 </Button>
-                <Button color="success" onClick={handleSave} disabled={loading}>
+                <Button data-testid="pf-settings-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
                   <i className="ri-check-double-line align-middle me-1"></i>
                   {loading ? "Saving…" : "Save Changes"}
                 </Button>

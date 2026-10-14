@@ -12,6 +12,7 @@ const TimeLineList = () => {
     <>
       <button
         style={{ display: "none" }}
+        data-testid="timeline-close-sheet-button"
         onClick={() => setShowSheet(false)}
         type="button"
         className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle light-dark-mode"

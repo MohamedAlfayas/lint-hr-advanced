@@ -12,7 +12,7 @@ import {
   TabContent,
   TabPane,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import { DatePicker } from "antd";
 import classnames from "classnames";
 

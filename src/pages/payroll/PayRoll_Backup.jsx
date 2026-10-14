@@ -22,7 +22,7 @@ import {
   Button,
 } from "reactstrap";
 import classnames from "classnames";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -604,7 +604,7 @@ const PayRollBackup = () => {
                                     onClick={() =>
                                       console.log("Edit DAta = ", rowData)
                                     }>
-                                    <i className="ri-pencil-fill fs-16"></i>
+                                    <i className="ri-pencil-line fs-16"></i>
                                   </Link>
                                 )}
                               </Cell>

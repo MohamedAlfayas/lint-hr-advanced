@@ -102,7 +102,7 @@ body .rs-table-row-header .rs-table-cell {
   /* Add any other styles as needed */
 }
 
-.lc_multi_select .css-wsp0cs-MultiValueGeneric {
+.lc_multi_select [class*="-MultiValueGeneric"] {
   color: white !important;
 }
 .lc-color {
@@ -152,55 +152,45 @@ body .rs-table-row-header .rs-table-cell {
   overflow-x: auto;
 }
 
-/* Parent row alignment */
+/* Dashboard: attendance table + map side by side, equal height */
 .lc_dashboard_row {
-  align-items: stretch; /* Make table and map equal height */
-  gap: 0; /* remove extra space between cols */
+  align-items: stretch;
 }
 
-/* Table column */
-.lc_table_col {
+.lc_table_col,
+.lc_map_col {
   display: flex;
   flex-direction: column;
 }
 
-/* Fix table header height */
+.lc_table_col > .card,
+.lc_map_col > .card {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+  border-radius: 12px;
+}
+
 .lc_table_col table thead th {
   padding: 12px 10px;
   font-size: 14px;
   white-space: nowrap;
 }
 
-/* Map column */
-.lc_map_col {
-  display: flex;
-  flex-direction: column;
+/* Map fills whatever height the row gives it */
+.lc_map_card {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
 }
 
-/* Make map take full height of column */
-.lc_map_col > div {
-  flex: 1;
-  min-height: 400px; /* Laptop safe */
-  height: 100%;
-  border-radius: 12px;
+.lc_map_body {
+  position: absolute;
+  inset: 0;
 }
 
-/* Reduce gap between sections */
-.lc_table_col,
-.lc_map_col {
-  margin-bottom: 15px;
-  margin-left: -12px;
-}
-
-/* Laptop/Desktop optimization */
-@media (min-width: 992px) {
-  .lc_table_col,
-  .lc_map_col {
-    margin-bottom: 0; /* remove gap in row */
-  }
-  .lc_map_col > div {
-    min-height: 500px; /* taller map on larger screens */
-  }
+.lc_map_body > div {
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 /* InfoWindow box */
 .lc_infowindow {
@@ -873,11 +863,6 @@ body .rs-table-row-header .rs-table-cell {
 
 .hide-picker-footer .ant-picker-footer {
   display: none;
-}
-
-#attendanceList .card-body {
-  padding-right: 0 !important;
-  padding-bottom: 0 !important;
 }
 
 /* ── Attendance table: vertical scrollbar starts below the heading ── */

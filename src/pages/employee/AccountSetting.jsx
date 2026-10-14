@@ -17,17 +17,14 @@ import {
   InputGroup,
   InputGroupText,
   Label,
-  Nav,
-  NavItem,
-  NavLink,
   Row,
   TabContent,
   TabPane,
 } from "reactstrap";
-import classnames from "classnames";
 import Flatpickr from "react-flatpickr";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { testId } from "../../shared/testing/testId";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 
@@ -51,7 +48,7 @@ import { PostApi } from "../../common/api/PostApi";
 import DummyUserImg from "../../assets/images/users/user.png";
 import avatar from "../../assets/images/users/avatar-1.jpg";
 import { DatePicker } from "antd";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import {
   gender_options,
   form_default_input_types,
@@ -76,6 +73,28 @@ import { useDispatch, useSelector } from "react-redux";
 import { setEmployeeAccountSettingsData } from "../../redux/reducers/ChildReducer/AccountSettingsReducer";
 import InputGroupAddon from "rsuite/esm/InputGroup/InputGroupAddon";
 import "../../common/css/lc_style.css";
+import "./accountSetting.scss";
+
+const PROFILE_FIELDS = [
+  "profile_url",
+  "first_name",
+  "last_name",
+  "emp_id",
+  "gender",
+  "contact_number",
+  "email",
+  "dob",
+  "joining_date",
+  "reporting_manager_id",
+  "work_schedule_id",
+];
+
+const SETTINGS_TABS = [
+  { id: "1", label: "Personal details", icon: "ri-user-3-line" },
+  { id: "2", label: "Change password", icon: "ri-lock-password-line" },
+  { id: "4", label: "Privacy policy", icon: "ri-shield-check-line" },
+];
+
 const AccountSettings = () => {
   const { id } = useParams();
 
@@ -98,12 +117,6 @@ const AccountSettings = () => {
 
   const employee_data = GetLocalStorageData("employee");
   const branch_options = GetLocalStorageData("branch") || [];
-  var contact_emails = branch_options.map(function (option, index) {
-    if (index === 0) {
-      return option.contact_email;
-    }
-  });
-
   const dep_options = GetLocalStorageData("department") || [];
   const ws_options = GetLocalStorageData("work_schedule") || [];
   const role_id_option = GetLocalStorageData("role") || [];
@@ -126,131 +139,6 @@ const AccountSettings = () => {
   const [joining_date, setJoinDate] = useState([]);
   const [activeTab, setActiveTab] = useState("1");
   const [profileObj, setProfileObj] = useState({});
-
-  const [experienceList, setExperienceList] = useState([]);
-
-  const emptyExperienceForm = {
-    id: null,
-    job_title: "",
-    company_name: "",
-    from_date: "",
-    to_date: "",
-    is_present: false,
-    description: "",
-  };
-
-  const [experienceForm, setExperienceForm] = useState(emptyExperienceForm);
-  const [showExperienceForm, setShowExperienceForm] = useState(false);
-  const [isEditingExperience, setIsEditingExperience] = useState(false);
-  const [experienceFormErrors, setExperienceFormErrors] = useState({});
-
-  const experienceValidationSchema = Yup.object({
-    job_title: Yup.string()
-      .trim()
-      .required("Please Enter Job Title")
-      .matches(/^[A-Za-z0-9.,&()'\-\s]+$/, "Please Enter Job Title")
-      .max(100, "Job Title must not exceed 100 characters"),
-    company_name: Yup.string()
-      .trim()
-      .required("Please Enter Company Name")
-      .matches(/^[A-Za-z0-9.,&()'\-\s]+$/, "Please Enter Company Name")
-      .max(100, "Company Name must not exceed 100 characters"),
-    from_date: Yup.string().trim().required("Please Select From Date"),
-  });
-
-  const getExperienceDuration = (from_date, to_date, is_present) => {
-    if (!from_date) return "";
-    const start = dayjs(from_date);
-    const end = is_present ? dayjs() : dayjs(to_date || dayjs());
-    let years = end.diff(start, "year");
-    start.add(years, "year");
-    let months = end.diff(start.add(years, "year"), "month");
-    if (months < 0) months = 0;
-    let text = "";
-    if (years > 0) text += `${years} Year${years > 1 ? "s" : ""} `;
-    if (months > 0) text += `${months} Month${months > 1 ? "s" : ""}`;
-    return text.trim() || "0 Months";
-  };
-
-  const handleExperienceInputChange = (e) => {
-    const { name, value } = e.target;
-    setExperienceForm({ ...experienceForm, [name]: value });
-  };
-
-  const handleExperienceFromDateChange = (date, dateStr) => {
-    setExperienceForm({
-      ...experienceForm,
-      from_date: date ? dayjs(date).format("YYYY-MM-DD") : "",
-    });
-  };
-
-  const handleExperienceToDateChange = (date, dateStr) => {
-    setExperienceForm({
-      ...experienceForm,
-      to_date: date ? dayjs(date).format("YYYY-MM-DD") : "",
-    });
-  };
-
-  const handleExperiencePresentToggle = (e) => {
-    setExperienceForm({
-      ...experienceForm,
-      is_present: e.target.checked,
-      to_date: e.target.checked ? "" : experienceForm.to_date,
-    });
-  };
-
-  const handleAddExperienceClick = () => {
-    setExperienceForm(emptyExperienceForm);
-    setIsEditingExperience(false);
-    setShowExperienceForm(true);
-  };
-
-  const handleEditExperience = (exp) => {
-    setExperienceForm(exp);
-    setIsEditingExperience(true);
-    setShowExperienceForm(true);
-  };
-
-  const handleDeleteExperience = (id) => {
-    setExperienceList(experienceList.filter((exp) => exp.id !== id));
-  };
-
-  const handleCancelExperienceForm = () => {
-    setExperienceForm(emptyExperienceForm);
-    setExperienceFormErrors({});
-    setIsEditingExperience(false);
-    setShowExperienceForm(false);
-  };
-
-  const handleSaveExperience = async () => {
-    try {
-      await experienceValidationSchema.validate(experienceForm, {
-        abortEarly: false,
-      });
-      setExperienceFormErrors({});
-    } catch (validationError) {
-      const errors = {};
-      validationError.inner.forEach((err) => {
-        errors[err.path] = err.message;
-      });
-      setExperienceFormErrors(errors);
-      return;
-    }
-
-    if (isEditingExperience) {
-      setExperienceList(
-        experienceList.map((exp) =>
-          exp.id === experienceForm.id ? experienceForm : exp,
-        ),
-      );
-    } else {
-      setExperienceList([
-        { ...experienceForm, id: Date.now() },
-        ...experienceList,
-      ]);
-    }
-    handleCancelExperienceForm();
-  };
 
   const [showPassword1, setShowPassword1] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
@@ -673,262 +561,264 @@ const AccountSettings = () => {
       ),
     });
   };
+  const roleName = employeeObj?.role?.id
+    ? role_id_option.find((d) => d.id === employeeObj?.role?.id)?.name || ""
+    : "";
+  const fullName = [employeeObj.first_name, employeeObj.last_name]
+    .filter(Boolean)
+    .join(" ");
+  const filledCount = PROFILE_FIELDS.filter((key) => {
+    const value = employeeObj?.[key];
+    return value !== undefined && value !== null && `${value}`.trim() !== "";
+  }).length;
+  const completion = Math.round((filledCount / PROFILE_FIELDS.length) * 100);
+  const completionTone =
+    completion >= 80 ? "is-good" : completion >= 50 ? "is-mid" : "is-low";
+
+  const namesFrom = (list, ids) =>
+    (list || [])
+      .filter((d) => (ids || []).map(Number).includes(Number(d.id)))
+      .map((d) => d.name || d.label)
+      .filter(Boolean)
+      .join(", ");
+  const reportingManager = reportingManagerOptions.find(
+    (e) => e.id === employeeObj.reporting_manager_id,
+  );
+  const joinedOn = dayjs(joining_date, DateFormat);
+  const tenure = (() => {
+    if (!joinedOn.isValid() || joinedOn.isAfter(dayjs())) return "";
+    const months = dayjs().diff(joinedOn, "month");
+    const years = Math.floor(months / 12);
+    const rest = months % 12;
+    if (!years && !rest) return "Joined this month";
+    return [years && `${years} yr${years > 1 ? "s" : ""}`, rest && `${rest} mo`]
+      .filter(Boolean)
+      .join(" ");
+  })();
+  const workSnapshot = [
+    {
+      icon: "ri-building-2-line",
+      label: "Department",
+      value: namesFrom(dep_options, employeeObj.primary_department_id_list),
+    },
+    {
+      icon: "ri-map-pin-line",
+      label: "Branch",
+      value: namesFrom(branch_options, employeeObj.branch_id_list),
+    },
+    {
+      icon: "ri-time-line",
+      label: "Work schedule",
+      value:
+        ws_options.find((w) => w.id === employeeObj.work_schedule_id)?.name || "",
+    },
+    {
+      icon: "ri-calendar-check-line",
+      label: "Joined",
+      value: joinedOn.isValid() ? joinedOn.format("DD MMM YYYY") : "",
+    },
+  ];
+
   return (
     <React.Fragment>
-      <div className="page-content">
+      <div className="page-content acs">
         <Container fluid>
-          <div className="position-relative mx-n4 mt-n4">
-            <div className="profile-wid-bg profile-setting-img">
-              <div className="overlay-content">
-                <div className="text-end p-3">
-                  {/* <div className="p-0 ms-auto rounded-circle profile-photo-edit">
-                                        <Input id="profile-foreground-img-file-input" type="file"
-                                            className="profile-foreground-img-file-input" />
-                                        <Label htmlFor="profile-foreground-img-file-input"
-                                            className="profile-photo-edit btn btn-light">
-                                            <i className="ri-image-edit-line align-bottom me-1"></i> Change Cover
-                                        </Label>
-                                    </div> */}
-                </div>
-                <div
-                  className="flex-shrink-0"
-                  style={{ marginRight: "30px", marginTop: "120px" }}
-                >
-                  <Button
-                    className="btn btn-success"
-                    onClick={() =>
-                      navigate(`/employee/view/${employeeObj.emp_uuid}`)
-                    }
-                  >
-                    <i className="ri-arrow-left-line align-bottom"></i> Back To
-                    Employee Profile
-                  </Button>
-                </div>
+          <div className="acs-hero">
+            <div className="acs-hero-main">
+              <span className="acs-hero-icon">
+                <i className="ri-user-settings-line" />
+              </span>
+              <div>
+                <h4 className="acs-hero-title">Account settings</h4>
+                <p className="acs-hero-sub">
+                  Manage your personal details and password.
+                </p>
               </div>
             </div>
+            <button
+              data-testid="account-settings-back-to-profile-button"
+              type="button"
+              className="acs-btn"
+              onClick={() => navigate(`/employee/view/${employeeObj.emp_uuid}`)}
+            >
+              <i className="ri-arrow-left-line" />
+              Back to profile
+            </button>
           </div>
 
-          <Row>
-            <Col xxl={3} sm={3} md={3} lg={3}>
-              <Card className="mt-n5">
-                <CardBody className="p-4">
-                  <div className="text-center">
-                    <div className="profile-user position-relative d-inline-block mx-auto mb-4">
-                      <img
-                        src={
-                          employeeObj.profile_url
-                            ? employeeObj.profile_url
-                            : DummyUserImg
-                        }
-                        className="rounded-circle avatar-xl img-thumbnail user-profile-image"
-                        alt="user-profile"
-                      />
+          <Row className="g-3">
+            <Col xl={3} lg={4}>
+              <div className="acs-side">
+              <div className="acs-card acs-profile">
+                <div className="acs-profile-cover" />
+                <div className="acs-avatar">
+                  <img
+                    src={employeeObj.profile_url || DummyUserImg}
+                    alt={fullName || "Profile"}
+                    onError={(e) => {
+                      if (e.currentTarget.src !== DummyUserImg) {
+                        e.currentTarget.src = DummyUserImg;
+                      }
+                    }}
+                  />
+                  <Input
+                    data-testid="account-settings-profile-photo-file-input"
+                    id="profile-img-file-input"
+                    type="file"
+                    accept="image/*"
+                    className="d-none"
+                    onChange={handleProfileChange}
+                  />
+                  <Label
+                    htmlFor="profile-img-file-input"
+                    className="acs-avatar-edit"
+                    title="Change photo"
+                  >
+                    <i className="ri-camera-fill" />
+                  </Label>
+                </div>
+                <h5 className="acs-name">{fullName || "—"}</h5>
+                {roleName && <span className="acs-role">{roleName}</span>}
 
-                      <div className="avatar-xs p-0 rounded-circle profile-photo-edit">
-                        <Input
-                          id="profile-img-file-input"
-                          type="file"
-                          accept="image/*"
-                          className="profile-img-file-input"
-                          onChange={handleProfileChange}
-                        />
-                        <Label
-                          htmlFor="profile-img-file-input"
-                          className="profile-photo-edit avatar-xs"
-                        >
-                          <span className="avatar-title rounded-circle bg-light text-body">
-                            <i className="ri-camera-fill"></i>
-                          </span>
-                        </Label>
-                      </div>
+                <div className="acs-meta">
+                  {employeeObj.emp_id && (
+                    <div>
+                      <i className="ri-hashtag" />
+                      <span>{employeeObj.emp_id}</span>
                     </div>
-                    <h5 className="fs-16 mb-1">{employeeObj.first_name}</h5>
-                    <p className="text-muted mb-0">
-                      {employeeObj?.role?.id
-                        ? role_id_option.length
-                          ? role_id_option.find(
-                              (d) => d.id === employeeObj?.role?.id,
-                            )?.name
-                          : ""
-                        : ""}
-                    </p>
-                  </div>
-                </CardBody>
-              </Card>
+                  )}
+                  {employeeObj.email && (
+                    <div>
+                      <i className="ri-mail-line" />
+                      <span>{employeeObj.email}</span>
+                    </div>
+                  )}
+                  {employeeObj.contact_number && (
+                    <div>
+                      <i className="ri-phone-line" />
+                      <span>
+                        {employeeObj.country_code ? `${employeeObj.country_code} ` : ""}
+                        {employeeObj.contact_number}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              <Card>
-                <CardBody>
-                  <div className="d-flex align-items-center mb-5">
-                    <div className="flex-grow-1">
-                      <h5 className="card-title mb-0">Complete Your Profile</h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <Link
-                        to="#"
-                        className="badge bg-light text-primary fs-12"
-                      >
-                        <i className="ri-edit-box-line align-bottom me-1"></i>{" "}
-                        Edit
-                      </Link>
-                    </div>
+              <div className="acs-card acs-complete">
+                <div className="acs-card-head">
+                  <div>
+                    <h6>Complete your profile</h6>
+                    <span>
+                      {filledCount} of {PROFILE_FIELDS.length} details added
+                    </span>
                   </div>
-                  <div className="progress animated-progress custom-progress progress-label">
-                    <div
-                      className="progress-bar bg-danger"
-                      role="progressbar"
-                      style={{ width: "30%" }}
-                      aria-valuenow="30"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    >
-                      <div className="label">30%</div>
-                    </div>
+                  <span className={`acs-pct ${completionTone}`}>{completion}%</span>
+                </div>
+                <div className={`acs-bar ${completionTone}`}>
+                  <span style={{ width: `${completion}%` }} />
+                </div>
+                {completion < 100 && (
+                  <button
+                    type="button"
+                    className="acs-link"
+                    onClick={() => tabChange("1")}
+                  >
+                    <i className="ri-edit-box-line" />
+                    Fill in missing details
+                  </button>
+                )}
+              </div>
+
+              <div className="acs-card acs-work">
+                <div className="acs-card-head">
+                  <div>
+                    <h6>Work snapshot</h6>
+                    <span>Your role in the organisation</span>
                   </div>
-                </CardBody>
-              </Card>
-              <Card>
-                <CardBody>
-                  <div className="d-flex align-items-center mb-4">
-                    <div className="flex-grow-1">
-                      <h5 className="card-title mb-0">Portfolio</h5>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <Link
-                        to="#"
-                        className="badge bg-light text-primary fs-12"
-                      >
-                        <i className="ri-add-fill align-bottom me-1"></i> Add
-                      </Link>
-                    </div>
+                  {tenure && (
+                    <span className="acs-tenure">
+                      <i className="ri-medal-line" />
+                      {tenure}
+                    </span>
+                  )}
+                </div>
+
+                <div className="acs-manager">
+                  {reportingManager?.profile_url ? (
+                    <img src={reportingManager.profile_url} alt="" />
+                  ) : (
+                    <span className="acs-manager-initial">
+                      {reportingManager ? (
+                        (reportingManager.first_name || reportingManager.label || "?").charAt(0)
+                      ) : (
+                        <i className="ri-user-star-line" />
+                      )}
+                    </span>
+                  )}
+                  <div>
+                    <small>Reporting manager</small>
+                    <strong>
+                      {reportingManager
+                        ? reportingManager.label ||
+                          [reportingManager.first_name, reportingManager.last_name]
+                            .filter(Boolean)
+                            .join(" ")
+                        : "Not assigned"}
+                    </strong>
                   </div>
-                  <div className="mb-3 d-flex">
-                    <div className="avatar-xs d-block flex-shrink-0 me-3">
-                      <span className="avatar-title rounded-circle fs-16 bg-dark text-light">
-                        <i className="ri-github-fill"></i>
-                      </span>
-                    </div>
-                    <Input
-                      type="email"
-                      className="form-control"
-                      id="gitUsername"
-                      placeholder="Username"
-                      defaultValue={contact_emails}
-                    />
-                  </div>
-                  <div className="mb-3 d-flex">
-                    <div className="avatar-xs d-block flex-shrink-0 me-3">
-                      <span className="avatar-title rounded-circle fs-16 bg-primary">
-                        <i className="ri-global-fill"></i>
-                      </span>
-                    </div>
-                    <Input
-                      type="text"
-                      className="form-control"
-                      id="websiteInput"
-                      placeholder="www.example.com"
-                      defaultValue={contact_emails}
-                    />
-                  </div>
-                  <div className="mb-3 d-flex">
-                    <div className="avatar-xs d-block flex-shrink-0 me-3">
-                      <span className="avatar-title rounded-circle fs-16 bg-success">
-                        <i className="ri-dribbble-fill"></i>
-                      </span>
-                    </div>
-                    <Input
-                      type="text"
-                      className="form-control"
-                      id="dribbleName"
-                      placeholder="Username"
-                      defaultValue={contact_emails}
-                    />
-                  </div>
-                  <div className="d-flex">
-                    <div className="avatar-xs d-block flex-shrink-0 me-3">
-                      <span className="avatar-title rounded-circle fs-16 bg-danger">
-                        <i className="ri-pinterest-fill"></i>
-                      </span>
-                    </div>
-                    <Input
-                      type="text"
-                      className="form-control"
-                      id="pinterestName"
-                      placeholder="Username"
-                      defaultValue={contact_emails}
-                    />
-                  </div>
-                </CardBody>
-              </Card>
+                </div>
+
+                <ul className="acs-work-list">
+                  {workSnapshot.map((item) => (
+                    <li key={item.label}>
+                      <i className={item.icon} />
+                      <span>{item.label}</span>
+                      <strong title={item.value}>{item.value || "—"}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              </div>
             </Col>
 
-            <Col xxl={9} sm={9} md={9} lg={9}>
-              <Card className="mt-n5">
-                <CardHeader>
-                  <Nav
-                    className="nav-tabs-custom rounded card-header-tabs border-bottom-0"
-                    role="tablist"
-                  >
-                    <NavItem>
-                      <NavLink
-                        className={classnames({ active: activeTab === "1" })}
-                        onClick={() => {
-                          tabChange("1");
-                        }}
-                        type="button"
-                      >
-                        <i className="fas fa-home"></i>
-                        Personal Details
-                      </NavLink>
-                    </NavItem>
-                    <NavItem>
-                      <NavLink
-                        to="#"
-                        className={classnames({ active: activeTab === "2" })}
-                        onClick={() => {
-                          tabChange("2");
-                        }}
-                        type="button"
-                      >
-                        <i className="far fa-user"></i>
-                        Change Password
-                      </NavLink>
-                    </NavItem>
-                    <NavItem>
-                      <NavLink
-                        to="#"
-                        className={classnames({ active: activeTab === "3" })}
-                        onClick={() => {
-                          tabChange("3");
-                        }}
-                        type="button"
-                      >
-                        <i className="far fa-envelope"></i>
-                        Experience
-                      </NavLink>
-                    </NavItem>
-                    <NavItem>
-                      <NavLink
-                        to="#"
-                        className={classnames({ active: activeTab === "4" })}
-                        onClick={() => {
-                          tabChange("4");
-                        }}
-                        type="button"
-                      >
-                        <i className="far fa-envelope"></i>
-                        Privacy Policy
-                      </NavLink>
-                    </NavItem>
-                  </Nav>
-                </CardHeader>
-                <CardBody className="p-4">
+            <Col xl={9} lg={8}>
+              <div className="acs-card acs-main">
+                <div className="acs-tabs" role="tablist">
+                  {SETTINGS_TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === tab.id}
+                      className={`acs-tab ${activeTab === tab.id ? "is-active" : ""}`}
+                      onClick={() => tabChange(tab.id)}
+                    >
+                      <i className={tab.icon} />
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="acs-body">
                   <TabContent activeTab={activeTab}>
                     <TabPane tabId="1">
                       <Form
                         onSubmit={FormikForm.handleSubmit}
                         action="javascript:void(0)"
+                        className="acs-form"
                       >
-                        <Row>
+                        <Row className="gx-3">
+                          <Col xs={12}>
+                            <div className="acs-section">
+                              <span className="acs-section-icon">
+                                <i className="ri-user-3-line" />
+                              </span>
+                              <div>
+                                <h6>Basic information</h6>
+                                <p>Your name, contact and personal details</p>
+                              </div>
+                            </div>
+                          </Col>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
                               <Label
@@ -1389,6 +1279,21 @@ const AccountSettings = () => {
                               Select Your Joining Date.
                             </div>
                           </Col>
+                          <Col xs={12}>
+                            <div className="acs-section">
+                              <span className="acs-section-icon">
+                                <i className="ri-briefcase-4-line" />
+                              </span>
+                              <div>
+                                <h6>Work information</h6>
+                                <p>Assigned by your organisation</p>
+                              </div>
+                              <span className="acs-section-badge">
+                                <i className="ri-lock-2-line" />
+                                Managed by HR
+                              </span>
+                            </div>
+                          </Col>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
                               <Label htmlFor="branch" className="form-label">
@@ -1516,7 +1421,10 @@ const AccountSettings = () => {
                           </Col>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
-                              <Label htmlFor="reporting_manager_id">
+                              <Label
+                                htmlFor="reporting_manager_id"
+                                className="form-label"
+                              >
                                 Reporting Manager
                               </Label>
                               <Select
@@ -1649,7 +1557,9 @@ const AccountSettings = () => {
                           </Col>
                           <Col xxl={6} sm={6} lg={6}>
                             <div>
-                              <Label htmlFor="empWs">Work Schedule</Label>
+                              <Label htmlFor="empWs" className="form-label">
+                                Work Schedule
+                              </Label>
                               <Select
                                 id="empWs"
                                 name="work_schedule_id"
@@ -1707,9 +1617,14 @@ const AccountSettings = () => {
                             )}
                           </Col>
                           <Col xxl={12} sm={12} lg={12}>
-                            <div className="text-end">
+                            <div className="acs-form-foot">
+                              <span>
+                                <i className="ri-information-line" />
+                                Locked fields can only be changed by HR.
+                              </span>
                               <button type="submit" className="btn btn-success">
-                                Save
+                                <i className="ri-save-3-line me-1" />
+                                Save changes
                               </button>
                             </div>
                           </Col>
@@ -2076,7 +1991,7 @@ const AccountSettings = () => {
 
                           <Col xxl={12} sm={12} lg={12}>
                             <div className="text-end">
-                              <button type="submit" className="btn btn-success">
+                              <button data-testid="account-settings-change-password-button" type="submit" className="btn btn-success">
                                 Change Password
                               </button>
                             </div>
@@ -2085,7 +2000,7 @@ const AccountSettings = () => {
                       </Form>
                       <div className="mt-4 mb-3 border-bottom pb-2">
                         <div className="float-end">
-                          <Link to="#" className="link-primary">
+                          <Link data-testid="account-settings-all-logout-link" to="#" className="link-primary">
                             All Logout
                           </Link>
                         </div>
@@ -2104,7 +2019,7 @@ const AccountSettings = () => {
                           </p>
                         </div>
                         <div>
-                          <Link to="#">Logout</Link>
+                          <Link to="#" data-testid="account-settings-device-iphone-12-pro-logout-link">Logout</Link>
                         </div>
                       </div>
                       <div className="d-flex align-items-center mb-3">
@@ -2120,7 +2035,7 @@ const AccountSettings = () => {
                           </p>
                         </div>
                         <div>
-                          <Link to="#">Logout</Link>
+                          <Link to="#" data-testid="account-settings-device-apple-ipad-pro-logout-link">Logout</Link>
                         </div>
                       </div>
                       <div className="d-flex align-items-center mb-3">
@@ -2136,7 +2051,7 @@ const AccountSettings = () => {
                           </p>
                         </div>
                         <div>
-                          <Link to="#">Logout</Link>
+                          <Link to="#" data-testid="account-settings-device-galaxy-s21-ultra-5g-logout-link">Logout</Link>
                         </div>
                       </div>
                       <div className="d-flex align-items-center">
@@ -2152,358 +2067,9 @@ const AccountSettings = () => {
                           </p>
                         </div>
                         <div>
-                          <Link to="#">Logout</Link>
+                          <Link to="#" data-testid="account-settings-device-dell-inspiron-14-logout-link">Logout</Link>
                         </div>
                       </div>
-                    </TabPane>
-
-                    <TabPane tabId="3">
-                      <div className="d-flex align-items-center mb-4">
-                        <div className="flex-grow-1">
-                          <h5 className="card-title mb-1">Experience</h5>
-                          <p className="text-muted mb-0">
-                            Your career journey in our company
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          <Button
-                            color="success"
-                            onClick={handleAddExperienceClick}
-                          >
-                            <i className="ri-add-line align-bottom me-1"></i>{" "}
-                            Add Experience
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="d-flex">
-                        <div
-                          className="position-relative me-3"
-                          style={{ width: "16px" }}
-                        >
-                          <div
-                            style={{
-                              position: "absolute",
-                              left: "7px",
-                              top: "22px",
-                              bottom: "22px",
-                              width: "2px",
-                              background: "#dcdcdc",
-                            }}
-                          ></div>
-                          <div
-                            className="d-flex flex-column"
-                            style={{ gap: "0" }}
-                          >
-                            {experienceList.map((exp) => (
-                              <div
-                                key={exp.id}
-                                className="d-flex align-items-center justify-content-center"
-                                style={{
-                                  height: "144px",
-                                  position: "relative",
-                                  zIndex: 1,
-                                }}
-                              >
-                                <div
-                                  className="bg-primary"
-                                  style={{
-                                    width: "11px",
-                                    height: "11px",
-                                    transform: "rotate(45deg)",
-                                  }}
-                                ></div>
-                              </div>
-                            ))}
-                            <div
-                              className="d-flex align-items-center justify-content-center bg-white"
-                              style={{
-                                height: "20px",
-                                position: "relative",
-                                zIndex: 1,
-                              }}
-                            >
-                              <div
-                                className="border border-secondary bg-white"
-                                style={{
-                                  width: "10px",
-                                  height: "10px",
-                                  transform: "rotate(45deg)",
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex-grow-1">
-                          {experienceList.map((exp) => (
-                            <Card key={exp.id} className="border mb-3">
-                              <CardBody className="d-flex">
-                                <div className="flex-shrink-0 me-3">
-                                  <div
-                                    className="avatar-sm rounded-circle bg-light d-flex align-items-center justify-content-center"
-                                    style={{ width: "45px", height: "45px" }}
-                                  >
-                                    <i className="ri-briefcase-line fs-18"></i>
-                                  </div>
-                                </div>
-                                <div className="flex-grow-1">
-                                  <h6 className="mb-1">
-                                    {exp.job_title}
-                                    {exp.is_present && (
-                                      <span className="badge bg-light text-dark ms-2 fw-normal">
-                                        Current
-                                      </span>
-                                    )}
-                                  </h6>
-                                  <p className="text-muted mb-1">
-                                    <i className="ri-building-line me-1"></i>
-                                    {exp.company_name}
-                                  </p>
-                                  <p className="text-muted mb-2 fs-13">
-                                    <i className="ri-calendar-line me-1"></i>
-                                    {dayjs(exp.from_date).format(
-                                      "MMM YYYY",
-                                    )} -{" "}
-                                    {exp.is_present
-                                      ? "Present"
-                                      : exp.to_date
-                                        ? dayjs(exp.to_date).format("MMM YYYY")
-                                        : ""}
-                                    <span className="badge bg-light text-dark ms-2 fw-normal">
-                                      {getExperienceDuration(
-                                        exp.from_date,
-                                        exp.to_date,
-                                        exp.is_present,
-                                      )}
-                                    </span>
-                                  </p>
-                                  {exp.description && (
-                                    <p className="text-muted mb-0 fs-13">
-                                      {exp.description}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex-shrink-0 d-flex align-items-start gap-3">
-                                  <Link
-                                    to="#"
-                                    className="text-success"
-                                    onClick={() => handleEditExperience(exp)}
-                                  >
-                                    <i className="ri-pencil-line align-bottom me-1"></i>
-                                    Edit
-                                  </Link>
-                                  <Link
-                                    to="#"
-                                    className="text-danger"
-                                    onClick={() =>
-                                      handleDeleteExperience(exp.id)
-                                    }
-                                  >
-                                    <i className="ri-delete-bin-line align-bottom me-1"></i>
-                                    Delete
-                                  </Link>
-                                </div>
-                              </CardBody>
-                            </Card>
-                          ))}
-                          <div className="text-muted fs-13">
-                            <i className="ri-flag-line me-1"></i>
-                            Joined the company
-                          </div>
-                        </div>
-                      </div>
-
-                      {showExperienceForm && (
-                        <Card className="border mt-4">
-                          <CardHeader className="bg-light">
-                            <h6 className="mb-0">
-                              <i className="ri-edit-2-line align-bottom me-1"></i>{" "}
-                              Add / Edit Experience
-                            </h6>
-                            <p className="text-muted mb-0 fs-13">
-                              Enter experience details
-                            </p>
-                          </CardHeader>
-                          <CardBody>
-                            <Row className="g-3">
-                              <Col md={6}>
-                                <Label className="form-label">
-                                  Job Title <span>*</span>
-                                </Label>
-                                <Input
-                                  type="text"
-                                  name="job_title"
-                                  placeholder="Enter job title"
-                                  value={experienceForm.job_title}
-                                  onChange={(e) => {
-                                    const value = e.target.value
-                                      .replace(/^[ ]+/, "")
-                                      .replace(/[^A-Za-z0-9.,&()'\-\s]/g, "");
-
-                                    setExperienceForm({
-                                      ...experienceForm,
-                                      job_title: value,
-                                    });
-
-                                    if (value.length > 100) {
-                                      setExperienceFormErrors((prev) => ({
-                                        ...prev,
-                                        job_title:
-                                          "Job Title must not exceed 100 characters",
-                                      }));
-                                    } else {
-                                      setExperienceFormErrors((prev) => ({
-                                        ...prev,
-                                        job_title: "",
-                                      }));
-                                    }
-                                  }}
-                                  autoComplete="off"
-                                  invalid={!!experienceFormErrors.job_title}
-                                />
-                                {experienceFormErrors.job_title && (
-                                  <div className="lc_form_error_text">
-                                    {experienceFormErrors.job_title}
-                                  </div>
-                                )}
-                              </Col>
-                              <Col md={6}>
-                                <Label className="form-label">
-                                  Company Name <span>*</span>
-                                </Label>
-                                <Input
-                                  type="text"
-                                  name="company_name"
-                                  placeholder="Enter company name"
-                                  value={experienceForm.company_name}
-                                  onChange={(e) => {
-                                    const value = e.target.value
-                                      .replace(/^[ ]+/, "")
-                                      .replace(/[^A-Za-z0-9.,&()'\-\s]/g, "");
-
-                                    setExperienceForm({
-                                      ...experienceForm,
-                                      company_name: value,
-                                    });
-
-                                    if (value.length > 100) {
-                                      setExperienceFormErrors((prev) => ({
-                                        ...prev,
-                                        company_name:
-                                          "Company Name must not exceed 100 characters",
-                                      }));
-                                    } else {
-                                      setExperienceFormErrors((prev) => ({
-                                        ...prev,
-                                        company_name: "",
-                                      }));
-                                    }
-                                  }}
-                                  autoComplete="off"
-                                  invalid={!!experienceFormErrors.company_name}
-                                />
-                                {experienceFormErrors.company_name && (
-                                  <div className="lc_form_error_text">
-                                    {experienceFormErrors.company_name}
-                                  </div>
-                                )}
-                              </Col>
-                              <Col md={6}>
-                                <Label className="form-label">
-                                  From Date <span>*</span>
-                                </Label>
-                                <DatePicker
-                                  className="form-control"
-                                  placeholder="Select start date"
-                                  format="DD-MM-YYYY"
-                                  value={
-                                    experienceForm.from_date
-                                      ? dayjs(experienceForm.from_date)
-                                      : null
-                                  }
-                                  onChange={handleExperienceFromDateChange}
-                                  style={{ width: "100%" }}
-                                  status={
-                                    experienceFormErrors.from_date
-                                      ? "error"
-                                      : ""
-                                  }
-                                />
-                                {experienceFormErrors.from_date && (
-                                  <div className="lc_form_error_text">
-                                    {experienceFormErrors.from_date}
-                                  </div>
-                                )}
-                              </Col>
-                              <Col md={6}>
-                                <Label className="form-label">To Date</Label>
-                                <div className="d-flex align-items-center gap-2">
-                                  <DatePicker
-                                    className="form-control"
-                                    placeholder="Select end date"
-                                    format="DD-MM-YYYY"
-                                    disabled={experienceForm.is_present}
-                                    value={
-                                      experienceForm.to_date
-                                        ? dayjs(experienceForm.to_date)
-                                        : null
-                                    }
-                                    onChange={handleExperienceToDateChange}
-                                    style={{ width: "100%" }}
-                                  />
-                                  <div className="form-check text-nowrap">
-                                    <Input
-                                      type="checkbox"
-                                      className="form-check-input"
-                                      id="is_present"
-                                      checked={experienceForm.is_present}
-                                      onChange={handleExperiencePresentToggle}
-                                    />
-                                    <Label
-                                      className="form-check-label"
-                                      htmlFor="is_present"
-                                    >
-                                      Present
-                                    </Label>
-                                  </div>
-                                </div>
-                              </Col>
-                              <Col md={12}>
-                                <Label className="form-label">
-                                  Job Description
-                                </Label>
-                                <Input
-                                  type="textarea"
-                                  name="description"
-                                  rows="3"
-                                  placeholder="Describe your role, responsibilities and achievements..."
-                                  value={experienceForm.description}
-                                  onChange={handleExperienceInputChange}
-                                  autoComplete="off"
-                                />
-                              </Col>
-                              <Col md={12}>
-                                <div className="hstack gap-2">
-                                  <Button
-                                    color="success"
-                                    onClick={handleSaveExperience}
-                                  >
-                                    <i className="ri-save-line align-bottom me-1"></i>{" "}
-                                    {isEditingExperience ? "Update" : "Save"}
-                                  </Button>
-                                  <Button
-                                    color="light"
-                                    onClick={handleCancelExperienceForm}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </Col>
-                            </Row>
-                          </CardBody>
-                        </Card>
-                      )}
                     </TabPane>
 
                     <TabPane tabId="4">
@@ -2524,7 +2090,7 @@ const AccountSettings = () => {
                             </p>
                           </div>
                           <div className="flex-shrink-0 ms-sm-3">
-                            <Link to="#" className="btn btn-sm btn-primary">
+                            <Link data-testid="account-settings-enable-two-facor-authentication-link" to="#" className="btn btn-sm btn-primary">
                               Enable Two-facor Authentication
                             </Link>
                           </div>
@@ -2542,7 +2108,7 @@ const AccountSettings = () => {
                             </p>
                           </div>
                           <div className="flex-shrink-0 ms-sm-3">
-                            <Link to="#" className="btn btn-sm btn-primary">
+                            <Link data-testid="account-settings-set-up-secondary-method-link" to="#" className="btn btn-sm btn-primary">
                               Set up secondary method
                             </Link>
                           </div>
@@ -2558,7 +2124,7 @@ const AccountSettings = () => {
                             </p>
                           </div>
                           <div className="flex-shrink-0 ms-sm-3">
-                            <Link to="#" className="btn btn-sm btn-primary">
+                            <Link data-testid="account-settings-generate-backup-codes-link" to="#" className="btn btn-sm btn-primary">
                               Generate backup codes
                             </Link>
                           </div>
@@ -2584,6 +2150,7 @@ const AccountSettings = () => {
                             <div className="flex-shrink-0">
                               <div className="form-check form-switch">
                                 <Input
+                                  data-testid="account-settings-directmessage-checkbox"
                                   className="form-check-input"
                                   type="checkbox"
                                   role="switch"
@@ -2610,6 +2177,7 @@ const AccountSettings = () => {
                             <div className="flex-shrink-0">
                               <div className="form-check form-switch">
                                 <Input
+                                  data-testid="account-settings-desktopnotification-checkbox"
                                   className="form-check-input"
                                   type="checkbox"
                                   role="switch"
@@ -2637,6 +2205,7 @@ const AccountSettings = () => {
                             <div className="flex-shrink-0">
                               <div className="form-check form-switch">
                                 <Input
+                                  data-testid="account-settings-emailnotification-checkbox"
                                   className="form-check-input"
                                   type="checkbox"
                                   role="switch"
@@ -2662,6 +2231,7 @@ const AccountSettings = () => {
                             <div className="flex-shrink-0">
                               <div className="form-check form-switch">
                                 <Input
+                                  data-testid="account-settings-chatnotification-checkbox"
                                   className="form-check-input"
                                   type="checkbox"
                                   role="switch"
@@ -2686,6 +2256,7 @@ const AccountSettings = () => {
                             <div className="flex-shrink-0">
                               <div className="form-check form-switch">
                                 <Input
+                                  data-testid="account-settings-purchaesnotification-checkbox"
                                   className="form-check-input"
                                   type="checkbox"
                                   role="switch"
@@ -2708,6 +2279,7 @@ const AccountSettings = () => {
                         </p>
                         <div>
                           <Input
+                            data-testid="account-settings-passwordinput-input"
                             type="password"
                             className="form-control"
                             id="passwordInput"
@@ -2718,18 +2290,18 @@ const AccountSettings = () => {
                           />
                         </div>
                         <div className="hstack gap-2 mt-3">
-                          <Link to="#" className="btn btn-soft-danger">
+                          <Link data-testid="account-settings-close-delete-this-account-link" to="#" className="btn btn-soft-danger">
                             Close & Delete This Account
                           </Link>
-                          <Link to="#" className="btn btn-light">
+                          <Link data-testid="account-settings-cancel-link" to="#" className="btn btn-light">
                             Cancel
                           </Link>
                         </div>
                       </div>
                     </TabPane>
                   </TabContent>
-                </CardBody>
-              </Card>
+                </div>
+              </div>
             </Col>
           </Row>
         </Container>

@@ -1,6 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Card, CardHeader, Col, Label, Row } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import { MonthFormat } from "../../../common/constant/Constants";
@@ -15,7 +14,7 @@ import { Link } from "react-router-dom";
 import AttendanceApproval from "../../../pages/attendanceApproval/AttendanceApproval";
 dayjs.extend(customParseFormat);
 
-const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_PAGE_SIZE = 10;
 
 const LeaveApprovalFilter = ({ formname, onPaginationChange }) => {
   const inputRef = useRef();
@@ -157,68 +156,63 @@ const LeaveApprovalFilter = ({ formname, onPaginationChange }) => {
 
   return (
     <React.Fragment>
-      <Card>
-        <CardHeader className="border-0 rounded">
-          <Row className="g-2">
-            <Col md={3}>
-              <Select
-                id="employee_filter"
-                name="employee_filter"
-                isClearable={false}
-                isMulti={false}
-                options={employeeTypeOptions || []}
-                className="basic-multi-select"
-                placeholder="Select Employee Type"
-                allowClear={false}
-                onChange={handleEmployeeTypeChange}
-                value={
-                  employeeTypeOptions.find((d) => d.id === employeeType) ||
-                  employeeTypeOptions[1]
-                }
-              />
-            </Col>
-            <Col md={3}>
-              <div className="form-icon right">
-                <DatePicker
-                  value={dayjs(filteredMonth)}
-                  format={MonthFormat}
-                  picker="month"
-                  allowClear={false}
-                  className="form-control"
-                  placeholder="Select Month"
-                  onChange={handleDateRangeChange}
-                />
-              </div>
-            </Col>
+      <div className="tf-card">
+        <div className="tf-fields">
+          <div className="tf-field">
+            <label className="tf-label" htmlFor="employee_filter">
+              <i className="ri-group-line"></i> Employee Type
+            </label>
+            <Select
+              inputId="employee_filter"
+              name="employee_filter"
+              isClearable={false}
+              isMulti={false}
+              options={employeeTypeOptions || []}
+              className="basic-multi-select"
+              placeholder="Select Employee Type"
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+              onChange={handleEmployeeTypeChange}
+              value={
+                employeeTypeOptions.find((d) => d.id === employeeType) ||
+                employeeTypeOptions[1]
+              }
+            />
+          </div>
 
-            <div className="col-lg-auto">
-              <div className="hstack gap-2">
-                <button
-                  type="button"
-                  onClick={handleFilter}
-                  className="btn btn-danger"
-                >
-                  <i className="ri-equalizer-fill me-1 align-bottom"></i> Filter
-                </button>
-              </div>
-            </div>
-            <div className="col-lg-auto">
-              <div className="hstack gap-2">
-                <Link to="/attendanceapproval" className="btn btn-info">
-                  <i className="ri-grid-fill"></i> Attendance Approval
-                </Link>
-              </div>
-            </div>
-            <div className="col-lg-auto">
-              <div className="hstack gap-2">
-                <Link to="/leave-approval" className="btn btn-info">
-                  <i className="ri-grid-fill"></i> Leave Approval
-                </Link>
-              </div>
-            </div>
-          </Row>
-        </CardHeader>
-      </Card>
+          <div className="tf-field">
+            <span className="tf-label">
+              <i className="ri-calendar-2-line"></i> Month
+            </span>
+            <DatePicker
+              value={dayjs(filteredMonth)}
+              format={MonthFormat}
+              picker="month"
+              allowClear={false}
+              placeholder="Select Month"
+              suffixIcon={<i className="ri-arrow-down-s-line"></i>}
+              style={{ width: "100%" }}
+              onChange={handleDateRangeChange}
+            />
+          </div>
+
+          <button type="button" onClick={handleFilter} className="tf-apply">
+            <i className="ri-equalizer-line"></i> Apply Filter
+          </button>
+        </div>
+
+        <nav className="tf-switch" aria-label="Approval type">
+          <Link
+            to="/attendanceapproval"
+            className="tf-switch-btn"
+          >
+            <i className="ri-time-line"></i> Attendance Approval
+          </Link>
+          <Link to="/leave-approval" className="tf-switch-btn active">
+            <i className="ri-calendar-check-line"></i> Leave Approval
+          </Link>
+        </nav>
+      </div>
     </React.Fragment>
   );
 };

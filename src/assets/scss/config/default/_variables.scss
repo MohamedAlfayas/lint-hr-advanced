@@ -951,7 +951,7 @@ $input-border-radius-sm:                var(--#{$prefix}border-radius-sm);
 $input-border-radius-lg:                var(--#{$prefix}border-radius-lg);
 
 $input-focus-bg:                        $input-bg;
-$input-focus-border-color:              var(--#{$prefix}primary-border-subtle);
+$input-focus-border-color:              var(--#{$prefix}success);
 $input-focus-color:                     $input-color;
 $input-focus-width:                     $input-btn-focus-width;
 $input-focus-box-shadow:                $input-btn-focus-box-shadow;

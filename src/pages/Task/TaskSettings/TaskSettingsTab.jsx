@@ -1,32 +1,20 @@
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  CardBody,
-  Col,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
-  TabContent,
-  TabPane,
-} from "reactstrap";
-import classnames from "classnames";
-
-//import images
-import slack from "../../../assets/images/brands/slack.png";
-import Status from "../Status/Status";
-import Priorities from "../Priorities/Priorities";
+import { TabContent, TabPane } from "reactstrap";
 import { useSelector } from "react-redux";
 
+import Status from "../Status/Status";
+import Priorities from "../Priorities/Priorities";
+import "./TaskSettingsTab.scss";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+
 const TaskSettingsTab = () => {
-  //Tab
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem("activeTab") || "1";
   });
   const toggleTab = (tab) => {
     if (activeTab !== tab) {
       setActiveTab(tab);
-      localStorage.setItem("activeTab", tab); // ✅ save tab
+      localStorage.setItem("activeTab", tab);
     }
   };
   useEffect(() => {
@@ -34,62 +22,65 @@ const TaskSettingsTab = () => {
       localStorage.removeItem("activeTab");
     };
   }, []);
-  const { company_detail } = useSelector((state) => state.CompanyReducer);
+
+  const { status_data } = useSelector((state) => state.StatusReducer);
+  const { Priorities_data } = useSelector((state) => state.PrioritiesReducer);
+
+  const tabs = [
+    {
+      id: "1",
+      label: "Status",
+      icon: "ri-checkbox-circle-line",
+      count: (status_data || []).length,
+    },
+    {
+      id: "2",
+      label: "Priority",
+      icon: "ri-flag-2-line",
+      count: (Priorities_data || []).length,
+    },
+  ];
 
   return (
     <React.Fragment>
-      <Row>
-        <Col lg={12}>
-          <Card style={{ marginTop: "70px" }}>
-            <div className="bg-info-subtle">
-              <CardBody className="pb-0 px-4">
-                <Nav className="nav-tabs-custom border-bottom-0" role="tablist">
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "1" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("1");
-                      }}
-                      href="#"
-                    >
-                      Status
-                    </NavLink>
-                  </NavItem>
-                  <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "2" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("2");
-                      }}
-                      href="#"
-                    >
-                      Priority
-                    </NavLink>
-                  </NavItem>
-                </Nav>
-              </CardBody>
-            </div>
-          </Card>
-        </Col>
-      </Row>
-      <Row>
-        <Col lg={12}>
-          <TabContent activeTab={activeTab} className="text-muted">
-            <TabPane tabId="1">
-              <Status />
-            </TabPane>
-            <TabPane tabId="2">
-              <Priorities />
-            </TabPane>
-          </TabContent>
-        </Col>
-      </Row>
+      <div className="tst-head">
+        <div className="tst-title">
+          <span className="tst-title-icon">
+            <i className="ri-settings-4-line"></i>
+          </span>
+          <div>
+            <h5>Task Settings</h5>
+            <p>Manage the statuses and priorities used across tasks</p>
+          </div>
+        </div>
+
+        <div className="tst-tabs" role="tablist">
+          {tabs.map((t) => (
+            <button
+              data-testid={testId("task-settings", itemTestKey(t), "button")}
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === t.id}
+              className={`tst-tab${activeTab === t.id ? " is-active" : ""}`}
+              onClick={() => toggleTab(t.id)}
+            >
+              <i className={t.icon}></i>
+              {t.label}
+              <span className="tst-tab-count">{t.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <TabContent activeTab={activeTab}>
+        <TabPane tabId="1">
+          <Status />
+        </TabPane>
+        <TabPane tabId="2">
+          <Priorities />
+        </TabPane>
+      </TabContent>
     </React.Fragment>
   );
 };

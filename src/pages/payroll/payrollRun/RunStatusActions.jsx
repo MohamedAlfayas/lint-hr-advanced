@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Button, Spinner, ButtonGroup } from "reactstrap";
+import { Spinner } from "reactstrap";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
-import { fetchStatusMaster, labelFor, PAYMENT_ONLY_STATUSES } from "./statusHelpers";
-import StatusBadge from "./StatusBadge";
+import { fetchStatusMaster, labelFor, colorFor, PAYMENT_ONLY_STATUSES } from "./statusHelpers";
+import StatusBadge, { STATUS_ICONS, toneProps } from "./StatusBadge";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
   const [rows, setRows]   = useState([]);
-  const [busy, setBusy]   = useState(false);
+  const [busy, setBusy]   = useState(null);
 
   useEffect(() => { fetchStatusMaster("run").then(setRows); }, []);
 
@@ -31,7 +32,7 @@ const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
       reverseButtons: true,
     }).then((r) => {
       if (!r.isConfirmed) return;
-      setBusy(true);
+      setBusy(target);
       Api({
         method: "PATCH",
         url: "payroll/payroll-run-status/",
@@ -44,21 +45,42 @@ const RunStatusActions = ({ run, onChanged, size = "sm" }) => {
           onChanged && onChanged(nextStatus);
         })
         .catch((err) => toast.error(err?.response?.data?.error_message || "Failed to update status."))
-        .finally(() => setBusy(false));
+        .finally(() => setBusy(null));
     });
   };
 
   return (
-    <div className="d-flex align-items-center gap-2">
+    <div className="rsa">
       <StatusBadge scope="run" code={run.status} />
       {nextCodes.length > 0 && (
-        <ButtonGroup size={size}>
-          {nextCodes.map((code) => (
-            <Button key={code} color="light" className="border" disabled={busy} onClick={() => move(code)}>
-              {busy ? <Spinner size="sm" /> : `→ ${labelFor(rows, code)}`}
-            </Button>
-          ))}
-        </ButtonGroup>
+        <div className="rsa-next">
+          <span className="rsa-label">
+            <i className="ri-arrow-right-line"></i>
+            Move to
+          </span>
+          {nextCodes.map((code) => {
+            const row = rows.find((r) => r.code === code);
+            const tone = toneProps(row?.color || colorFor(code));
+            return (
+              <button
+                data-testid={testId("payroll-run-status-next", itemTestKey(code), "button")}
+                key={code}
+                type="button"
+                className={`rsa-btn ${tone.className} ${size === "sm" ? "" : "is-lg"}`}
+                style={tone.style}
+                disabled={!!busy}
+                onClick={() => move(code)}
+              >
+                {busy === code ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <i className={STATUS_ICONS[code] || "ri-arrow-right-circle-line"}></i>
+                )}
+                {labelFor(rows, code)}
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );

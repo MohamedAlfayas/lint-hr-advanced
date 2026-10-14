@@ -1,0 +1,158 @@
+// Dark mode for legacy screens that hard-code light colours in inline styles.
+// Browsers serialise inline hex colours as `rgb(r, g, b)`, so the attribute
+// selectors below match `style={{ background: "#fff" }}` etc. `!important`
+// is required to beat the inline declaration. Google Maps internals
+// (.gm-style) keep their own white UI.
+
+// Near-white surfaces -> card surface
+$dark-surface-sources: (
+  "255, 255, 255", // #fff
+  "250, 250, 250", // #fafafa
+  "249, 250, 251", // #f9fafb
+  "248, 249, 250", // #f8f9fa
+  "248, 250, 252", // #f8fafc
+  "248, 249, 252", // #f8f9fc
+  "247, 248, 250", // #f7f8fa
+  "247, 248, 251", // #f7f8fb
+  "245, 245, 245", // #f5f5f5
+  "245, 247, 251", // #f5f7fb
+);
+
+// Light greys -> slightly raised surface
+$dark-raised-sources: (
+  "243, 244, 246", // #f3f4f6
+  "243, 243, 249", // #f3f3f9
+  "241, 241, 241", // #f1f1f1
+  "241, 245, 249", // #f1f5f9
+  "240, 240, 240", // #f0f0f0
+  "238, 240, 244", // #eef0f4
+  "238, 240, 247", // #eef0f7
+);
+
+// Grey tracks / dividers
+$dark-track-sources: (
+  "233, 236, 239", // #e9ecef
+  "229, 231, 235", // #e5e7eb
+  "228, 230, 238", // #e4e6ee
+  "226, 232, 240", // #e2e8f0
+  "222, 226, 230", // #dee2e6
+);
+
+// Near-black text -> body text
+$dark-text-sources: (
+  "0, 0, 0",
+  "15, 23, 42",    // #0f172a
+  "17, 24, 39",    // #111827
+  "30, 41, 59",    // #1e293b
+  "31, 41, 55",    // #1f2937
+  "33, 37, 41",    // #212529
+  "51, 51, 51",    // #333
+  "51, 65, 85",    // #334155
+  "52, 64, 84",    // #344054
+  "55, 65, 81",    // #374151
+  "73, 80, 87",    // #495057
+);
+
+[data-bs-theme="dark"] {
+  @each $rgb in $dark-surface-sources {
+    :not(.gm-style *)[style*="background: rgb(#{$rgb})"],
+    :not(.gm-style *)[style*="background-color: rgb(#{$rgb})"] {
+      background: var(--vz-secondary-bg) !important;
+    }
+  }
+  :not(.gm-style *)[style*="background: white"],
+  :not(.gm-style *)[style*="background-color: white"] {
+    background: var(--vz-secondary-bg) !important;
+  }
+
+  @each $rgb in $dark-raised-sources {
+    :not(.gm-style *)[style*="background: rgb(#{$rgb})"],
+    :not(.gm-style *)[style*="background-color: rgb(#{$rgb})"] {
+      background: var(--vz-tertiary-bg) !important;
+    }
+  }
+
+  @each $rgb in $dark-track-sources {
+    :not(.gm-style *)[style*="background: rgb(#{$rgb})"],
+    :not(.gm-style *)[style*="background-color: rgb(#{$rgb})"] {
+      background: #2f343a !important;
+    }
+  }
+
+  @each $rgb in join($dark-track-sources, $dark-raised-sources) {
+    [style*="solid rgb(#{$rgb})"] {
+      border-color: var(--vz-border-color) !important;
+    }
+  }
+
+  @each $rgb in $dark-text-sources {
+    :not(.gm-style *)[style^="color: rgb(#{$rgb})"],
+    :not(.gm-style *)[style*=" color: rgb(#{$rgb})"] {
+      color: var(--vz-body-color) !important;
+    }
+  }
+
+  // react-select (also when the menu is portalled to <body>). Option state
+  // colours come from emotion classes we can't target, so a dark overlay is
+  // laid over them: transparent rows blend in, focused/selected stay tinted.
+  [class*="css-"][class*="-menu"]:not([class*="Mui"]):not([class*="-menuPortal"]) {
+    background-color: var(--vz-secondary-bg) !important;
+    color: var(--vz-body-color) !important;
+    border: 1px solid var(--vz-border-color);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  }
+  [class*="css-"][class*="-option"]:not([class*="Mui"]) {
+    background-image: linear-gradient(rgba(33, 37, 41, 0.78), rgba(33, 37, 41, 0.78));
+  }
+  [class*="css-"][class*="-control"]:not([class*="Mui"]) {
+    background-color: var(--vz-input-bg, var(--vz-secondary-bg)) !important;
+    border-color: var(--vz-border-color) !important;
+  }
+  [class*="css-"][class*="-singleValue"],
+  [class*="css-"][class*="-Input"]:not([class*="Mui"]) {
+    color: var(--vz-body-color) !important;
+  }
+  [class*="css-"][class*="-NoOptionsMessage"],
+  [class*="css-"][class*="-LoadingMessage"] {
+    color: var(--vz-secondary-color) !important;
+  }
+
+  // antd popups
+  .ant-picker,
+  .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    background-color: var(--vz-input-bg, var(--vz-secondary-bg)) !important;
+    border-color: var(--vz-border-color) !important;
+    color: var(--vz-body-color) !important;
+  }
+  .ant-picker-input > input,
+  .ant-select-selection-item {
+    color: var(--vz-body-color) !important;
+  }
+  .ant-picker-dropdown .ant-picker-panel-container,
+  .ant-select-dropdown {
+    background-color: var(--vz-secondary-bg) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  }
+  .ant-picker-dropdown :is(.ant-picker-header, .ant-picker-header button, .ant-picker-content th, .ant-picker-cell-in-view),
+  .ant-select-item {
+    color: var(--vz-body-color) !important;
+  }
+  .ant-picker-dropdown .ant-picker-cell:not(.ant-picker-cell-in-view) {
+    color: var(--vz-secondary-color) !important;
+  }
+  .ant-picker-dropdown :is(.ant-picker-header, .ant-picker-footer, .ant-picker-panel) {
+    border-color: var(--vz-border-color) !important;
+  }
+  .ant-picker-dropdown .ant-picker-cell:hover:not(.ant-picker-cell-selected) .ant-picker-cell-inner,
+  .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .bg-white:not(.gm-style *) {
+    background-color: var(--vz-secondary-bg) !important;
+  }
+
+  .text-dark:not(.badge):not(.btn) {
+    color: var(--vz-body-color) !important;
+  }
+}

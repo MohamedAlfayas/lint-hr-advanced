@@ -6,7 +6,7 @@ import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
   Col, Row, Label, Button, Input, Badge,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 
@@ -41,7 +41,7 @@ const SettingRow = ({ label, children, last = false }) => (
 );
 const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
-    <span style={{ display: "inline-block", width: 36, height: 20, borderRadius: 12, background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0 }}>
+    <span style={{ display: "inline-block", width: 36, height: 20, borderRadius: 12, background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0 }}>
       <span style={{ position: "absolute", top: 3, left: checked ? 18 : 3, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left 0.2s" }} />
     </span>
     {label && <span style={{ fontSize: 13 }}>{label}</span>}
@@ -149,7 +149,7 @@ const LeaveCreditPolicySettings = () => {
             </div>
             <h6 className="mb-1">No Leave Credit Policy Configured</h6>
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>Set how paid leave is credited, carried forward and encashed.</p>
-            <Button color="primary" onClick={handleNew}><i className="ri-add-line align-bottom me-1"></i> Configure Policy</Button>
+            <Button data-testid="leave-credit-policy-configure-policy-button" color="primary" onClick={handleNew}><i className="ri-add-line align-bottom me-1"></i> Configure Policy</Button>
           </div>
           {rules.length > 0 && <div className="mt-2"><ProrationRules rules={rules} /></div>}
         </CardBody>
@@ -169,10 +169,10 @@ const LeaveCreditPolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
+              <Button data-testid="leave-credit-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}><i className="ri-add-line fs-14"></i> New Version</Button>
+              <Button data-testid="leave-credit-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}><i className="ri-add-line fs-14"></i> New Version</Button>
             </>
           )}
         </div>
@@ -206,17 +206,18 @@ const LeaveCreditPolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing
-              ? <Input type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
+              ? <Input data-testid="leave-credit-policy-effective-date-input" type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
               : <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>}
           </SettingRow>
           <SettingRow label="Status">
             {isEditing
-              ? <div className="form-check form-switch mb-0"><Input className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} /></div>
+              ? <div className="form-check form-switch mb-0"><Input data-testid="leave-credit-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} /></div>
               : <ViewToggle checked={!!data.is_active} label={data.is_active ? "Active" : "Inactive"} />}
           </SettingRow>
           <SettingRow label="Credit Mode" last>
             {isEditing
-              ? <Select options={CREDIT_MODE} value={CREDIT_MODE.find((o) => o.value === form.credit_based)}
+              ? <Select
+                  testId="leave-credit-policy-credit-based" options={CREDIT_MODE} value={CREDIT_MODE.find((o) => o.value === form.credit_based)}
                   onChange={(o) => handleChange("credit_based", o.value)} styles={{ container: (p) => ({ ...p, width: 220 }) }} />
               : <Badge color="primary" pill style={{ fontSize: 12, padding: "4px 12px" }}>{CREDIT_MODE.find((o) => o.value === data.credit_based)?.label || "—"}</Badge>}
           </SettingRow>
@@ -227,13 +228,13 @@ const LeaveCreditPolicySettings = () => {
           {(isEditing ? form.credit_based : data.credit_based) ? (
             <SettingRow label="Monthly Credit (days)" last>
               {isEditing
-                ? <Input type="number" step="0.01" min="0" value={form.monthly_credit ?? ""} onChange={(e) => handleChange("monthly_credit", e.target.value)} style={{ width: 120 }} />
+                ? <Input data-testid="leave-credit-policy-monthly-credit-input" type="number" step="0.01" min="0" value={form.monthly_credit ?? ""} onChange={(e) => handleChange("monthly_credit", e.target.value)} style={{ width: 120 }} />
                 : <span style={{ fontSize: 13 }}>{data.monthly_credit ?? "—"}</span>}
             </SettingRow>
           ) : (
             <SettingRow label="Yearly Credit (days)" last>
               {isEditing
-                ? <Input type="number" step="0.01" min="0" value={form.yearly_credit ?? ""} onChange={(e) => handleChange("yearly_credit", e.target.value)} style={{ width: 120 }} />
+                ? <Input data-testid="leave-credit-policy-yearly-credit-input" type="number" step="0.01" min="0" value={form.yearly_credit ?? ""} onChange={(e) => handleChange("yearly_credit", e.target.value)} style={{ width: 120 }} />
                 : <span style={{ fontSize: 13 }}>{data.yearly_credit ?? "—"}</span>}
             </SettingRow>
           )}
@@ -243,19 +244,20 @@ const LeaveCreditPolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Period Boundary">
             {isEditing
-              ? <Select options={BOUNDARY} value={BOUNDARY.find((o) => o.value === form.boundary_type)}
+              ? <Select
+                  testId="leave-credit-policy-boundary-type" options={BOUNDARY} value={BOUNDARY.find((o) => o.value === form.boundary_type)}
                   onChange={(o) => handleChange("boundary_type", o.value)} styles={{ container: (p) => ({ ...p, width: 260 }) }} />
               : <span style={{ fontSize: 13 }}>{BOUNDARY.find((o) => o.value === data.boundary_type)?.label || "—"}</span>}
           </SettingRow>
           <SettingRow label="Carry Forward" last={!(isEditing ? form.carry_forward : data.carry_forward)}>
             {isEditing
-              ? <div className="form-check form-switch mb-0"><Input className="form-check-input" type="checkbox" checked={!!form.carry_forward} onChange={() => handleToggle("carry_forward")} /></div>
+              ? <div className="form-check form-switch mb-0"><Input data-testid="leave-credit-policy-carry-forward-checkbox" className="form-check-input" type="checkbox" checked={!!form.carry_forward} onChange={() => handleToggle("carry_forward")} /></div>
               : <ViewToggle checked={!!data.carry_forward} />}
           </SettingRow>
           {(isEditing ? form.carry_forward : data.carry_forward) && (
             <SettingRow label="Max Carry Forward (days, default)" last>
               {isEditing
-                ? <Input type="number" step="0.01" min="0" value={form.max_carry_forward ?? ""} onChange={(e) => handleChange("max_carry_forward", e.target.value)} style={{ width: 120 }} />
+                ? <Input data-testid="leave-credit-policy-max-carry-forward-input" type="number" step="0.01" min="0" value={form.max_carry_forward ?? ""} onChange={(e) => handleChange("max_carry_forward", e.target.value)} style={{ width: 120 }} />
                 : <span style={{ fontSize: 13 }}>{data.max_carry_forward ?? "—"}</span>}
             </SettingRow>
           )}
@@ -265,19 +267,20 @@ const LeaveCreditPolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Pay Remaining (encash, default)">
             {isEditing
-              ? <div className="form-check form-switch mb-0"><Input className="form-check-input" type="checkbox" checked={!!form.pay_remaining} onChange={() => handleToggle("pay_remaining")} />
+              ? <div className="form-check form-switch mb-0"><Input data-testid="leave-credit-policy-pay-remaining-checkbox" className="form-check-input" type="checkbox" checked={!!form.pay_remaining} onChange={() => handleToggle("pay_remaining")} />
                   <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{form.pay_remaining ? "Encash" : "Lapse"}</Label></div>
               : <ViewToggle checked={!!data.pay_remaining} label={data.pay_remaining ? "Encash" : "Lapse"} />}
           </SettingRow>
           <SettingRow label="Encashment Base">
             {isEditing
-              ? <Select options={ENCASH_BASE} value={ENCASH_BASE.find((o) => o.value === form.encashment_base)}
+              ? <Select
+                  testId="leave-credit-policy-encash" options={ENCASH_BASE} value={ENCASH_BASE.find((o) => o.value === form.encashment_base)}
                   onChange={(o) => handleChange("encashment_base", o.value)} styles={{ container: (p) => ({ ...p, width: 200 }) }} />
               : <span style={{ fontSize: 13 }}>{ENCASH_BASE.find((o) => o.value === data.encashment_base)?.label || "—"}</span>}
           </SettingRow>
           <SettingRow label="Per-day Divisor" last>
             {isEditing
-              ? <Input type="number" min="1" max="31" value={form.encashment_day_divisor ?? ""} onChange={(e) => handleChange("encashment_day_divisor", e.target.value)} style={{ width: 100 }} />
+              ? <Input data-testid="leave-credit-policy-encashment-day-divisor-input" type="number" min="1" max="31" value={form.encashment_day_divisor ?? ""} onChange={(e) => handleChange("encashment_day_divisor", e.target.value)} style={{ width: 100 }} />
               : <span style={{ fontSize: 13 }}>{data.encashment_day_divisor ?? "—"}</span>}
           </SettingRow>
         </div>
@@ -286,7 +289,8 @@ const LeaveCreditPolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Proration Rule" last>
             {isEditing
-              ? <Select options={ruleOptions} isClearable value={ruleOptions.find((o) => o.value === form.proration_rule) || null}
+              ? <Select
+                  testId="leave-credit-policy-calendar-day-default" options={ruleOptions} isClearable value={ruleOptions.find((o) => o.value === form.proration_rule) || null}
                   onChange={(o) => handleChange("proration_rule", o ? o.value : null)} placeholder="Calendar-day (default)"
                   styles={{ container: (p) => ({ ...p, width: 240 }) }} />
               : <span style={{ fontSize: 13 }}>{rules.find((r) => r.id === data.proration_rule)?.code || "Calendar-day (default)"}</span>}
@@ -295,8 +299,8 @@ const LeaveCreditPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top mb-4">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="leave-credit-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
+            <Button data-testid="leave-credit-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line align-middle me-1"></i>{loading ? "Saving…" : "Save Changes"}
             </Button>
           </div>

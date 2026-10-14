@@ -7,9 +7,17 @@
 // with antd month DatePicker + react-select Selects.
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Table, Card, CardHeader, Col, Row, Alert } from "reactstrap";
+import { PageSkeleton } from "../../../component/common/skeleton/Skeleton";
+import { Alert } from "reactstrap";
 import { DatePicker } from "antd";
-import Select from "react-select";
+import { IconButton, Tooltip, Typography } from "@mui/material";
+import {
+  ApvDate,
+  ApvLeaveType,
+  ApvStatus,
+} from "../../../component/common/approval/ApprovalCells";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import Select from "../../../shared/ui/TestableSelect";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { useDispatch } from "react-redux";
@@ -20,6 +28,9 @@ import EmployeeClaimModal from "./Modal/EmployeeClaimModal";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../../common/api/Api";
 import { MonthFormat } from "../../../common/constant/Constants";
+import AppTable from "../../../shared/ui/table/AppTable";
+import "./MyReimbursements.scss";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 dayjs.extend(customParseFormat);
 
 const fmt = (v) => {
@@ -27,12 +38,68 @@ const fmt = (v) => {
   return isNaN(n) ? "0.00" : n.toFixed(2);
 };
 
+const STATUS_TONES = {
+  approved: { tone: "success", icon: "ri-checkbox-circle-line" },
+  rejected: { tone: "danger", icon: "ri-close-circle-line" },
+  submitted: { tone: "warning", icon: "ri-time-line" },
+};
+
+const statusLabel = (status) => (status === "submitted" ? "Pending Approval" : status);
+
 const STATUS_OPTIONS = [
   { id: "",          label: "All Status",       value: "" },
   { id: "submitted", label: "Pending Approval", value: "submitted" },
   { id: "approved",  label: "Approved",         value: "approved" },
   { id: "rejected",  label: "Rejected",         value: "rejected" },
 ];
+
+const selectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: 40,
+    borderRadius: 12,
+    backgroundColor: "var(--vz-secondary-bg)",
+    borderColor: state.isFocused ? "var(--vz-primary)" : "var(--vz-border-color)",
+    boxShadow: state.isFocused ? "0 0 0 4px rgba(var(--vz-primary-rgb), 0.12)" : "none",
+    "&:hover": { borderColor: "color-mix(in srgb, var(--vz-primary) 50%, var(--vz-border-color))" },
+  }),
+  valueContainer: (base) => ({ ...base, paddingInline: 12 }),
+  singleValue: (base) => ({ ...base, color: "var(--vz-body-color)", fontWeight: 500 }),
+  input: (base) => ({ ...base, color: "var(--vz-body-color)" }),
+  placeholder: (base) => ({ ...base, color: "var(--vz-secondary-color)" }),
+  indicatorSeparator: () => ({ display: "none" }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? "var(--vz-primary)" : "var(--vz-secondary-color)",
+    transform: state.selectProps.menuIsOpen ? "rotate(180deg)" : "none",
+    transition: "transform .2s",
+  }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 20,
+    marginTop: 6,
+    overflow: "hidden",
+    borderRadius: 14,
+    border: "1px solid var(--vz-border-color)",
+    backgroundColor: "var(--vz-secondary-bg)",
+    boxShadow: "0 24px 48px -16px rgba(15, 23, 42, 0.28)",
+  }),
+  menuList: (base) => ({ ...base, padding: 6 }),
+  option: (base, state) => ({
+    ...base,
+    borderRadius: 9,
+    margin: "2px 0",
+    cursor: "pointer",
+    fontWeight: state.isSelected ? 600 : 500,
+    color: state.isSelected ? "#fff" : state.isFocused ? "var(--vz-primary)" : "var(--vz-body-color)",
+    background: state.isSelected
+      ? "linear-gradient(135deg, var(--vz-primary), var(--vz-info))"
+      : state.isFocused
+        ? "rgba(var(--vz-primary-rgb), 0.08)"
+        : "transparent",
+    "&:active": { backgroundColor: "rgba(var(--vz-primary-rgb), 0.15)" },
+  }),
+};
 
 const MyReimbursements = ({ employeeId, canSubmit = true }) => {
   const dispatch = useDispatch();
@@ -163,8 +230,102 @@ const MyReimbursements = ({ employeeId, canSubmit = true }) => {
 
   const total = visibleClaims.reduce((s, c) => s + parseFloat(c.computed_amount || 0), 0);
 
+  // Per-status totals respect the month + type filters but not the status filter,
+  // so the status pills always show what each choice would return.
+  const statusSummary = useMemo(() => {
+    const base = { submitted: { count: 0, amount: 0 }, approved: { count: 0, amount: 0 }, rejected: { count: 0, amount: 0 } };
+    claims
+      .filter((c) => !filterKeys.thisMonth || (c.claim_date || "").slice(0, 7) === filterKeys.thisMonth)
+      .filter((c) => filterKeys.type === "0" || String(c.reimbursement_type) === filterKeys.type)
+      .forEach((c) => {
+        const bucket = base[c.status];
+        if (!bucket) return;
+        bucket.count += 1;
+        bucket.amount += parseFloat(c.computed_amount || 0);
+      });
+    return base;
+  }, [claims, filterKeys.thisMonth, filterKeys.type]);
+
+  const activeFilterCount =
+    (filterKeys.thisMonth ? 1 : 0) + (filterKeys.status ? 1 : 0) + (filterKeys.type !== "0" ? 1 : 0);
+  const resetFilters = () => setFilterKeys({ thisMonth: "", status: "", type: "0" });
+
+  const columns = useMemo(() => {
+    const typeOf = (c) => types.find((x) => x.id === parseInt(c.reimbursement_type));
+    const inputText = (c) => {
+      const t = typeOf(c);
+      const isRate = (c.calculation_mode || t?.calculation_mode) === "rate_x_units";
+      return isRate && c.claim_data?.units
+        ? `${c.claim_data.units} ${c.unit_label || t?.meta?.unit_label} × ₹${t?.meta?.rate}`
+        : `₹${fmt(c.claim_data?.amount)}`;
+    };
+
+    return [
+      {
+        id: "type",
+        accessorFn: (c) => c.type_name || typeOf(c)?.name || "—",
+        header: "Type",
+        filterVariant: "select",
+        Cell: ({ cell }) => <ApvLeaveType name={cell.getValue()} />,
+        Footer: () => (visibleClaims.length > 0 ? <strong>Total</strong> : null),
+      },
+      {
+        accessorKey: "claim_date",
+        header: "Date",
+        Cell: ({ cell }) => <ApvDate value={cell.getValue()} />,
+      },
+      { id: "input", accessorFn: inputText, header: "Input" },
+      {
+        id: "computed_amount",
+        accessorFn: (c) => parseFloat(c.computed_amount || 0),
+        header: "Amount",
+        filterVariant: "range",
+        Cell: ({ row }) => (
+          <span className="fw-medium text-success">₹{fmt(row.original.computed_amount)}</span>
+        ),
+        exportValue: (c) => fmt(c.computed_amount),
+        Footer: () =>
+          visibleClaims.length > 0 ? (
+            <span className="fw-medium text-success">₹{fmt(total)}</span>
+          ) : null,
+      },
+      {
+        id: "status",
+        accessorFn: (c) => statusLabel(c.status),
+        header: "Status",
+        filterVariant: "select",
+        Cell: ({ row }) => {
+          const s = STATUS_TONES[row.original.status] || STATUS_TONES.submitted;
+          const label = String(statusLabel(row.original.status) || "");
+          return (
+            <ApvStatus
+              tone={s.tone}
+              icon={s.icon}
+              label={label.replace(/^\w/, (c) => c.toUpperCase())}
+            />
+          );
+        },
+      },
+      {
+        id: "notes",
+        accessorFn: (c) => c.claim_data?.description || "—",
+        header: "Notes",
+        Cell: ({ cell }) => (
+          <Tooltip title={cell.getValue()} placement="top-start" enterDelay={400}>
+            <Typography
+              variant="body2"
+              sx={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
+              {cell.getValue()}
+            </Typography>
+          </Tooltip>
+        ),
+      },
+    ];
+  }, [types, visibleClaims.length, total]);
+
   if (policyLoading) {
-    return <div className="text-center py-5 text-muted">Loading...</div>;
+    return <PageSkeleton testId="my-reimbursements-loading-skeleton" label="Loading reimbursements" />;
   }
 
   if (!policyId) {
@@ -177,136 +338,187 @@ const MyReimbursements = ({ employeeId, canSubmit = true }) => {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h5 className="mb-0">My Reimbursements</h5>
+      <div className="rmb-head">
+        <div className="apv-head">
+          <span className="apv-head-icon tone-success">
+            <i className="ri-wallet-3-line" />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <h5 className="apv-head-title">My Reimbursements</h5>
+            <span className="apv-head-sub">Submit expense claims and track their approval</span>
+          </div>
+        </div>
         {canSubmit && (
-          <button
-            type="button"
-            className="btn btn-success add-btn"
-            onClick={() => setClaimModal(true)}
-          >
-            <i className="ri-add-line align-bottom me-1" />New Claim
+          <button data-testid="my-reimbursements-new-claim-button" type="button" className="it-btn is-primary" onClick={() => setClaimModal(true)}>
+            <i className="ri-add-line" />
+            New Claim
           </button>
         )}
       </div>
 
-      {/* ── Filter bar (matches AttendanceFilter.jsx) ── */}
-      <Card>
-        <CardHeader className="border-0 rounded">
-          <Row className="g-2">
-            <Col xl={2}>
-              <DatePicker
-                value={filterKeys.thisMonth ? dayjs(filterKeys.thisMonth, MonthFormat) : null}
-                format={MonthFormat}
-                picker="month"
-                allowClear={true}
-                placeholder="Select Month"
-                className="form-control"
-                onChange={handleDateRangeChange}
-              />
-            </Col>
-
-            <Col xl={2}>
-              <Select
-                options={STATUS_OPTIONS}
-                placeholder="Select Status"
-                value={STATUS_OPTIONS.find((d) => d.id === filterKeys.status)}
-                onChange={handleStatusChange}
-              />
-            </Col>
-
-            <Col xl={2}>
-              <Select
-                options={typeOptions}
-                placeholder="Select Type"
-                value={typeOptions.find((d) => d.id === filterKeys.type)}
-                onChange={handleTypeChange}
-              />
-            </Col>
-          </Row>
-        </CardHeader>
-      </Card>
-
-      {visibleClaims.length > 0 && (
-        <div className="d-flex gap-3 my-3 flex-wrap">
-          <div className="border rounded p-2 px-3">
-            <small className="text-muted d-block">Total shown</small>
-            <span className="fw-medium text-success fs-5">₹{fmt(total)}</span>
-          </div>
-          <div className="border rounded p-2 px-3">
-            <small className="text-muted d-block">Claims</small>
-            <span className="fw-medium fs-5">{visibleClaims.length}</span>
+      <div className="rmb-stats">
+        <div className="rmb-stat tone-success">
+          <span className="rmb-stat-icon">
+            <i className="ri-wallet-3-line" />
+          </span>
+          <div>
+            <small>Total shown</small>
+            <b>₹{fmt(total)}</b>
           </div>
         </div>
-      )}
+        <div className="rmb-stat tone-primary">
+          <span className="rmb-stat-icon">
+            <i className="ri-file-list-3-line" />
+          </span>
+          <div>
+            <small>Claims</small>
+            <b>{visibleClaims.length}</b>
+          </div>
+        </div>
+        <div className="rmb-stat tone-warning">
+          <span className="rmb-stat-icon">
+            <i className="ri-time-line" />
+          </span>
+          <div>
+            <small>Pending</small>
+            <b>₹{fmt(statusSummary.submitted.amount)}</b>
+            <em>{statusSummary.submitted.count} claims</em>
+          </div>
+        </div>
+        <div className="rmb-stat tone-info">
+          <span className="rmb-stat-icon">
+            <i className="ri-checkbox-circle-line" />
+          </span>
+          <div>
+            <small>Approved</small>
+            <b>₹{fmt(statusSummary.approved.amount)}</b>
+            <em>{statusSummary.approved.count} claims</em>
+          </div>
+        </div>
+      </div>
 
-      <Table bordered hover responsive className="align-middle" style={{ fontSize: 14 }}>
-        <thead className="table-light">
-          <tr>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Input</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Notes</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={7} className="text-center py-4 text-muted">Loading...</td></tr>
-          ) : visibleClaims.length === 0 ? (
-            <tr><td colSpan={7} className="text-center py-4 text-muted">No claims found.</td></tr>
-          ) : visibleClaims.map((c) => {
-            const t      = types.find((x) => x.id === parseInt(c.reimbursement_type));
-            const isRate = (c.calculation_mode || t?.calculation_mode) === "rate_x_units";
-            return (
-              <tr key={c.id}>
-                <td>{c.type_name || t?.name || "—"}</td>
-                <td>{c.claim_date}</td>
-                <td>
-                  {isRate && c.claim_data?.units
-                    ? `${c.claim_data.units} ${c.unit_label || t?.meta?.unit_label} × ₹${t?.meta?.rate}`
-                    : `₹${fmt(c.claim_data?.amount)}`}
-                </td>
-                <td className="fw-medium text-success">₹{fmt(c.computed_amount)}</td>
-                <td>
-                  <span className={`badge text-uppercase px-2 py-1 ${
-                    c.status === "approved"  ? "bg-success-subtle text-success" :
-                    c.status === "rejected"  ? "bg-danger-subtle  text-danger"  :
-                                              "bg-warning-subtle text-warning"
-                  }`}>
-                    {c.status === "submitted" ? "Pending Approval" : c.status}
+      <div className="rmb-filters">
+        <div className="rmb-filters-title">
+          <i className="ri-filter-3-line" />
+          Filters
+          {activeFilterCount > 0 && <span className="rmb-filters-badge">{activeFilterCount}</span>}
+        </div>
+
+        <div className="rmb-filters-row">
+          <div className="rmb-field">
+            <label>
+              <i className="ri-calendar-2-line" /> Month
+            </label>
+            <DatePicker
+              value={filterKeys.thisMonth ? dayjs(filterKeys.thisMonth, MonthFormat) : null}
+              format={MonthFormat}
+              picker="month"
+              allowClear={true}
+              placeholder="All months"
+              onChange={handleDateRangeChange}
+              style={{ width: "100%", height: 40 }}
+            />
+          </div>
+
+          <div className="rmb-field">
+            <label>
+              <i className="ri-checkbox-circle-line" /> Status
+            </label>
+            <Select
+              testId="my-reimbursements-status"
+              options={STATUS_OPTIONS}
+              value={STATUS_OPTIONS.find((o) => o.id === filterKeys.status)}
+              onChange={handleStatusChange}
+              styles={selectStyles}
+              classNamePrefix="rmb-select"
+              isSearchable={false}
+              formatOptionLabel={(o) => (
+                <span className={`rmb-opt tone-${o.id ? STATUS_TONES[o.id].tone : "primary"}`}>
+                  <i className={o.id ? STATUS_TONES[o.id].icon : "ri-apps-2-line"} />
+                  <em>{o.label}</em>
+                  <span className="rmb-opt-count">
+                    {o.id ? statusSummary[o.id].count : claims.length}
                   </span>
-                </td>
-                <td style={{ maxWidth: 160 }}>
-                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {c.claim_data?.description || "—"}
-                  </div>
-                </td>
-                <td className="text-center">
-                  {canSubmit && c.status === "submitted" ? (
-                    <i
-                      className="ri-delete-bin-line text-danger"
-                      style={{ cursor: "pointer" }}
-                      title="Withdraw claim"
-                      onClick={() => handleDeleteClaim(c)}
-                    />
-                  ) : "—"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        {visibleClaims.length > 0 && (
-          <tfoot>
-            <tr className="table-light">
-              <td colSpan={3} className="fw-medium">Total</td>
-              <td colSpan={4} className="fw-medium text-success">₹{fmt(total)}</td>
-            </tr>
-          </tfoot>
+                </span>
+              )}
+            />
+          </div>
+
+          <div className="rmb-field">
+            <label>
+              <i className="ri-price-tag-3-line" /> Type
+            </label>
+            <Select
+              testId="my-reimbursements-all-types"
+              options={typeOptions}
+              placeholder="All types"
+              value={typeOptions.find((d) => d.id === filterKeys.type)}
+              onChange={handleTypeChange}
+              styles={selectStyles}
+              isSearchable
+            />
+          </div>
+        </div>
+
+        {activeFilterCount > 0 && (
+          <div className="rmb-active">
+            {filterKeys.thisMonth && (
+              <span className="rmb-chip">
+                <i className="ri-calendar-2-line" />
+                {dayjs(filterKeys.thisMonth, MonthFormat).format("MMM YYYY")}
+                <button data-testid="my-reimbursements-remove-month-filter-button" type="button" onClick={() => setFilterKeys((p) => ({ ...p, thisMonth: "" }))} aria-label="Remove month filter">
+                  <i className="ri-close-line" />
+                </button>
+              </span>
+            )}
+            {filterKeys.status && (
+              <span className="rmb-chip">
+                <i className={STATUS_TONES[filterKeys.status].icon} />
+                {STATUS_OPTIONS.find((o) => o.id === filterKeys.status)?.label}
+                <button data-testid="my-reimbursements-remove-status-filter-button" type="button" onClick={() => setFilterKeys((p) => ({ ...p, status: "" }))} aria-label="Remove status filter">
+                  <i className="ri-close-line" />
+                </button>
+              </span>
+            )}
+            {filterKeys.type !== "0" && (
+              <span className="rmb-chip">
+                <i className="ri-price-tag-3-line" />
+                {typeOptions.find((o) => o.id === filterKeys.type)?.label}
+                <button data-testid="my-reimbursements-remove-type-filter-button" type="button" onClick={() => setFilterKeys((p) => ({ ...p, type: "0" }))} aria-label="Remove type filter">
+                  <i className="ri-close-line" />
+                </button>
+              </span>
+            )}
+            <button data-testid="my-reimbursements-reset-all-button" type="button" className="rmb-reset" onClick={resetFilters}>
+              <i className="ri-refresh-line" />
+              Reset all
+            </button>
+          </div>
         )}
-      </Table>
+      </div>
+
+      <AppTable
+        columns={columns}
+        data={visibleClaims}
+        isLoading={loading}
+        onRefresh={fetchClaims}
+        exportFileName="my-reimbursements"
+        emptyMessage="No claims found."
+        enableRowActions
+        positionActionsColumn="last"
+        displayColumnDefOptions={{ "mrt-row-actions": { header: "Action", size: 80 } }}
+        renderRowActions={({ row }) =>
+          canSubmit && row.original.status === "submitted" ? (
+            <Tooltip title="Withdraw claim">
+              <IconButton data-testid="my-reimbursements-delete-outline-button" size="small" color="error" onClick={() => handleDeleteClaim(row.original)}>
+                <DeleteOutlineRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : (
+            "—"
+          )
+        }
+      />
 
       <EmployeeClaimModal
         isOpen={claimModal}

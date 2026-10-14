@@ -12,6 +12,11 @@ import { setStatus } from "../../../redux/reducers/ChildReducer/StatusReducer";
 import { status_component_name } from "../../../common/constant/Constants";
 
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
+import {
+  ApvActive,
+  ApvColorTag,
+  ApvReason,
+} from "../../../component/common/approval/ApprovalCells";
 
 const Status = () => {
   const dispatch = useDispatch();
@@ -25,36 +30,6 @@ const Status = () => {
     dispatch(setStatus(localStatus));
   }, [dispatch]);
 
-  const isValidColor = (color) => {
-    const s = new Option().style;
-    s.color = color;
-    return s.color !== "";
-  };
-
-  const getContrastTextColor = (backgroundColor) => {
-    if (!backgroundColor || !isValidColor(backgroundColor)) {
-      return "#FFFFFF";
-    }
-
-    const temp = document.createElement("div");
-    temp.style.color = backgroundColor;
-    document.body.appendChild(temp);
-
-    const rgb = window.getComputedStyle(temp).color;
-    document.body.removeChild(temp);
-
-    const matches = rgb.match(/\d+/g);
-
-    if (!matches || matches.length < 3) {
-      return "#FFFFFF";
-    }
-
-    const [r, g, b] = matches.map(Number);
-
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-    return brightness > 128 ? "#000000" : "#FFFFFF";
-  };
   // ================= TABLE COLUMNS =================
   const additionalColumn = useMemo(
     () => [
@@ -63,55 +38,20 @@ const Status = () => {
         id: "name",
         filterable: false,
         accessor: (obj) => (
-          <span
-            className="badge text-uppercase"
-            style={{
-              // backgroundColor: obj.color || "#6c757d",
-              backgroundColor: isValidColor(obj.color) ? obj.color : "#000000",
-              // color: "#fff",
-              color: getContrastTextColor(obj.color),
-              padding: "6px 10px",
-              fontSize: "11px",
-              fontWeight: 600,
-              letterSpacing: "0.5px",
-            }}
-          >
-            {obj.name}
-          </span>
+          <ApvColorTag color={obj.color} label={obj.name} icon="ri-checkbox-circle-line" />
         ),
       },
-
       {
         Header: "Description",
-        accessor: "description",
-        filterable: false,
         id: "description",
-
-        Cell: ({ row }) => {
-          return row.original.description || "-";
-        },
+        filterable: false,
+        accessor: (obj) => <ApvReason text={obj.description} />,
       },
-
       {
         Header: "Status",
         id: "status",
         filterable: false,
-
-        Cell: ({ row }) => {
-          const obj = row.original;
-
-          const status = obj.status ? "Active" : "Inactive";
-
-          const statusClass = obj.status ? "success" : "warning";
-
-          return (
-            <span
-              className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-            >
-              {status}
-            </span>
-          );
-        },
+        accessor: (obj) => <ApvActive active={obj.status} />,
       },
     ],
     [],

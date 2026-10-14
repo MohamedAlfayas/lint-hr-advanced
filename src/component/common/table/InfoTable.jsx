@@ -10,9 +10,6 @@ import {
   Col,
   Container,
   CardHeader,
-  Nav,
-  NavItem,
-  NavLink,
   Row,
   Label,
   Modal,
@@ -24,13 +21,14 @@ import {
   DropdownToggle,
   DropdownMenu,
   DropdownItem,
-  Badge,
   Button,
 } from "reactstrap";
-
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 import dayjs from "dayjs";
 import TableContainer from "../../../component/common/table/TableContainer";
+import { rowTestId, testId, itemTestKey } from "../../../shared/testing/testId";
+import { testIdModuleFor } from "../../../shared/testing/testIdModules";
 import DeleteModal from "../../../component/common/modal/DeleteModal";
 import Loader from "../../../component/common/loader/Loader";
 import ExportCSV from "../../../component/common/export/ExportCSV";
@@ -38,7 +36,6 @@ import ExportCSV from "../../../component/common/export/ExportCSV";
 import { useEffect } from "react";
 import { useCallback } from "react";
 
-import classnames from "classnames";
 import { isEmpty } from "lodash";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -135,9 +132,321 @@ import {
 } from "../../../redux/reducers/ChildReducer/HolidayReducer";
 import { removeLeaveType } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import { RemoveLocalStorageData } from "../../../meta/RemoveLocalStorageData";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import ReorderStatusModal from "./ReorderStatusModal";
 import { setStatus } from "../../../redux/reducers/ChildReducer/StatusReducer";
 defineElement(loadAnimation);
+
+const PAGE_META = {
+  employee: { title: "Employees", singular: "Employee", icon: "ri-team-line", tone: "primary", sub: "Manage your workforce" },
+  role: { title: "Roles", singular: "Role", icon: "ri-shield-user-line", tone: "danger", sub: "Access & permissions" },
+  work_schedule: { title: "Work Schedules", singular: "Work Schedule", icon: "ri-calendar-2-line", tone: "info", sub: "Shifts & working days" },
+  holiday: { title: "Holidays", singular: "Holiday", icon: "ri-sun-line", tone: "warning", sub: "Company holiday calendar" },
+  leave_application: { title: "Leave Applications", singular: "Leave Application", icon: "ri-calendar-event-line", tone: "success", sub: "Your leave requests" },
+  leave_types: { title: "Leave Types", singular: "Leave Type", icon: "ri-price-tag-3-line", tone: "info", sub: "Leave policies & quotas" },
+  custom_fields: { title: "Custom Fields", singular: "Custom Field", icon: "ri-input-method-line", tone: "secondary", sub: "Extra form fields" },
+  CustomStatusForm: { title: "Custom Status", singular: "Custom Status", icon: "ri-emotion-line", tone: "warning", sub: "Employee status options" },
+  Status: { title: "Task Status", singular: "Status", icon: "ri-checkbox-circle-line", tone: "success", sub: "Task workflow stages" },
+  Priority: { title: "Priorities", singular: "Priority", icon: "ri-flag-2-line", tone: "danger", sub: "Task priority levels" },
+  Clients: { title: "Clients", singular: "Client", icon: "ri-building-4-line", tone: "info", sub: "Customer accounts" },
+  Projects: { title: "Projects", singular: "Project", icon: "ri-folder-chart-line", tone: "primary", sub: "Track delivery & progress" },
+  Task: { title: "Tasks", singular: "Task", icon: "ri-task-line", tone: "success", sub: "Work items & assignments" },
+  "Contact Group": { title: "Contact Groups", singular: "Contact Group", icon: "ri-contacts-book-line", tone: "info", sub: "Grouped contacts" },
+  Contacts: { title: "Contacts", singular: "Contact", icon: "ri-contacts-line", tone: "primary", sub: "People & companies" },
+  custom_form: { title: "Custom Forms", singular: "Custom Form", icon: "ri-file-list-3-line", tone: "secondary", sub: "Build & share forms" },
+  "Assign Custom Form": { title: "Assigned Forms", singular: "Assignment", icon: "ri-file-user-line", tone: "info", sub: "Form assignments" },
+};
+
+const getPageMeta = (formname) => {
+  if (PAGE_META[formname]) return PAGE_META[formname];
+  const pretty = String(formname || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return { title: pretty, singular: pretty, icon: "ri-table-line", tone: "primary", sub: "" };
+};
+
+const TAB_TONES = {
+  all: "primary",
+  active: "success",
+  inactive: "danger",
+  pending: "warning",
+  approved: "success",
+  rejected: "danger",
+  cancelled: "secondary",
+  canceled: "secondary",
+  completed: "success",
+  open: "info",
+};
+const tabToneOf = (label) => TAB_TONES[String(label || "").trim().toLowerCase()] || "info";
+
+// Rows carry many hidden fields (ids, urls, settings); search only the text a
+// user sees, matching from the start of the value.
+// Last name is only matched as part of the full name, so "d" doesn't pick up
+// "Minish D".
+const SEARCH_TEXT_KEYS = [
+  "first_name",
+  "name",
+  "title",
+  "email",
+  "emp_id",
+  "company_name",
+  "client_name",
+  "project_name",
+];
+const SEARCH_SKIP_KEYS = new Set(["id", "created_by", "updated_by", "work_schedule_id_list"]);
+
+const rowMatchesSearch = (row, rawSearch) => {
+  const q = String(rawSearch || "").trim().toLowerCase();
+  if (!q) return true;
+  const startsWithQ = (v) => v != null && String(v).trim().toLowerCase().startsWith(q);
+
+  if (row.date) {
+    const formatted = dayjs(row.date).format("DD-MM-YYYY");
+    const compactQ = q.replace(/[-/]/g, "");
+    if (formatted.startsWith(q) || (compactQ && formatted.replace(/-/g, "").startsWith(compactQ))) {
+      return true;
+    }
+  }
+
+  const textKeys = SEARCH_TEXT_KEYS.filter((k) => k in row);
+  if (textKeys.length) {
+    if (row.first_name && startsWithQ(`${row.first_name} ${row.last_name || ""}`)) return true;
+    if (row.role && typeof row.role === "object" && startsWithQ(row.role.name)) return true;
+    return textKeys.some((k) => startsWithQ(row[k]));
+  }
+
+  return Object.entries(row).some(
+    ([key, value]) =>
+      !SEARCH_SKIP_KEYS.has(key) &&
+      !key.endsWith("_id") &&
+      key !== "date" &&
+      value != null &&
+      typeof value !== "object" &&
+      startsWithQ(value),
+  );
+};
+
+const toLocalISO = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const lastWorkingDayHtml = (message) => {
+  const today = toLocalISO(new Date());
+  return `
+    <p class="lwd-msg">${message}</p>
+    <div class="lwd">
+      <div class="lwd-label">
+        <span><i class="ri-logout-box-r-line"></i> Last working day</span>
+        <em>Optional</em>
+      </div>
+      <div class="lwd-field" id="lwd-field" data-testid="employee-last-working-day-trigger" role="button" tabindex="0">
+        <span class="lwd-icon"><i class="ri-calendar-2-line"></i></span>
+        <span class="lwd-text">
+          <b id="lwd-display" data-testid="employee-last-working-day-selected-value"></b>
+          <small id="lwd-rel"></small>
+        </span>
+        <button type="button" class="lwd-clear" id="lwd-clear" data-testid="employee-last-working-day-clear-button" title="Clear date"><i class="ri-close-line"></i></button>
+        <i class="ri-arrow-down-s-line lwd-caret"></i>
+        <input type="hidden" id="lwd-input" data-testid="employee-last-working-day-input" value="${today}" />
+      </div>
+      <div class="lwd-cal" id="lwd-cal" aria-hidden="true"><div class="lwd-cal-inner" id="lwd-cal-inner"></div></div>
+      <div class="lwd-chips">
+        <button type="button" data-lwd="today" data-testid="employee-last-working-day-today-option">Today</button>
+        <button type="button" data-lwd="yesterday" data-testid="employee-last-working-day-yesterday-option">Yesterday</button>
+        <button type="button" data-lwd="eom" data-testid="employee-last-working-day-end-of-last-month-option">End of last month</button>
+      </div>
+      <small class="lwd-hint"><i class="ri-information-line"></i> Payroll will pay this employee up to this date.</small>
+    </div>`;
+};
+
+const bindLastWorkingDayField = (popup) => {
+  const input = popup.querySelector("#lwd-input");
+  const field = popup.querySelector("#lwd-field");
+  const display = popup.querySelector("#lwd-display");
+  const rel = popup.querySelector("#lwd-rel");
+  const clear = popup.querySelector("#lwd-clear");
+  const chips = popup.querySelectorAll("[data-lwd]");
+  if (!input || !field) return;
+
+  const presets = () => {
+    const now = new Date();
+    const y = new Date(now);
+    y.setDate(now.getDate() - 1);
+    return {
+      today: toLocalISO(now),
+      yesterday: toLocalISO(y),
+      eom: toLocalISO(new Date(now.getFullYear(), now.getMonth(), 0)),
+    };
+  };
+
+  const render = () => {
+    const v = input.value;
+    field.classList.toggle("is-empty", !v);
+    if (!v) {
+      display.textContent = "No date selected";
+      rel.textContent = "Leave blank if unknown";
+    } else {
+      const d = new Date(`${v}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diff = Math.round((today - d) / 86400000);
+      display.textContent = d.toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      rel.textContent = diff === 0 ? "Today" : diff === 1 ? "Yesterday" : `${diff} days ago`;
+    }
+    const p = presets();
+    chips.forEach((c) => c.classList.toggle("is-active", p[c.dataset.lwd] === v));
+  };
+
+  // ── Custom calendar ──
+  const cal = popup.querySelector("#lwd-cal");
+  const calInner = popup.querySelector("#lwd-cal-inner");
+  const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  const MONTHS_SHORT = Array.from({ length: 12 }, (_, i) =>
+    new Date(2000, i, 1).toLocaleDateString(undefined, { month: "short" }),
+  );
+  const todayIso = () => toLocalISO(new Date());
+  let mode = "days";
+  let view = new Date();
+  view.setDate(1);
+
+  const syncViewToValue = () => {
+    const base = input.value ? new Date(`${input.value}T00:00:00`) : new Date();
+    view = new Date(base.getFullYear(), base.getMonth(), 1);
+  };
+
+  const drawCalendar = () => {
+    const tIso = todayIso();
+    const now = new Date();
+    const y = view.getFullYear();
+    const m = view.getMonth();
+    const atMaxMonth = y > now.getFullYear() || (y === now.getFullYear() && m >= now.getMonth());
+    const atMaxYear = y >= now.getFullYear();
+
+    if (mode === "months") {
+      const months = MONTHS_SHORT.map((label, i) => {
+        const future = y > now.getFullYear() || (y === now.getFullYear() && i > now.getMonth());
+        const cls = [
+          "lwd-cal-month",
+          i === m ? "is-selected" : "",
+          y === now.getFullYear() && i === now.getMonth() ? "is-today" : "",
+        ].join(" ");
+        return `<button type="button" class="${cls}" data-month="${i}" data-testid="employee-last-working-day-month-${label.toLowerCase()}-button" ${future ? "disabled" : ""}>${label}</button>`;
+      }).join("");
+      calInner.innerHTML = `
+        <div class="lwd-cal-head">
+          <button type="button" class="lwd-cal-nav" data-nav="-12" data-testid="employee-last-working-day-previous-year-button" aria-label="Previous year"><i class="ri-arrow-left-s-line"></i></button>
+          <button type="button" class="lwd-cal-title" data-mode="days" data-testid="employee-last-working-day-days-view-button">${y}</button>
+          <button type="button" class="lwd-cal-nav" data-nav="12" data-testid="employee-last-working-day-next-year-button" aria-label="Next year" ${atMaxYear ? "disabled" : ""}><i class="ri-arrow-right-s-line"></i></button>
+        </div>
+        <div class="lwd-cal-months">${months}</div>`;
+      return;
+    }
+
+    const first = new Date(y, m, 1);
+    const start = new Date(y, m, 1 - first.getDay());
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const iso = toLocalISO(d);
+      const outside = d.getMonth() !== m;
+      const future = iso > tIso;
+      const cls = [
+        "lwd-cal-day",
+        outside ? "is-outside" : "",
+        iso === tIso ? "is-today" : "",
+        iso === input.value ? "is-selected" : "",
+        d.getDay() === 0 || d.getDay() === 6 ? "is-weekend" : "",
+      ].join(" ");
+      cells.push(
+        `<button type="button" class="${cls}" data-date="${iso}" data-testid="employee-last-working-day-day-${iso}-button" ${future ? "disabled" : ""}>${d.getDate()}</button>`,
+      );
+    }
+    const title = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    calInner.innerHTML = `
+      <div class="lwd-cal-head">
+        <button type="button" class="lwd-cal-nav" data-nav="-1" data-testid="employee-last-working-day-previous-month-button" aria-label="Previous month"><i class="ri-arrow-left-s-line"></i></button>
+        <button type="button" class="lwd-cal-title" data-mode="months" data-testid="employee-last-working-day-months-view-button">${title}<i class="ri-arrow-down-s-line"></i></button>
+        <button type="button" class="lwd-cal-nav" data-nav="1" data-testid="employee-last-working-day-next-month-button" aria-label="Next month" ${atMaxMonth ? "disabled" : ""}><i class="ri-arrow-right-s-line"></i></button>
+      </div>
+      <div class="lwd-cal-week">${WEEKDAYS.map((w) => `<span>${w}</span>`).join("")}</div>
+      <div class="lwd-cal-grid">${cells.join("")}</div>
+      <div class="lwd-cal-foot">
+        <button type="button" data-act="clear" data-testid="employee-last-working-day-panel-clear-button"><i class="ri-delete-back-2-line"></i> Clear</button>
+        <button type="button" data-act="today" data-testid="employee-last-working-day-panel-today-button" class="is-primary"><i class="ri-focus-3-line"></i> Today</button>
+      </div>`;
+  };
+
+  const setOpen = (open) => {
+    cal.classList.toggle("is-open", open);
+    field.classList.toggle("is-open", open);
+    cal.setAttribute("aria-hidden", open ? "false" : "true");
+    if (open) {
+      mode = "days";
+      syncViewToValue();
+      drawCalendar();
+    }
+  };
+  const toggleOpen = () => setOpen(!cal.classList.contains("is-open"));
+
+  calInner.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn || btn.disabled) return;
+    if (btn.dataset.nav) {
+      view = new Date(view.getFullYear(), view.getMonth() + Number(btn.dataset.nav), 1);
+      drawCalendar();
+    } else if (btn.dataset.mode) {
+      mode = btn.dataset.mode;
+      drawCalendar();
+    } else if (btn.dataset.month) {
+      view = new Date(view.getFullYear(), Number(btn.dataset.month), 1);
+      mode = "days";
+      drawCalendar();
+    } else if (btn.dataset.date) {
+      input.value = btn.dataset.date;
+      render();
+      setOpen(false);
+    } else if (btn.dataset.act === "clear") {
+      input.value = "";
+      render();
+      setOpen(false);
+    } else if (btn.dataset.act === "today") {
+      input.value = todayIso();
+      render();
+      setOpen(false);
+    }
+  });
+
+  field.addEventListener("click", toggleOpen);
+  field.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleOpen();
+    }
+  });
+  clear.addEventListener("click", (e) => {
+    e.stopPropagation();
+    input.value = "";
+    render();
+    if (cal.classList.contains("is-open")) drawCalendar();
+  });
+  chips.forEach((c) =>
+    c.addEventListener("click", () => {
+      input.value = presets()[c.dataset.lwd];
+      render();
+      if (cal.classList.contains("is-open")) {
+        syncViewToValue();
+        drawCalendar();
+      }
+    }),
+  );
+  render();
+};
 
 const InfoTable = ({
   additionalColumn,
@@ -153,6 +462,7 @@ const InfoTable = ({
   initialActiveTab,
   onChangeLeave,
   serverPagination, // ✅ ADD THIS
+  loading = false,
   ...props
 }) => {
   const dispatch = useDispatch();
@@ -229,12 +539,7 @@ const InfoTable = ({
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderList, setReorderList] = useState([]);
 
-  const getValidColor = (color) => {
-    const option = new Option();
-    option.style.color = color;
-
-    return option.style.color ? color : "#000000";
-  };
+  const tidModule = testIdModuleFor(formname);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -278,6 +583,7 @@ const InfoTable = ({
     }
 
     const result = await Swal.fire({
+      testId: testId(tidModule, "delete"),
       title: `Delete ${entityName}?`,
       text: "This action cannot be undone.",
       icon: "warning",
@@ -292,6 +598,7 @@ const InfoTable = ({
 
     try {
       Swal.fire({
+        testId: testId(tidModule, "deleting"),
         title: "Deleting...",
         allowOutsideClick: false,
         allowEscapeKey: false,
@@ -312,6 +619,7 @@ const InfoTable = ({
       RemoveLocalStorageData(storageKey, id);
 
       await Swal.fire({
+        testId: testId(tidModule, "deleted"),
         title: "Deleted!",
         text: response?.data?.message || `${entityName} Deleted Successfully`,
         icon: "success",
@@ -321,6 +629,7 @@ const InfoTable = ({
       Swal.close();
 
       Swal.fire({
+        testId: testId(tidModule, "delete-failed"),
         title: "Error!",
         text:
           error?.response?.data?.message ||
@@ -340,49 +649,7 @@ const InfoTable = ({
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(new Date(currentYear, 0, 1));
 
-  // Checked All
-  const checkedAll = useCallback((e) => {
-    const checkall = document.getElementById("checkBoxAll");
-    const ele = document.querySelectorAll(".dataCheckBox:not(:disabled)");
-    const checkboxesArray = Array.from(ele);
-
-    checkboxesArray.forEach((checkbox) => {
-      if (e.target.checked) {
-        checkbox.checked = true;
-        setSelectedGroupIds((prevIds) => [
-          ...prevIds,
-          parseInt(checkbox.value),
-        ]);
-      } else {
-        checkbox.checked = false;
-        setSelectedGroupIds([]);
-      }
-    });
-
-    deleteCheckbox();
-    approveRejectCheckbox();
-  }, []);
-
-  function generateOptions(maxValue, selectedValue) {
-    let options = "";
-    for (let i = 0; i < maxValue; i++) {
-      const selected = selectedValue && i === selectedValue ? "selected" : "";
-      options += `<option value="${i}" ${selected}>${i}</option>`;
-    }
-    return options;
-  }
-
-  const resetCheckBox = () => {
-    const checkall = document.getElementById("checkBoxAll");
-    const ele = document.querySelectorAll(".dataCheckBox:not(:disabled)");
-    const checkboxesArray = Array.from(ele);
-    checkboxesArray.forEach((checkbox) => {
-      checkbox.checked = false;
-      setSelectedGroupIds([]);
-    });
-    deleteCheckbox();
-    approveRejectCheckbox();
-  };
+  const resetCheckBox = () => setSelectedGroupIds([]);
 
   const handleApproval = async (orderData) => {
     let employee_first_name =
@@ -399,6 +666,36 @@ const InfoTable = ({
     let selectedMinute = minutes;
     let textValue;
 
+    const stepper = (id, value, max, step, unit) => `
+      <div class="apv-step">
+        <button type="button" class="apv-step-btn" data-target="${id}" data-step="-${step}" data-testid="${testId(tidModule, "approve", id, "decrease-button")}" aria-label="Decrease">
+          <i class="ri-subtract-line"></i>
+        </button>
+        <div class="apv-step-field">
+          <input id="${id}" data-testid="${testId(tidModule, "approve", id, "input")}" type="number" min="0" max="${max}" value="${value}" class="apv-step-input" />
+          <span class="apv-step-unit">${unit}</span>
+        </div>
+        <button type="button" class="apv-step-btn" data-target="${id}" data-step="${step}" data-testid="${testId(tidModule, "approve", id, "increase-button")}" aria-label="Increase">
+          <i class="ri-add-line"></i>
+        </button>
+      </div>`;
+
+    const paidHrBlock = `
+      <div class="apv-paid">
+        <div class="apv-paid-label"><i class="ri-time-line"></i> Edit paid hours</div>
+        <div class="apv-paid-fields">
+          ${stepper("select-hour", hours, 23, 1, "hrs")}
+          <span class="apv-paid-colon">:</span>
+          ${stepper("select-minute", minutes, 59, 5, "min")}
+        </div>
+      </div>`;
+
+    const clampInput = (input) => {
+      const max = Number(input.max) || 0;
+      const value = parseInt(input.value, 10);
+      input.value = Number.isNaN(value) ? 0 : Math.min(max, Math.max(0, value));
+    };
+
     let content =
       formname === leave_approval_component_name ||
       formname === leave_pending_table
@@ -412,17 +709,7 @@ const InfoTable = ({
             ${
               formname === attendance_approval_component_name ||
               formname === attendance_pending_table
-                ? `<span style="display: inline-block; margin-top: 20px;">
-                  <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
-                  <b className="mt-2 me-1 ms-2">H</b>
-                  <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
-                    ${generateOptions(24, hours)}
-                  </Select>
-                  <b className="mt-2 me-1 ms-2">M</b>
-                  <Select id="select-minute" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
-                    ${generateOptions(60, minutes)}
-                  </Select>
-                </span>`
+                ? paidHrBlock
                 : undefined
             }
           </div>`
@@ -434,23 +721,14 @@ const InfoTable = ({
             ${
               formname === attendance_approval_component_name ||
               formname === attendance_pending_table
-                ? `<span style="display: inline-block; margin-top: 20px;">
-                  <label for="select-hour" style="display: inline-block; margin-right: 5px;">Edit Paid Hr:</label>      
-                  <b className="mt-2 me-1 ms-2">H</b>
-                  <Select id="select-hour" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
-                    ${generateOptions(24, hours)}
-                  </Select>
-                  <b className="mt-2 me-1 ms-2">M</b>
-                  <Select id="select-minute" class="swal2-input" style="display: inline-block; width: auto; margin-left: 5px;">
-                    ${generateOptions(60, minutes)}
-                  </Select>
-                </span>`
+                ? paidHrBlock
                 : undefined
             }
           </div>`;
     let btnText = "Yes, Approve";
 
     Swal.fire({
+      testId: testId(tidModule, "approve"),
       title: "Confirmation",
       html: content,
       icon: "info",
@@ -487,6 +765,19 @@ const InfoTable = ({
               }
             }
           : undefined,
+      didOpen: (popup) => {
+        popup.querySelectorAll(".apv-step-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const input = popup.querySelector(`#${btn.dataset.target}`);
+            if (!input) return;
+            input.value = (parseInt(input.value, 10) || 0) + Number(btn.dataset.step);
+            clampInput(input);
+          });
+        });
+        popup.querySelectorAll(".apv-step-input").forEach((input) => {
+          input.addEventListener("blur", () => clampInput(input));
+        });
+      },
     }).then(async (result) => {
       if (
         formname === leave_approval_component_name ||
@@ -515,8 +806,8 @@ const InfoTable = ({
         formname === attendance_pending_table
       ) {
         if (result.value) {
-          selectedHour = document.getElementById("select-hour").value;
-          selectedMinute = document.getElementById("select-minute").value;
+          selectedHour = Math.min(23, Math.max(0, parseInt(document.getElementById("select-hour").value, 10) || 0));
+          selectedMinute = Math.min(59, Math.max(0, parseInt(document.getElementById("select-minute").value, 10) || 0));
 
           const finalHr =
             parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
@@ -569,6 +860,7 @@ const InfoTable = ({
     let btnText = "Yes, Reject";
 
     Swal.fire({
+      testId: testId(tidModule, "reject"),
       title: "Confirmation",
       html: content,
       icon: "warning",
@@ -648,6 +940,7 @@ const InfoTable = ({
     let btnText = "Yes, Approve";
 
     Swal.fire({
+      testId: testId(tidModule, "bulk-approve"),
       title: "Confirmation",
       html: content,
       icon: "info",
@@ -730,6 +1023,7 @@ const InfoTable = ({
     let btnText = "Yes, Reject";
 
     Swal.fire({
+      testId: testId(tidModule, "bulk-reject"),
       title: "Confirmation",
       html: content,
       icon: "warning",
@@ -801,6 +1095,7 @@ const InfoTable = ({
 
   const handleActionClick = async (orderData) => {
     const result = await Swal.fire({
+      testId: testId(tidModule, "cancel-request"),
       title: "Cancel Leave Request",
       html: "Are you sure you want to <b>raise a cancel leave request?</b>",
       icon: "warning",
@@ -833,11 +1128,12 @@ const InfoTable = ({
         toast.success(Api?.data?.message || "Cancel request raised");
 
         // ✅ SweetAlert
-        await Swal.fire(
-          "Request Sent!",
-          Api?.data?.message || "Cancel request raised successfully",
-          "success",
-        );
+        await Swal.fire({
+          testId: testId(tidModule, "cancel-request-sent"),
+          title: "Request Sent!",
+          html: Api?.data?.message || "Cancel request raised successfully",
+          icon: "success",
+        });
       } else {
         toast.error(
           Api?.data?.message || Api?.data?.detail || "Request failed",
@@ -851,6 +1147,7 @@ const InfoTable = ({
 
   const handleDelete = async (orderData) => {
     const result = await Swal.fire({
+      testId: testId(tidModule, "delete-leave"),
       title: "Delete Leave Application",
       text: "Are you sure you want to delete this leave application?",
       icon: "warning",
@@ -880,11 +1177,12 @@ const InfoTable = ({
         toast.success(Api?.data?.message || "Deleted successfully");
 
         // ✅ SweetAlert success
-        await Swal.fire(
-          "Deleted!",
-          Api?.data?.message || "Leave Application Deleted Successfully",
-          "success",
-        );
+        await Swal.fire({
+          testId: testId(tidModule, "leave-deleted"),
+          title: "Deleted!",
+          html: Api?.data?.message || "Leave Application Deleted Successfully",
+          icon: "success",
+        });
       } else {
         toast.error(Api?.data?.message || Api?.data?.detail || "Delete failed");
       }
@@ -895,6 +1193,7 @@ const InfoTable = ({
   };
   const handleHolidayDelete = async (orderData) => {
     const result = await Swal.fire({
+      testId: testId(tidModule, "delete-holiday"),
       title: "Delete Holiday",
       text: "Are you sure you want to delete this Holiday?",
       icon: "warning",
@@ -918,6 +1217,7 @@ const InfoTable = ({
         toast.success(Api?.data?.message || "Holiday deleted successfully");
 
         await Swal.fire({
+          testId: testId(tidModule, "holiday-deleted"),
           title: "Deleted!",
           text: Api?.data?.message || "Holiday deleted successfully.",
           icon: "success",
@@ -935,6 +1235,7 @@ const InfoTable = ({
 
   const handleLeaveTypeDelete = async (leaveTypeData) => {
     const result = await Swal.fire({
+      testId: testId(tidModule, "delete-leave-type"),
       title: "Delete Leave Type",
       text: "Are you sure you want to delete this Leave Type?",
       icon: "warning",
@@ -963,6 +1264,7 @@ const InfoTable = ({
         toast.success(Api?.data?.message || "Leave Type deleted successfully");
 
         await Swal.fire({
+          testId: testId(tidModule, "leave-type-deleted"),
           title: "Deleted!",
           text: Api?.data?.message || "Leave Type deleted successfully.",
           icon: "success",
@@ -980,14 +1282,6 @@ const InfoTable = ({
 
   const handleTypeFilterChange = (event) => {
     setTypeFilter(event.target.value);
-  };
-
-  const handleReorderDragEnd = (result) => {
-    if (!result.destination) return;
-    const reordered = Array.from(reorderList);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-    setReorderList(reordered);
   };
 
   const openReorderModal = () => {
@@ -1031,28 +1325,31 @@ const InfoTable = ({
       statusToChange: orderData?.is_active === true ? false : true,
     };
 
+    const isDeactivate = orderData?.is_active === true;
+    const confirmMsg = `Are you sure you want to ${orderInfo?.text?.toLowerCase()} <b style="color: var(--vz-heading-color)">${orderData.first_name || ""} ${orderData.last_name || ""}</b>?`;
+
     Swal.fire({
+      testId: testId(tidModule, "toggle-active"),
       title: orderInfo.text,
-      text: ` Are you sure to ${orderInfo?.text} Employee (${orderData.first_name} ${orderData.last_name})?`,
+      // On deactivation, capture the last working day so payroll still pays
+      // this employee for the month they worked. Optional — can be left blank.
+      html: isDeactivate ? lastWorkingDayHtml(confirmMsg) : confirmMsg,
       icon: `${orderInfo?.icon}`,
       showCancelButton: true,
       confirmButtonColor: `${orderInfo?.confirmBtnColor}`,
       cancelButtonColor: "#3085d6",
       confirmButtonText: `Yes, ${orderInfo?.text}`,
-      // On deactivation, capture the last working day so payroll still pays
-      // this employee for the month they worked. Optional — can be left blank.
-      ...(orderData?.is_active === true
+      ...(isDeactivate
         ? {
-            input: "date",
-            inputLabel: "Last working day (optional)",
-            inputValue: new Date().toISOString().slice(0, 10),
-            inputAttributes: { max: new Date().toISOString().slice(0, 10) },
+            didOpen: bindLastWorkingDayField,
+            preConfirm: () => ({
+              date: document.getElementById("lwd-input")?.value || null,
+            }),
           }
         : {}),
     }).then(async (result) => {
       if (result.isConfirmed) {
-        orderInfo.lastWorkingDay =
-          orderData?.is_active === true ? result.value || null : null;
+        orderInfo.lastWorkingDay = isDeactivate ? result.value?.date || null : null;
         setActiveInactiveAPIOrderData(orderData);
         setActiveInactiveAPIOrderInfo(orderInfo);
         ActivateOrDeactivate(orderData, orderInfo);
@@ -1170,6 +1467,11 @@ const InfoTable = ({
       .required("Please Confirm Password"),
   });
 
+  const markField = (errorElement, message) => {
+    errorElement.textContent = message;
+    errorElement.closest(".rp-field")?.classList.toggle("has-error", !!message);
+  };
+
   const handleResetPassword = (orderData) => {
     const profile_data = JSON.parse(
       localStorage.getItem("lint_hr_profile_data") || "{}",
@@ -1178,110 +1480,101 @@ const InfoTable = ({
     const first_name = profile_data?.first_name || "";
     const last_name = profile_data?.last_name || "";
 
+    const field = (id, label, owner, placeholder, extra = "") => `
+      <div class="rp-field">
+        <label for="${id}">${label} <span>${owner}</span></label>
+        <div class="rp-control">
+          <i class="ri-lock-2-line rp-lead"></i>
+          <input type="password" id="${id}" data-testid="${testId(tidModule, "reset-password", label, "input")}" class="rp-input" placeholder="${placeholder}" autocomplete="new-password" />
+          <button type="button" class="rp-toggle" data-target="${id}" data-testid="${testId(tidModule, "reset-password", label, "visibility-button")}" tabindex="-1" title="Show / hide">
+            <i class="ri-eye-line"></i>
+          </button>
+        </div>
+        ${extra}
+        <div id="${id}Error" data-testid="${testId(tidModule, "reset-password", label, "error")}" class="rp-error"></div>
+      </div>`;
+
+    const adminName = `${first_name} ${last_name}`.trim();
+    const empName =
+      `${orderData.first_name || ""} ${orderData.last_name || ""}`.trim();
+
     Swal.fire({
-      title: "Reset Password",
+      testId: testId(tidModule, "reset-password"),
+      title: `<span class="rp-title-icon"><i class="ri-lock-password-line"></i></span>Reset Password`,
+      customClass: { popup: "rp-popup" },
       html: `
       <style>
-        .label-lc {
-          display: block;
-          text-align: left;
-          width: 90%;
-          margin: 8px auto 10px;
-          font-weight: 500;
+        .swal2-container .swal2-popup.rp-popup.swal2-modal { width: 30rem !important; }
+        .swal2-container .swal2-popup.rp-popup.swal2-modal .swal2-title { display: flex !important; flex-direction: column; align-items: center; gap: 12px; }
+        .swal2-container .swal2-popup.rp-popup.swal2-modal .swal2-html-container { overflow: visible !important; margin: 6px 0 0 !important; padding: 0 !important; }
+        .rp-title-icon {
+          width: 52px; height: 52px; border-radius: 14px;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 24px; color: #fff;
+          background: linear-gradient(135deg, var(--vz-primary), var(--vz-info));
+          box-shadow: 0 8px 18px rgba(var(--vz-primary-rgb), .35);
         }
-
-        .password-wrapper {
-          position: relative;
-          width: 90%;
-          margin: 0 auto 5px;
+        .rp-sub { font-size: 13px; color: var(--vz-secondary-color); margin: 0 0 18px; text-align: center; }
+        .rp-sub b { color: var(--vz-heading-color); font-weight: 600; }
+        .rp-form { text-align: left; padding: 0 26px 6px; display: flex; flex-direction: column; gap: 14px; }
+        .rp-divider { height: 1px; background: var(--vz-border-color); margin: 2px 0; }
+        .rp-field label { display: block; margin: 0 0 6px; font-size: 12.5px; font-weight: 600; color: var(--vz-heading-color); }
+        .rp-field label span { font-weight: 500; color: var(--vz-secondary-color); }
+        .rp-control { position: relative; }
+        .rp-lead { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--vz-secondary-color); pointer-events: none; transition: color .15s; }
+        .rp-input {
+          width: 100%; height: 44px; margin: 0; padding: 0 44px 0 40px;
+          border: 1px solid var(--vz-border-color); border-radius: 10px;
+          background: var(--vz-body-bg); color: var(--vz-body-color);
+          font-size: 13.5px; outline: none; box-shadow: none;
+          transition: border-color .15s, box-shadow .15s, background-color .15s;
         }
-
-        .password-wrapper .swal2-input {
-          width: 100% !important;
-          margin: 0 !important;
-          padding-right: 45px !important;
-          box-sizing: border-box;
+        .rp-input::placeholder { color: var(--vz-secondary-color); opacity: .8; }
+        .rp-input:focus { border-color: var(--vz-primary); background: var(--vz-secondary-bg); box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), .15); }
+        .rp-control:focus-within .rp-lead { color: var(--vz-primary); }
+        .rp-field.has-error .rp-input { border-color: var(--vz-danger); box-shadow: 0 0 0 3px rgba(var(--vz-danger-rgb), .12); }
+        .rp-field.has-error .rp-lead { color: var(--vz-danger); }
+        .rp-toggle {
+          position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+          width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent;
+          display: inline-flex; align-items: center; justify-content: center;
+          font-size: 17px; color: var(--vz-secondary-color); cursor: pointer; transition: color .15s, background-color .15s;
         }
-
-        .password-toggle {
-          position: absolute;
-          top: 50%;
-          right: 15px;
-          transform: translateY(-50%);
-          cursor: pointer;
-          z-index: 9999;
-          color: #6c757d;
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .rp-toggle:hover { color: var(--vz-primary); background: rgba(var(--vz-primary-rgb), .08); }
+        .rp-error { font-size: 11.5px; color: var(--vz-danger); margin-top: 5px; }
+        .rp-error:empty { display: none; }
+        .rp-rules { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .rp-rule {
+          display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px;
+          font-size: 11px; font-weight: 500; color: var(--vz-secondary-color);
+          background: var(--vz-tertiary-bg); border: 1px solid var(--vz-border-color); transition: all .15s;
         }
-
-        .error-message {
-          color: #f06548;
-          font-size: 12px;
-          text-align: left;
-          min-height: 18px;
-          width: 90%;
-          margin: 2px auto 8px;
-        }
+        .rp-rule.ok { color: var(--vz-success); background: rgba(var(--vz-success-rgb), .1); border-color: rgba(var(--vz-success-rgb), .3); }
       </style>
 
-      <form id="resetPasswordForm">
-        <label class="label-lc">
-          Admin Password (${first_name} ${last_name})
-        </label>
-        <div class="password-wrapper">
-          <input
-            type="password"
-            id="adminPassword"
-            class="swal2-input"
-            placeholder="Enter Admin Password"
-          />
-          <span class="password-toggle" data-target="adminPassword">
-             <i class="las la-eye"></i>
-          </span>
-        </div>
-        <div id="adminPasswordError" class="error-message"></div>
-
-        <label class="label-lc">
-          New Password (${orderData.first_name || ""} ${orderData.last_name || ""})
-        </label>
-        <div class="password-wrapper">
-          <input
-            type="password"
-            id="newPassword"
-            class="swal2-input"
-            placeholder="Enter New Password"
-          />
-          <span class="password-toggle" data-target="newPassword">
-             <i class="las la-eye"></i>
-          </span>
-        </div>
-        <div id="newPasswordError" class="error-message"></div>
-
-        <label class="label-lc">
-          Confirm Password (${orderData.first_name || ""} ${orderData.last_name || ""})
-        </label>
-        <div class="password-wrapper">
-          <input
-            type="password"
-            id="confirmPassword"
-            class="swal2-input"
-            placeholder="Enter Confirm Password"
-          />
-          <span class="password-toggle" data-target="confirmPassword">
-            <i class="las la-eye"></i>
-          </span>
-        </div>
-        <div id="confirmPasswordError" class="error-message"></div>
+      <p class="rp-sub">Set a new password for <b>${empName || "this employee"}</b></p>
+      <form id="resetPasswordForm" class="rp-form" autocomplete="off">
+        ${field("adminPassword", "Your Password", `(${adminName})`, "Enter your admin password")}
+        <div class="rp-divider"></div>
+        ${field(
+          "newPassword",
+          "New Password",
+          `(${empName})`,
+          "Enter new password",
+          `<div class="rp-rules">
+            <span class="rp-rule" data-rule="len"><i class="ri-checkbox-blank-circle-line"></i>8–20 chars</span>
+            <span class="rp-rule" data-rule="case"><i class="ri-checkbox-blank-circle-line"></i>Aa</span>
+            <span class="rp-rule" data-rule="num"><i class="ri-checkbox-blank-circle-line"></i>123</span>
+            <span class="rp-rule" data-rule="special"><i class="ri-checkbox-blank-circle-line"></i>!@#$%^&*</span>
+          </div>`,
+        )}
+        ${field("confirmPassword", "Confirm Password", `(${empName})`, "Re-enter new password")}
       </form>
     `,
       icon: false,
       showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#f06548",
-      confirmButtonText: "Reset Password",
+      focusConfirm: false,
+      confirmButtonText: '<i class="ri-refresh-line me-1"></i> Reset Password',
 
       preConfirm: async () => {
         const adminPasswordValue = document
@@ -1302,9 +1595,9 @@ const InfoTable = ({
         );
 
         // Reset previous error messages
-        adminPasswordError.textContent = "";
-        newPasswordError.textContent = "";
-        confirmPasswordError.textContent = "";
+        markField(adminPasswordError, "");
+        markField(newPasswordError, "");
+        markField(confirmPasswordError, "");
 
         let isValid = true;
 
@@ -1323,11 +1616,11 @@ const InfoTable = ({
           if (err.inner) {
             err.inner.forEach((error) => {
               if (error.path === "admin_password")
-                adminPasswordError.textContent = error.message;
+                markField(adminPasswordError, error.message);
               if (error.path === "new_password")
-                newPasswordError.textContent = error.message;
+                markField(newPasswordError, error.message);
               if (error.path === "confirm_password")
-                confirmPasswordError.textContent = error.message;
+                markField(confirmPasswordError, error.message);
             });
           }
         }
@@ -1368,16 +1661,14 @@ const InfoTable = ({
       },
 
       didOpen: () => {
-        document.querySelectorAll(".password-toggle").forEach((button) => {
+        document.querySelectorAll(".rp-toggle").forEach((button) => {
           button.onclick = () => {
             const input = document.getElementById(button.dataset.target);
-            if (input.type === "password") {
-              input.type = "text";
-              button.innerHTML = '<i class="las la-eye-slash"></i>';
-            } else {
-              input.type = "password";
-              button.innerHTML = '<i class="las la-eye"></i>';
-            }
+            const show = input.type === "password";
+            input.type = show ? "text" : "password";
+            button.innerHTML = show
+              ? '<i class="ri-eye-off-line"></i>'
+              : '<i class="ri-eye-line"></i>';
           };
         });
 
@@ -1395,9 +1686,9 @@ const InfoTable = ({
         const validateField = async (fieldName, values, errorElement) => {
           try {
             await resetPasswordValidationSchema.validateAt(fieldName, values);
-            errorElement.textContent = "";
+            markField(errorElement, "");
           } catch (err) {
-            errorElement.textContent = err.message;
+            markField(errorElement, err.message);
           }
         };
 
@@ -1410,7 +1701,24 @@ const InfoTable = ({
           );
         });
 
+        const rules = {
+          len: (v) => v.length >= 8 && v.length <= 20,
+          case: (v) => /[a-z]/.test(v) && /[A-Z]/.test(v),
+          num: (v) => /[0-9]/.test(v),
+          special: (v) => /[!@#$%^&*]/.test(v),
+        };
+        const updateRules = (value) => {
+          document.querySelectorAll(".rp-rule").forEach((chip) => {
+            const ok = rules[chip.dataset.rule](value);
+            chip.classList.toggle("ok", ok);
+            chip.firstElementChild.className = ok
+              ? "ri-checkbox-circle-fill"
+              : "ri-checkbox-blank-circle-line";
+          });
+        };
+
         newPasswordInput.addEventListener("input", () => {
+          updateRules(newPasswordInput.value);
           const values = {
             admin_password: adminPasswordInput.value,
             new_password: newPasswordInput.value,
@@ -1440,70 +1748,24 @@ const InfoTable = ({
       },
     }).then(async (result) => {
       if (result.isConfirmed) {
-        Swal.fire(
-          "Password Reset!",
-          result.value?.apiResponse?.data?.message ||
+        Swal.fire({
+          testId: testId(tidModule, "password-reset-success"),
+          title: "Password Reset!",
+          html:
+            result.value?.apiResponse?.data?.message ||
             "Password has been reset successfully.",
-          "success",
-        );
+          icon: "success",
+        });
       }
     });
   };
   // Column
   const initialColumns = [
     {
-      Header: (
-        <input
-          type="checkbox"
-          id="checkBoxAll"
-          className="form-check-input"
-          onClick={(e) => {
-            checkedAll(e);
-          }}
-        />
-      ),
-      Cell: (cellProps) => {
-        const orderDataChecked = cellProps.row.original.id;
-        const orderData = cellProps.row.original;
-        return (
-          <input
-            type="checkbox"
-            className="dataCheckBox form-check-input"
-            disabled={
-              (formname === leave_approval_component_name &&
-                orderData?.status !== 1) ||
-              (formname === attendance_approval_component_name &&
-                orderData?.hr_status !== 3)
-            }
-            id={`checkbox-${cellProps.row.original.id}`}
-            value={cellProps.row.original.id}
-            onClick={(event) => {
-              const isChecked = event.target.checked;
-
-              if (isChecked) {
-                setSelectedGroupIds((prevIds) => [
-                  ...prevIds,
-                  orderDataChecked,
-                ]);
-              } else {
-                setSelectedGroupIds((prevIds) =>
-                  prevIds.filter((id) => id !== orderDataChecked),
-                );
-              }
-
-              deleteCheckbox(`checkbox-${cellProps.row.original.id}`);
-              approveRejectCheckbox(`checkbox-${cellProps.row.original.id}`);
-            }}
-          />
-        );
-      },
-      id: "#",
-      is_action: false,
-    },
-    {
       Header: "Action",
       Cell: (cellProps) => {
         const orderData = cellProps.row.original;
+        const rowId = (...parts) => rowTestId(testIdModuleFor(formname), orderData, ...parts);
         if (
           formname &&
           (formname === leave_approval_component_name ||
@@ -1513,29 +1775,28 @@ const InfoTable = ({
               orderData?.leave_cancellation_details &&
               orderData?.leave_cancellation_details.status === 1))
         ) {
+          const isCancelReq = orderData.status === 4;
           return (
-            <ul className="list-inline hstack gap-2 mb-0">
-              <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-success d-inline-block edit-item-btn"
-                  onClick={() => {
-                    handleApproval(orderData);
-                  }}
-                >
-                  <i className="ri-check-line fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-danger d-inline-block remove-item-btn"
-                  onClick={() => handleReject(orderData)}
-                >
-                  <i className="ri-close-line fs-16"></i>
-                </Link>
-              </li>
-            </ul>
+            <div className="apv-actions">
+              <button
+                type="button"
+                className="apv-act is-approve"
+                title={isCancelReq ? "Approve cancellation" : "Approve"}
+                onClick={() => handleApproval(orderData)}
+                data-testid={rowId("approve-button")}
+              >
+                <i className="ri-check-line"></i>
+              </button>
+              <button
+                type="button"
+                className="apv-act is-reject"
+                title={isCancelReq ? "Reject cancellation" : "Reject"}
+                onClick={() => handleReject(orderData)}
+                data-testid={rowId("reject-button")}
+              >
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
           );
         } else if (
           formname &&
@@ -1545,11 +1806,7 @@ const InfoTable = ({
           orderData?.leave_cancellation_details &&
           orderData?.leave_cancellation_details.status != 1
         ) {
-          <li className="list-inline-item">
-            <Link to="#" className="text-primary d-inline-block">
-              <i className="ri-eye-fill fs-16"></i>
-            </Link>
-          </li>;
+          return <span className="apv-muted">—</span>;
         } else if (
           formname &&
           (formname === attendance_approval_component_name ||
@@ -1557,28 +1814,26 @@ const InfoTable = ({
           orderData.hr_status === 3
         ) {
           return (
-            <ul className="list-inline hstack gap-2 mb-0">
-              <li className="list-inline-item edit">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-success d-inline-block edit-item-btn"
-                  onClick={() => {
-                    handleApproval(orderData);
-                  }}
-                >
-                  <i className="ri-check-line fs-16"></i>
-                </Link>
-              </li>
-              <li className="list-inline-item">
-                <Link
-                  to="javascript:void(0)"
-                  className="text-danger d-inline-block remove-item-btn"
-                  onClick={() => handleReject(orderData)}
-                >
-                  <i className="ri-close-line fs-16"></i>
-                </Link>
-              </li>
-            </ul>
+            <div className="apv-actions">
+              <button
+                type="button"
+                className="apv-act is-approve"
+                title="Approve"
+                onClick={() => handleApproval(orderData)}
+                data-testid={rowId("approve-button")}
+              >
+                <i className="ri-check-line"></i>
+              </button>
+              <button
+                type="button"
+                className="apv-act is-reject"
+                title="Reject"
+                onClick={() => handleReject(orderData)}
+                data-testid={rowId("reject-button")}
+              >
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
           );
         } else if (formname === leave_application_component_name) {
           return (
@@ -1591,11 +1846,12 @@ const InfoTable = ({
                     <Link
                       to="javascript:void(0)"
                       className="text-primary d-inline-block edit-item-btn"
+                      data-testid={rowId("edit-button")}
                       onClick={() => {
                         handleCreateAndUpdate(orderData.id, orderData);
                       }}
                     >
-                      <i className="ri-pencil-fill fs-16"></i>
+                      <i className="ri-pencil-line fs-16"></i>
                     </Link>
                   </li>
 
@@ -1604,11 +1860,12 @@ const InfoTable = ({
                     <Link
                       to="javascript:void(0)"
                       className="text-danger d-inline-block delete-item-btn"
+                      data-testid={rowId("delete-button")}
                       onClick={() => {
                         handleDelete(orderData);
                       }}
                     >
-                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                      <i className="ri-delete-bin-line fs-16"></i>
                     </Link>
                   </li>
                 </>
@@ -1619,10 +1876,14 @@ const InfoTable = ({
                 <li className="list-inline-item">
                   <button
                     type="button"
-                    className="btn btn-soft-warning btn-border btn-sm"
+                    className="btn btn-soft-warning btn-sm rounded-pill px-2 py-1 text-nowrap"
+                    style={{ fontSize: 12, fontWeight: 600 }}
+                    title="Raise cancel leave request"
+                    data-testid={rowId("cancel-request-button")}
                     onClick={() => handleActionClick(orderData)}
                   >
-                    Raise Cancel Leave Request
+                    <i className="ri-close-circle-line align-middle me-1"></i>
+                    Cancel Request
                   </button>
                 </li>
               )}
@@ -1635,9 +1896,10 @@ const InfoTable = ({
                 <Link
                   to="javascript:void(0)"
                   className="text-primary d-inline-block edit-item-btn"
+                  data-testid={rowId("edit-button")}
                   onClick={() => handleCreateAndUpdate(orderData.id, orderData)}
                 >
-                  <i className="ri-pencil-fill fs-16"></i>
+                  <i className="ri-pencil-line fs-16"></i>
                 </Link>
               </li>
 
@@ -1645,9 +1907,10 @@ const InfoTable = ({
                 <Link
                   to="javascript:void(0)"
                   className="text-danger d-inline-block delete-item-btn"
+                  data-testid={rowId("delete-button")}
                   onClick={() => handleHolidayDelete(orderData)}
                 >
-                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                  <i className="ri-delete-bin-line fs-16"></i>
                 </Link>
               </li>
             </>
@@ -1659,9 +1922,10 @@ const InfoTable = ({
                 <Link
                   to="javascript:void(0)"
                   className="text-primary d-inline-block edit-item-btn"
+                  data-testid={rowId("edit-button")}
                   onClick={() => handleCreateAndUpdate(orderData.id, orderData)}
                 >
-                  <i className="ri-pencil-fill fs-16"></i>
+                  <i className="ri-pencil-line fs-16"></i>
                 </Link>
               </li>
 
@@ -1671,7 +1935,7 @@ const InfoTable = ({
                   className="text-danger d-inline-block delete-item-btn"
                   onClick={() => handleLeaveTypeDelete(orderData)}
                 >
-                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                  <i className="ri-delete-bin-line fs-16"></i>
                 </Link>
               </li> */}
             </>
@@ -1702,15 +1966,16 @@ const InfoTable = ({
                     style={{ cursor: "not-allowed", opacity: 0.5 }}
                     title="This status cannot be edited"
                   >
-                    <i className="ri-pencil-fill fs-16"></i>
+                    <i className="ri-pencil-line fs-16"></i>
                   </span>
                 ) : (
                   <Link
                     to="javascript:void(0)"
                     className="text-primary d-inline-block edit-item-btn"
+                    data-testid={rowId("edit-button")}
                     onClick={() => handleCreateAndUpdate(rowData.id, rowData)}
                   >
-                    <i className="ri-pencil-fill fs-16"></i>
+                    <i className="ri-pencil-line fs-16"></i>
                   </Link>
                 )}
               </li>
@@ -1721,7 +1986,7 @@ const InfoTable = ({
                   className="text-danger d-inline-block remove-item-btn"
                   onClick={() => deleteHandler(rowData.id, formname)}
                 >
-                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                  <i className="ri-delete-bin-line fs-16"></i>
                 </Link>
               </li> */}
             </>
@@ -1733,6 +1998,7 @@ const InfoTable = ({
                 <DropdownToggle
                   tag="a"
                   className="text-reset dropdown-btn"
+                  data-testid={rowId("actions-menu-trigger")}
                   href=""
                   onClick={(e) => e.preventDefault()}
                 >
@@ -1740,9 +2006,10 @@ const InfoTable = ({
                     <i className="mdi mdi-dots-horizontal"></i>
                   </span>
                 </DropdownToggle>
-                <DropdownMenu className="dropdown-menu-end">
+                <DropdownMenu className="dropdown-menu-end" container="body" style={{ zIndex: 1300 }}>
                   {!!orderData && (
                     <DropdownItem
+                      data-testid={rowId("toggle-active-option")}
                       onClick={() => {
                         handleActiveStatus(orderData);
                       }}
@@ -1754,6 +2021,7 @@ const InfoTable = ({
                     </DropdownItem>
                   )}
                   <DropdownItem
+                    data-testid={rowId("reset-password-option")}
                     onClick={() => {
                       handleResetPassword(orderData);
                     }}
@@ -1767,11 +2035,12 @@ const InfoTable = ({
                 <Link
                   to="javascript:void(0)"
                   className="text-primary d-inline-block edit-item-btn"
+                  data-testid={rowId("edit-button")}
                   onClick={() => {
                     handleCreateAndUpdate(orderData.id, orderData);
                   }}
                 >
-                  <i className="ri-pencil-fill fs-16"></i>
+                  <i className="ri-pencil-line fs-16"></i>
                 </Link>
               </li>
               {/* <li className="list-inline-item">
@@ -1782,7 +2051,7 @@ const InfoTable = ({
                     const orderData = cellProps.row.original;
                   }}
                 >
-                  <i className="ri-delete-bin-5-fill fs-16"></i>
+                  <i className="ri-delete-bin-line fs-16"></i>
                 </Link>
               </li> */}
             </ul>
@@ -1794,11 +2063,12 @@ const InfoTable = ({
                 <Link
                   to="javascript:void(0)"
                   className="text-primary d-inline-block edit-item-btn"
+                  data-testid={rowId("edit-button")}
                   onClick={() => {
                     handleCreateAndUpdate(orderData.id, orderData);
                   }}
                 >
-                  <i className="ri-pencil-fill fs-16"></i>
+                  <i className="ri-pencil-line fs-16"></i>
                 </Link>
               </li>
             </ul>
@@ -1816,11 +2086,12 @@ const InfoTable = ({
                     <Link
                       to="javascript:void(0)"
                       className="text-primary d-inline-block edit-item-btn"
+                      data-testid={rowId("edit-button")}
                       onClick={() => {
                         handleCreateAndUpdate(orderData.id, orderData);
                       }}
                     >
-                      <i className="ri-pencil-fill fs-16"></i>
+                      <i className="ri-pencil-line fs-16"></i>
                     </Link>
                   </li>
 
@@ -1829,12 +2100,13 @@ const InfoTable = ({
                     <Link
                       to="#"
                       className="text-danger d-inline-block remove-item-btn"
+                      data-testid={rowId("delete-button")}
                       onClick={() => {
                         const rowData = cellProps.row.original;
                         // 👉 your delete logic here
                       }}
                     >
-                      <i className="ri-delete-bin-5-fill fs-16"></i>
+                      <i className="ri-delete-bin-line fs-16"></i>
                     </Link>
                   </li>
                 </>
@@ -1868,7 +2140,9 @@ const InfoTable = ({
 
     if (
       formname === leave_approval_component_name ||
-      attendance_approval_component_name
+      formname === attendance_approval_component_name ||
+      formname === leave_pending_table ||
+      formname === attendance_pending_table
     ) {
       setShowAllLeaveApprovalBtn(
         isAdminUser ||
@@ -1902,19 +2176,25 @@ const InfoTable = ({
       formname === leave_approval_component_name
     ) {
       if (firstEffectExecutedRef.current) {
-              if (currentApprovalComponent === attendance_approval_component_name) {
-          approvalEmployeeTypeFilter === 0 && showAllAttendanceApprovalBtn
-            ? setShowEditBtn(true)
-            : approvalEmployeeTypeFilter === 1 && showTeamAttendanceApprovalBtn
-              ? setShowEditBtn(true)
-              : setShowEditBtn(false);
+        // ApprovalFilter stores the scope as "all" / "hierarchy" / "team";
+        // older screens used 0 (all / hierarchy) and 1 (team).
+        const isTeamScope =
+          approvalEmployeeTypeFilter === 1 || approvalEmployeeTypeFilter === "team";
+        const isAllScope =
+          approvalEmployeeTypeFilter === 0 ||
+          approvalEmployeeTypeFilter === "all" ||
+          approvalEmployeeTypeFilter === "hierarchy";
+        if (currentApprovalComponent === attendance_approval_component_name) {
+          setShowEditBtn(
+            (isAllScope && showAllAttendanceApprovalBtn) ||
+              (isTeamScope && showTeamAttendanceApprovalBtn),
+          );
         }
-              if (currentApprovalComponent === leave_approval_component_name) {
-          approvalEmployeeTypeFilter === 0 && showAllLeaveApprovalBtn
-            ? setShowEditBtn(true)
-            : approvalEmployeeTypeFilter === 1 && showTeamLeaveApprovalBtn
-              ? setShowEditBtn(true)
-              : setShowEditBtn(false);
+        if (currentApprovalComponent === leave_approval_component_name) {
+          setShowEditBtn(
+            (isAllScope && showAllLeaveApprovalBtn) ||
+              (isTeamScope && showTeamLeaveApprovalBtn),
+          );
         }
       }
     }
@@ -2062,7 +2342,7 @@ const InfoTable = ({
   useEffect(() => {
     if (showEditBtn === true) {
       const newColumns = [...initialColumns];
-      newColumns.splice(1, 0, ...additionalColumn);
+      newColumns.splice(0, 0, ...additionalColumn);
       setTableColumn(newColumns);
     } else {
       const newColumns = [...additionalColumn];
@@ -2070,6 +2350,65 @@ const InfoTable = ({
       setTableColumn(newColumns);
     }
   }, [showEditBtn]);
+
+  const isApprovalTable =
+    formname === leave_approval_component_name ||
+    formname === attendance_approval_component_name;
+  const pageMeta = getPageMeta(formname);
+  const isRowSelectable = (row) =>
+    formname === leave_approval_component_name
+      ? row?.status === 1
+      : row?.hr_status === 3;
+  const selectableIds = isApprovalTable
+    ? (dataList || []).filter(isRowSelectable).map((row) => row.id)
+    : [];
+  const allRowsSelected =
+    selectableIds.length > 0 &&
+    selectableIds.every((id) => selectedGroupIds.includes(id));
+
+  useEffect(() => {
+    setSelectedGroupIds((prev) => {
+      const next = prev.filter((id) => selectableIds.includes(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [dataList]);
+
+  const selectionColumn = {
+    id: "#",
+    Header: (
+      <input
+        type="checkbox"
+        className="form-check-input"
+        checked={allRowsSelected}
+        data-testid={testId(tidModule, "select-all-checkbox")}
+        disabled={!selectableIds.length}
+        onChange={(e) => setSelectedGroupIds(e.target.checked ? selectableIds : [])}
+      />
+    ),
+    Cell: (cellProps) => {
+      const row = cellProps.row.original;
+      if (!isRowSelectable(row)) return null;
+      return (
+        <input
+          type="checkbox"
+          className="form-check-input"
+          checked={selectedGroupIds.includes(row.id)}
+          data-testid={rowTestId(tidModule, row, "checkbox")}
+          onChange={(e) => {
+            const { checked } = e.target;
+            setSelectedGroupIds((prev) =>
+              checked
+                ? prev.includes(row.id) ? prev : [...prev, row.id]
+                : prev.filter((id) => id !== row.id),
+            );
+          }}
+        />
+      );
+    },
+  };
+
+  const columnsForTable =
+    isApprovalTable && showEditBtn ? [selectionColumn, ...tableColumn] : tableColumn;
 
   const toggleTab = (tab, type, condition) => {
     if (activeTab !== tab) {
@@ -2111,48 +2450,11 @@ const InfoTable = ({
   };
 
   // Delete Multiple
-  const [selectedCheckBoxDelete, setSelectedCheckBoxDelete] = useState([]);
-  const [selectedCheckBoxApproveReject, setSelectedCheckBoxApproveReject] =
-    useState([]);
   const [isMultiDeleteButton, setIsMultiDeleteButton] = useState(false);
-  const [selectApproveReject, setSelectApproveReject] = useState(false);
 
   const deleteMultiple = () => {
-    const checkall = document.getElementById("checkBoxAll");
-    selectedCheckBoxDelete.forEach((element) => {
-      setTimeout(() => {
-        toast.clearWaitingQueue();
-      }, 3000);
-    });
-    checkall.checked = false;
+    setSelectedGroupIds([]);
     setIsMultiDeleteButton(false);
-  };
-
-  const approveReject = () => {
-    const checkall = document.getElementById("checkBoxAll");
-    selectedCheckBoxApproveReject.forEach((element) => {
-      setTimeout(() => {
-        toast.clearWaitingQueue();
-      }, 3000);
-    });
-    checkall.checked = false;
-    setSelectApproveReject(false);
-  };
-
-  const deleteCheckbox = () => {
-    const ele = document.querySelectorAll(".dataCheckBox:checked");
-    ele.length > 0
-      ? setIsMultiDeleteButton(true)
-      : setIsMultiDeleteButton(false);
-    setSelectedCheckBoxDelete(ele);
-  };
-
-  const approveRejectCheckbox = () => {
-    const ele = document.querySelectorAll(".dataCheckBox:checked");
-    ele.length > 0
-      ? setSelectApproveReject(true)
-      : setSelectApproveReject(false);
-    setSelectedCheckBoxApproveReject(ele);
   };
 
   const handleDeleteData = (data) => {};
@@ -2401,26 +2703,62 @@ const InfoTable = ({
           onCloseClick={() => setDeleteModalMulti(false)}
         />
         <Container fluid>
-          <Card id="dataList">
+          <Card
+            id="dataList"
+            className={
+              formname !== attendance_pending_table && formname !== leave_pending_table
+                ? "apv-card it-card"
+                : undefined
+            }
+          >
             {formname &&
               formname !== attendance_pending_table &&
               formname !== leave_pending_table && (
                 <CardHeader className="bdata-0">
-                  <Row className="align-items-center gy-3">
-                    <div className="col-sm">
-                      {formname &&
-                        formname !== attendance_pending_table &&
-                        formname !== leave_pending_table && (
-                          <h5
-                            className="card-title mb-0"
-                            style={{ textTransform: "capitalize" }}
-                          >
-                            {formname.split("_").join(" ")}
-                          </h5>
-                        )}
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div className="text-start me-auto" style={{ minWidth: 0 }}>
+                      {isApprovalTable ? (
+                        <div className="apv-head">
+                          <span className="apv-head-icon">
+                            <i
+                              className={
+                                formname === attendance_approval_component_name
+                                  ? "ri-fingerprint-line"
+                                  : "ri-calendar-check-line"
+                              }
+                            ></i>
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <h5 className="apv-head-title">
+                              {formname === attendance_approval_component_name
+                                ? "Attendance Approval"
+                                : "Leave Approval"}
+                            </h5>
+                            <span className="apv-head-sub">
+                              {selectedGroupIds.length > 0
+                                ? `${selectedGroupIds.length} selected for bulk action`
+                                : "Review, approve or reject team requests"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="apv-head">
+                          <span className={`apv-head-icon tone-${pageMeta.tone}`}>
+                            <i className={pageMeta.icon}></i>
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <h5 className="apv-head-title">{pageMeta.title}</h5>
+                            <span className="apv-head-sub">
+                              {(tabledata?.length || 0).toLocaleString()}{" "}
+                              {(tabledata?.length || 0) === 1 ? "record" : "records"}
+                              {pageMeta.sub ? ` · ${pageMeta.sub}` : ""}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="col-sm-auto">
-                      <div className="d-flex gap-1 flex-wrap">
+                    <div className="ms-auto">
+                      <div className="d-flex gap-1 flex-wrap justify-content-end">
                         {formname &&
                           formname !== leave_approval_component_name &&
                           formname !== attendance_approval_component_name &&
@@ -2429,33 +2767,30 @@ const InfoTable = ({
                           showCreateBtn && (
                             <button
                               type="button"
-                              className="btn btn-success add-btn"
+                              className="it-btn is-primary add-btn"
                               id="create-btn"
-                              style={{ textTransform: "capitalize" }}
+                              data-testid={testId(tidModule, "create-button")}
                               onClick={() => {
                                 handleCreateAndUpdate(0);
                               }}
                             >
-                              <i className="ri-add-line align-bottom me-1"></i>{" "}
-                              Create {formname.split("_").join(" ")}
+                              <i className="ri-add-line"></i>
+                              Create {pageMeta.singular}
                             </button>
                           )}{" "}
                         {formname === status_component_name && showEditBtn &&(
                           <button
                             type="button"
-                            className="btn btn-secondary"
+                            className="it-btn is-soft"
                             id="reorder-btn"
+                            data-testid={testId(tidModule, "reorder-button")}
                             onClick={openReorderModal}
                           >
                             <svg
                               width="14"
                               height="14"
                               viewBox="0 0 16 16"
-                              fill="#fff"
-                              style={{
-                                marginRight: 6,
-                                verticalAlign: "middle",
-                              }}
+                              fill="currentColor"
                             >
                               <circle cx="5" cy="3" r="1.3" />
                               <circle cx="11" cy="3" r="1.3" />
@@ -2476,14 +2811,14 @@ const InfoTable = ({
                             showImportBtn &&  (
                               <button
                                 type="button"
-                                className="btn btn-primary align-bottom me-1"
-                                id="create-btn"
-                                style={{ textTransform: "capitalize" }}
+                                className="it-btn is-soft"
+                                id="import-btn"
+                                data-testid={testId(tidModule, "import-button")}
                                 onClick={() => {
                                   HandleImportExport();
                                 }}
                               >
-                                <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                                <i className="ri-upload-cloud-2-line"></i>
                                 Import
                               </button>
                             )}{" "}
@@ -2502,140 +2837,103 @@ const InfoTable = ({
                             showExportBtn && (
                               <button
                                 type="button"
-                                className="btn btn-info"
+                                className="it-btn is-soft"
                                 onClick={() => setIsExportCSV(true)}
+                                data-testid={testId(tidModule, "export-button")}
                               >
-                                <i className="ri-file-download-line align-bottom me-1"></i>{" "}
+                                <i className="ri-download-cloud-2-line"></i>
                                 Export
                               </button>
                             )}{" "}
                           {isMultiDeleteButton && <div></div>}
-                          {selectApproveReject &&
+                          {selectedGroupIds.length > 0 &&
                             (formname === leave_approval_component_name ||
                               formname ===
                                 attendance_approval_component_name) && (
-                              <div>
-                                                                {formname ===
-                                  attendance_approval_component_name &&
-                                  showEditBtn && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="btn btn-success custom-toggle active"
-                                        id="bulk-approve-btn"
-                                        onClick={() => handleBulkApproval()}
-                                      >
-                                        <i class="ri-check-fill align-bottom me-1"></i>{" "}
-                                        Bulk Approve
-                                      </button>{" "}
-                                      <button
-                                        type="button"
-                                        className="btn btn-danger custom-toggle active"
-                                        id="bulk-reject-btn"
-                                        onClick={() => handleBulkReject()}
-                                      >
-                                        <i className="ri-close-line align-bottom me-1"></i>{" "}
-                                        Bulk Reject
-                                      </button>{" "}
-                                    </>
-                                  )}
-                                                            {formname === leave_approval_component_name &&
-                                  showEditBtn && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="btn btn-success add-btn"
-                                        id="bulk-approve-btn"
-                                        onClick={() => handleBulkApproval()}
-                                      >
-                                        <i className="ri-check-line fs-16"></i>{" "}
-                                        Bulk Approve
-                                      </button>{" "}
-                                      <button
-                                        type="button"
-                                        className="btn btn-danger add-btn"
-                                        id="bulk-reject-btn"
-                                        onClick={() => handleBulkReject()}
-                                      >
-                                        <i className="ri-close-line fs-16"></i>{" "}
-                                        Bulk Reject
-                                      </button>{" "}
-                                    </>
-                                  )}
+                              <div className="apv-bulk">
+                                {showEditBtn && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="apv-bulk-btn is-approve"
+                                      id="bulk-approve-btn"
+                                      data-testid={testId(tidModule, "bulk-approve-button")}
+                                      onClick={() => handleBulkApproval()}
+                                    >
+                                      <i className="ri-check-double-line"></i>
+                                      Approve
+                                      <span className="apv-bulk-count">
+                                        {selectedGroupIds.length}
+                                      </span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="apv-bulk-btn is-reject"
+                                      id="bulk-reject-btn"
+                                      data-testid={testId(tidModule, "bulk-reject-button")}
+                                      onClick={() => handleBulkReject()}
+                                    >
+                                      <i className="ri-close-line"></i>
+                                      Reject
+                                      <span className="apv-bulk-count">
+                                        {selectedGroupIds.length}
+                                      </span>
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             )}
                         </div>
                       </div>
                     </div>
-                  </Row>
+                  </div>
                 </CardHeader>
               )}
 
             <CardBody className="pt-0">
               <div>
-                <Nav
-                  className="nav-tabs nav-tabs-custom nav-success"
-                  role="tablist"
-                >
-                  {formname === attendance_pending_table ? null : formname ===
-                    leave_pending_table ? null : (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === 1 },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab(1, "all");
-                        }}
-                        href="#"
-                      >
-                        <i className="ri-store-2-fill me-1 align-bottom"></i>{" "}
-                        All Datas
-                        {tabledata && tabledata.length > 0 && (
-                          <Badge
-                            color={activeTab === 1 ? "success" : "primary"}
-                            style={{ marginLeft: "5px" }}
-                          >
-                            {tabledata.length}
-                          </Badge>
-                        )}
-                      </NavLink>
-                    </NavItem>
-                  )}
-
-                  {!!filterOptions &&
-                    filterOptions.map((obj, idx) => (
-                      <NavItem>
-                        <NavLink
-                          className={classnames(
-                            { active: activeTab === String(idx + 2) },
-                            "fw-semibold",
-                          )}
-                          onClick={() => {
-                            toggleTab(String(idx + 2), obj.option);
-                          }}
-                          href="#"
-                        >
-                          <i className="ri-checkbox-circle-line me-1 align-bottom"></i>{" "}
-                          {obj.label}
-                          {obj.count > 0 && (
-                            <Badge
-                              color={
-                                activeTab === String(idx + 2)
-                                  ? "success"
-                                  : "primary"
-                              }
-                              style={{ marginLeft: "5px" }}
+                {(() => {
+                  const showAllTab =
+                    formname !== attendance_pending_table &&
+                    formname !== leave_pending_table;
+                  const tabs = [
+                    ...(showAllTab
+                      ? [{ value: 1, label: "All", count: tabledata?.length || 0, option: "all" }]
+                      : []),
+                    ...(filterOptions || []).map((obj, idx) => ({
+                      value: String(idx + 2),
+                      label: obj.label,
+                      count: obj.count || 0,
+                      option: obj.option,
+                    })),
+                  ];
+                  if (!tabs.length) return null;
+                  return (
+                    <div className="it-tabs-row">
+                      <div className="it-tabs" role="tablist">
+                        {tabs.map((t) => {
+                          const active = String(activeTab) === String(t.value);
+                          return (
+                            <button
+                              key={t.value}
+                              type="button"
+                              role="tab"
+                              aria-selected={active}
+                              className={`it-tab tone-${tabToneOf(t.label)} ${active ? "is-active" : ""}`}
+                              onClick={() => toggleTab(t.value, t.option)}
+                              data-testid={testId(tidModule, "tab", t.label)}
                             >
-                              {obj.count}
-                            </Badge>
-                          )}
-                        </NavLink>
-                      </NavItem>
-                    ))}
-                </Nav>
-                {isLoading ? (
+                              <span className="it-tab-dot"></span>
+                              {t.label}
+                              <span className="it-tab-count">{t.count}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+                {isLoading || loading ? (
                   <TableSkeleton />
                 ) : (
                   // ✅ FIX: TableContainer (which renders the filter row, e.g.
@@ -2648,7 +2946,7 @@ const InfoTable = ({
                   // TableContainer, below the filter row, via its `noResults`
                   // prop.
                   <TableContainer
-                    columns={tableColumn}
+                    columns={columnsForTable}
                     data={
                       dataList
                         ?.filter((obj) => {
@@ -2739,50 +3037,7 @@ const InfoTable = ({
                         // ─────────────────────────────
                         // Search Filter
                         // ─────────────────────────────
-                        .filter((d) => {
-                          if (!search?.trim()) return true;
-
-                          return Object.entries(d).some(([key, value]) => {
-                            // Ignore ID fields
-                            if (
-                              key === "id" ||
-                              key.endsWith("_id") ||
-                              key === "created_by" ||
-                              key === "updated_by" ||
-                              key === "work_schedule_id_list"
-                            ) {
-                              return false;
-                            }
-
-                            if (value == null) return false;
-
-                            const searchValue = String(value);
-
-                            if (key === "date") {
-                              const formattedDate =
-                                dayjs(value).format("DD-MM-YYYY");
-                              const normalizedDate = formattedDate.replace(
-                                /[-/]/g,
-                                "",
-                              );
-                              const normalizedSearch = search.replace(
-                                /[-/]/g,
-                                "",
-                              );
-
-                              return (
-                                formattedDate
-                                  .toLowerCase()
-                                  .includes(search.toLowerCase()) ||
-                                normalizedDate.includes(normalizedSearch)
-                              );
-                            }
-
-                            return searchValue
-                              .toLowerCase()
-                              .includes(search.toLowerCase());
-                          });
-                        }) || []
+                        .filter((d) => rowMatchesSearch(d, search)) || []
                     }
                     isPagination={true}
                     isGlobalFilter={true}
@@ -2799,8 +3054,8 @@ const InfoTable = ({
                   />
                 )}
               </div>
-              <Modal id="showModal" isOpen={modal} toggle={toggle} centered>
-                <ModalHeader className="bg-light p-3" toggle={toggle}>
+              <Modal id="showModal" data-testid={testId(tidModule, "order-dialog")} isOpen={modal} toggle={toggle} centered>
+                <ModalHeader className="bg-light p-3" toggle={toggle} close={<ModalCloseButton onClick={toggle} testId={testId(tidModule, "order-close-button")} />}>
                   {/* {!!isEdit ? "Edit Order" : "Add Order"} */}
                 </ModalHeader>
                 <Form
@@ -2819,6 +3074,7 @@ const InfoTable = ({
                         Order Id
                       </Label>
                       <Input
+                        data-testid={testId(tidModule, "order-id-input")}
                         name="orderId"
                         id="id-field"
                         className="form-control"
@@ -2835,6 +3091,7 @@ const InfoTable = ({
                         Customer Name
                       </Label>
                       <Input
+                        data-testid={testId(tidModule, "order-customer-input")}
                         name="customer"
                         id="customername-field"
                         className="form-control"
@@ -2849,6 +3106,7 @@ const InfoTable = ({
                       </Label>
 
                       <Input
+                        data-testid={testId(tidModule, "order-product-select")}
                         name="product"
                         type="select"
                         className="form-select"
@@ -2867,7 +3125,7 @@ const InfoTable = ({
                           <Label htmlFor="amount-field" className="form-label">
                             Amount
                           </Label>
-                          <Input name="amount" type="text" />
+                          <Input data-testid={testId(tidModule, "order-amount-input")} name="amount" type="text" />
                         </div>
                       </div>
                       <div className="col-md-6">
@@ -2877,6 +3135,7 @@ const InfoTable = ({
                           </Label>
 
                           <Input
+                            data-testid={testId(tidModule, "order-payment-select")}
                             name="payment"
                             type="select"
                             className="form-select"
@@ -2891,6 +3150,7 @@ const InfoTable = ({
                       </Label>
 
                       <Input
+                        data-testid={testId(tidModule, "order-status-select")}
                         name="status"
                         type="select"
                         className="form-select"
@@ -2900,6 +3160,7 @@ const InfoTable = ({
                   <div className="modal-footer">
                     <div className="hstack gap-2 justify-content-end">
                       <button
+                        data-testid={testId(tidModule, "order-footer-close-button")}
                         type="button"
                         className="btn btn-light"
                         onClick={() => {
@@ -2914,6 +3175,7 @@ const InfoTable = ({
               </Modal>
 
               <Modal
+                data-testid={testId(tidModule, "reassign-manager-dialog")}
                 fade={true}
                 isOpen={showRMModal}
                 toggle={onRMModalCloseClick}
@@ -2943,6 +3205,7 @@ const InfoTable = ({
                               <Row>
                                 <Col lg={6}>
                                   <Select
+                                    testId={testId(tidModule, "reassign-manager", d?.name || d?.id, "select")}
                                     name={`rep_man_select_${d.id}`}
                                     id={`rep_man_id_${d.id}`}
                                     options={d.rep_man_options}
@@ -2978,6 +3241,7 @@ const InfoTable = ({
                   </div>
                   <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                     <button
+                      data-testid={testId(tidModule, "reassign-manager-close-button")}
                       type="button"
                       className="btn w-sm btn-light"
                       data-bs-dismiss="modal"
@@ -2989,6 +3253,7 @@ const InfoTable = ({
                       type="button"
                       className="btn w-sm btn-danger"
                       id="assign-record"
+                      data-testid={testId(tidModule, "reassign-manager-assign-button")}
                       onClick={assignNewReportingManager}
                     >
                       Assign
@@ -2998,6 +3263,7 @@ const InfoTable = ({
               </Modal>
 
               <Modal
+                data-testid={testId(tidModule, "activate-dialog")}
                 fade={true}
                 isOpen={showActivateEmpModal}
                 toggle={onActivateEmpModalClick}
@@ -3024,6 +3290,7 @@ const InfoTable = ({
                               Primary Department
                             </Label>
                             <Select
+                              testId={testId(tidModule, "activate-primary-department")}
                               id="primary_department_id_list"
                               name="primary_department_id_list"
                               isMulti={true}
@@ -3051,6 +3318,7 @@ const InfoTable = ({
                               Reporting Manager
                             </Label>
                             <Select
+                              testId={testId(tidModule, "activate-reporting-manager")}
                               id="reporting_manager_id"
                               name="reporting_manager_id"
                               isMulti={false}
@@ -3093,6 +3361,7 @@ const InfoTable = ({
                     <button
                       type="button"
                       className="btn w-sm btn-light"
+                      data-testid={testId(tidModule, "activate-close-button")}
                       data-bs-dismiss="modal"
                       onClick={() => setShowActivateEmpModal(false)}
                     >
@@ -3102,6 +3371,7 @@ const InfoTable = ({
                       type="button"
                       className="btn w-sm btn-danger"
                       id="assign-record"
+                      data-testid={testId(tidModule, "activate-assign-button")}
                       onClick={ActivateEmployeeAPI}
                     >
                       Assign
@@ -3109,110 +3379,14 @@ const InfoTable = ({
                   </div>
                 </ModalBody>
               </Modal>
-              <Modal
+              <ReorderStatusModal
                 isOpen={showReorderModal}
-                toggle={() => setShowReorderModal(false)}
-                centered
-              >
-                <ModalHeader toggle={() => setShowReorderModal(false)}>
-                  Reorder Status
-                </ModalHeader>
-                <ModalBody>
-                  <div
-                    style={{
-                      maxHeight: "400px",
-                      overflowY: "auto",
-                      paddingRight: "6px",
-                    }}
-                  >
-                    <DragDropContext onDragEnd={handleReorderDragEnd}>
-                      <Droppable droppableId="reorder-status-list">
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                          >
-                            {reorderList.map((item, index) => (
-                              <Draggable
-                                key={item.id}
-                                draggableId={String(item.id)}
-                                index={index}
-                              >
-                                {(dragProvided, dragSnapshot) => (
-                                  <div
-                                    ref={dragProvided.innerRef}
-                                    {...dragProvided.draggableProps}
-                                    {...dragProvided.dragHandleProps}
-                                    style={{
-                                      ...dragProvided.draggableProps.style,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "10px",
-                                      padding: "10px 12px",
-                                      marginBottom: "8px",
-                                      borderRadius: "6px",
-                                      border: "1px solid #e3e3e3",
-                                      background: dragSnapshot.isDragging
-                                        ? "#f0f4ff"
-                                        : "#fff",
-                                      cursor: "grab",
-                                    }}
-                                  >
-                                    <svg
-                                      width="16"
-                                      height="16"
-                                      viewBox="0 0 16 16"
-                                      fill="#8a8a8a"
-                                    >
-                                      <circle cx="5" cy="3" r="1.3" />
-                                      <circle cx="11" cy="3" r="1.3" />
-                                      <circle cx="5" cy="8" r="1.3" />
-                                      <circle cx="11" cy="8" r="1.3" />
-                                      <circle cx="5" cy="13" r="1.3" />
-                                      <circle cx="11" cy="13" r="1.3" />
-                                    </svg>
-                                    <span
-                                      className="badge text-uppercase"
-                                      style={{
-                                        backgroundColor: getValidColor(
-                                          item.color,
-                                        ),
-                                        color: "#fff",
-                                        padding: "6px 10px",
-                                        fontSize: "11px",
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {item.name}
-                                    </span>
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
-                  </div>
-                </ModalBody>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-light"
-                    onClick={() => setShowReorderModal(false)}
-                  >
-                    Close
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-success"
-                    onClick={handleSaveReorder}
-                  >
-                    Save
-                  </button>
-                </div>
-              </Modal>
+                onClose={() => setShowReorderModal(false)}
+                items={reorderList}
+                onChange={setReorderList}
+                onSave={handleSaveReorder}
+                tidModule={tidModule}
+              />
             </CardBody>
           </Card>
         </Container>

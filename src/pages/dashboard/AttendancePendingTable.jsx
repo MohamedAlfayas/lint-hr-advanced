@@ -16,22 +16,29 @@ import {
   ModalBody,
   Badge,
   UncontrolledTooltip,
-  Row,
-  Col,
 } from "reactstrap";
 import { setAttendanceApprovalTableFilterKeys } from "../../redux/reducers/ChildReducer/TableFilterReducer";
 import { format } from "date-fns";
 import { ParseTime } from "../../common/js/ParseTime";
-import { ConvertSecondsToTime } from "../../common/js/ConvertSecondsToTime";
-import { Link } from "react-router-dom";
+import {
+  ApvCheckIn,
+  ApvDate,
+  ApvDiff,
+  ApvEmployee,
+  ApvNotesButton,
+  ApvSeconds,
+  ApvWorked,
+} from "../../component/common/approval/ApprovalCells";
 import SimpleBar from "simplebar-react";
+import NotesModal from "../../component/common/modal/NotesModal";
 import { differenceInMinutes } from "date-fns";
-import { GetAmPmDateTime } from "../../common/js/ConvertDateTimeToAmPm";
 import "./../../common/css/lc_style.css";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
 import { VIEW_TEAM_ATTENDANCE_APPROVAL_ACCESS_KEY } from "../../common/constant/RoleConstants";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 const AttendancePendingTable = ({ onDataLengthChange }) => {
   const dispatch = useDispatch();
 
@@ -47,7 +54,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       setAttendanceApprovalTableFilterKeys({ primary_department_id_list: 0 }),
     );
   }, []);
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data")) || {};
 
   useEffect(() => {
     const today = new Date();
@@ -139,217 +146,93 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       filterable: false,
       id: "employee_id",
 
-      accessor: (obj) => {
-        const EmployeeData = GetLocalStorageData("employee") || [];
-        const thisEmployee = EmployeeData.find(
-          (data) => data.id === obj.employee_id,
-        );
-
-        // If no match, return fallback UI
-        if (!thisEmployee) {
-          return (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <div
-                  className="avatar-xs rounded-circle"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background: "#6c757d",
-                  }}
-                >
-                  <span className="first_letter" style={{ color: "white" }}>
-                    ?
-                  </span>
-                </div>
-              </div>
-              <div className="flex-grow-1">
-                <div>Unknown</div>
-                <div>-</div>
-              </div>
-            </div>
-          );
-        }
-
-        // If profile URL exists
-        if (thisEmployee.profile_url) {
-          return (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <img
-                  src={thisEmployee.profile_url}
-                  alt=""
-                  className="avatar-xs rounded-circle"
-                  style={{
-                    objectFit: "cover",
-                  }}
-                />
-              </div>
-              <div className="flex-grow-1">
-                <div>{thisEmployee.first_name}</div>
-                <div>{thisEmployee.email}</div>
-              </div>
-            </div>
-          );
-        }
-
-        // If no profile image, show initial
-        return (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                }}
-                data-bs-toggle="tooltip"
-                title={thisEmployee.first_name || ""}
-              >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {thisEmployee.first_name?.charAt(0) || "?"}
-                </span>
-              </div>
-            </div>
-            <div className="flex-grow-1">
-              <div>{thisEmployee.first_name || "Unknown"}</div>
-              <div>{thisEmployee.email || "-"}</div>
-            </div>
-          </div>
-        );
-      },
+      accessor: (obj) => (
+        <ApvEmployee employee={EmployeeData.find((data) => data.id === obj.employee_id)} />
+      ),
     },
-
     {
       Header: "Date",
       accessor: "date",
       filterable: false,
       id: "date",
-      accessor: (obj) => {
-        const date = format(new Date(obj.date), "dd MMM, yyyy");
-
-        return <b>{date}</b>;
-      },
+      accessor: (obj) => <ApvDate value={obj.date} />,
     },
     {
       Header: "First Check In",
       accessor: "first_check_in",
       filterable: false,
       id: "first_check_in",
-      accessor: (obj) => {
-        let in_time = obj?.first_check_in
-          ? format(ParseTime(obj?.first_check_in), "h:mm a")
-          : null;
-        return (
-          <React.Fragment>
-            {in_time}{" "}
-            {obj.entry_log.length > 0 ? (
-              <Link
-                className="link-opacity-75 ms-1"
-                href="#"
-                onClick={() => {
-                  setTimelineList(obj?.entry_log);
-                  setTimeLineDate(format(new Date(obj?.date), "dd MMM, yyyy"));
-                  open_timeline();
-                }}
-              >
-                +{obj.entry_log.length}
-              </Link>
-            ) : (
-              <span>-</span>
-            )}
-          </React.Fragment>
-        );
-      },
+      accessor: (obj) => (
+        <ApvCheckIn
+          time={obj?.first_check_in ? format(ParseTime(obj.first_check_in), "h:mm a") : null}
+          entries={obj?.entry_log?.length || 0}
+          onOpenLog={() => {
+            setTimelineList(obj?.entry_log);
+            setTimeLineDate(format(new Date(obj?.date), "dd MMM, yyyy"));
+            open_timeline();
+          }}
+        />
+      ),
     },
     {
       Header: "Work Schedule",
       accessor: "work_schedule",
       filterable: false,
       id: "work_schedule",
-      accessor: (obj) => {
-        let workSchedule = ConvertSecondsToTime(
-          obj.work_schedule_duration_without_break,
-        );
-        return <React.Fragment> {workSchedule} </React.Fragment>;
-      },
+      accessor: (obj) => <ApvSeconds seconds={obj.work_schedule_duration_without_break} />,
     },
     {
       Header: "Checked Hours",
       accessor: "checked_hoours",
       filterable: false,
       id: "checked_hours",
-      accessor: (obj) => {
-        let checked_hours = ConvertSecondsToTime(obj.checked_in_hr_in_seconds);
-        return <React.Fragment> {checked_hours} </React.Fragment>;
-      },
+      accessor: (obj) => (
+        <ApvWorked
+          worked={obj.checked_in_hr_in_seconds || 0}
+          planned={obj.work_schedule_duration_without_break || 0}
+        />
+      ),
     },
     {
       Header: "Edited Hours",
       accessor: "edited_hours",
       filterable: false,
       id: "edited_hours",
-      accessor: (obj) => {
-        let edited_hours = ConvertSecondsToTime(
-          obj.edited_checked_in_hr_in_seconds,
-        );
-
-        return <b>{edited_hours}</b>;
-      },
+      accessor: (obj) => (
+        <ApvSeconds seconds={obj.edited_checked_in_hr_in_seconds} tone="primary" strong />
+      ),
     },
     {
       Header: "OT",
       accessor: "ot",
       filterable: false,
       id: "ot",
-      accessor: (obj) => {
-        let ot_hours = ConvertSecondsToTime(obj.edited_ot_hr_in_seconds);
-        return <b>{ot_hours}</b>;
-      },
+      accessor: (obj) => <ApvSeconds seconds={obj.edited_ot_hr_in_seconds} tone="info" strong />,
     },
     {
       Header: "Diff",
       accessor: "diff",
       filterable: false,
       id: "diff",
-      accessor: (obj) => {
-        let diff = ConvertSecondsToTime(obj.paid_hr_difference_in_seconds);
-        return <b>{diff}</b>;
-      },
+      accessor: (obj) => <ApvDiff seconds={obj.paid_hr_difference_in_seconds} />,
     },
-
     {
       Header: "Paid Hr",
       accessor: "paid_hr",
       filterable: false,
       id: "paid_hr",
-      accessor: (obj) => {
-        let final_hr = ConvertSecondsToTime(obj.final_paid_hr_in_seconds);
-        return <React.Fragment>{final_hr}</React.Fragment>;
-      },
+      accessor: (obj) => (
+        <ApvSeconds seconds={obj.final_paid_hr_in_seconds} tone="success" strong />
+      ),
     },
     {
       Header: "Notes",
       accessor: "notes",
       filterable: false,
       id: "notes",
-      accessor: (obj) => {
-        return (
-          <React.Fragment>
-            {" "}
-            <Link
-              className="link-opacity-75 ms-1"
-              href="#"
-              onClick={() => viewNotes(obj)}
-            >
-              {obj.notes.length} Notes
-            </Link>
-          </React.Fragment>
-        );
-      },
+      accessor: (obj) => (
+        <ApvNotesButton count={obj.notes?.length || 0} onClick={() => viewNotes(obj)} />
+      ),
     },
   ];
 
@@ -377,6 +260,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
         table_class={"Lc_leave_apply_table"}
       />
       <Modal
+        data-testid="attendance-pending-date-dialog"
         isOpen={timeline_modal}
         toggle={() => {
           open_timeline();
@@ -384,7 +268,12 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
         centered
         className="custom-modal"
       >
-        <ModalHeader>
+        <ModalHeader
+          close={<ModalCloseButton onClick={() => {
+          open_timeline();
+        }} testId="attendance-pending-date-close-button" />} toggle={() => {
+          open_timeline();
+        }}>
           <h5
             className="modal-title"
             id="exampleModalToggleLabel"
@@ -463,6 +352,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
                               >
                                 {checkInData.location_id !== null ? (
                                   <a
+                                    data-testid={testId("attendance-pending-date-check-in-location", itemTestKey(data), "link")}
                                     href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -499,6 +389,7 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
                                 {checkOutData &&
                                 checkOutData.location_id !== null ? (
                                   <a
+                                    data-testid={testId("attendance-pending-date-check-out-location", itemTestKey(data), "link")}
                                     href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -533,7 +424,8 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
             </SimpleBar>
             <div className="text-center mt-3">
               <Button
-                className="btn btn-warning"
+                data-testid="attendance-pending-date-footer-close-button"
+                className="btn btn-light modal-dismiss-btn"
                 onClick={() => {
                   open_timeline();
                 }}
@@ -544,164 +436,19 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
           </div>
         </ModalBody>
       </Modal>
-      <Modal
+      <NotesModal
         isOpen={notes_modal}
-        toggle={() => {
-          closeNotesModal();
-        }}
-        centered
-        className="custom-modal"
-      >
-        <ModalHeader>
-          <h5
-            className="modal-title"
-            id="exampleModalToggleLabel"
-            style={{ fontSize: "smaller" }}
-          >
-            Notes - {format(new Date(date), "dd MMM, yyyy")}
-          </h5>
-        </ModalHeader>
-        <ModalBody className="text-left">
-          <div>
-            <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
-              {notesList && notesList.length > 0 ? (
-                notesList.map((d) => {
-                  let emp_details =
-                    !!EmployeeData &&
-                    EmployeeData.find((e) => e.id === d.employee_id);
-
-                  return (
-                    <div className="d-flex mb-4">
-                      <div className="flex-shrink-0">
-                        {emp_details?.profile_url ? (
-                          <img
-                            src={emp_details?.profile_url}
-                            alt=""
-                            className="avatar-xs rounded-circle"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div
-                            className="avatar-xs rounded-circle"
-                            style={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              background: "#0ab39c",
-                              objectFit: "cover",
-                            }}
-                            data-bs-toggle="tooltip"
-                            title={emp_details.first_name}
-                          >
-                            <span
-                              className="first_letter"
-                              style={{ color: "white" }}
-                            >
-                              {emp_details.first_name.charAt(0)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-grow-1 ms-3">
-                        <h5 className="fs-13">
-                          {emp_details.first_name}{" "}
-                          <small className="text-muted ms-2">
-                            {/* 20 Dec 2021 - 05:47AM */}
-                            {GetAmPmDateTime(d?.created_time)}
-                          </small>
-                        </h5>
-                        <p className="text-muted">{d?.message}</p>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "25vh",
-                  }}
-                >
-                  <lord-icon
-                    src="https://cdn.lordicon.com/msoeawqm.json"
-                    trigger="loop"
-                    colors="primary:#405189,secondary:#0ab39c"
-                    style={{
-                      marginTop: "20px",
-                      width: "150px",
-                      height: "80px",
-                      marginBottom: "20px",
-                    }}
-                  ></lord-icon>
-                  <p
-                    style={{
-                      width: "300px",
-                      color: "#405189",
-                      fontSize: "20px",
-                      textAlign: "center",
-                    }}
-                  >
-                    No Notes Found!
-                  </p>
-                </div>
-              )}
-            </SimpleBar>
-            <form className="mt-4">
-              <Row className="g-3">
-                <Col xs={12}>
-                  <label
-                    htmlFor="exampleFormControlTextarea1"
-                    className="form-label text-body"
-                  >
-                    Leave a Notes
-                  </label>
-                  <textarea
-                    className="form-control bg-light border-light"
-                    id="exampleFormControlTextarea1"
-                    rows="3"
-                    placeholder="Enter your comment..."
-                    value={notesUpdateObj?.notes || ""}
-                    onChange={(e) =>
-                      setNotesUpdateObj({
-                        ...notesUpdateObj,
-                        notes: e.target.value,
-                      })
-                    }
-                  ></textarea>
-                </Col>
-                <Col xs={12} className="text-end">
-                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-                    <button
-                      type="button"
-                      className="btn btn-warning"
-                      data-bs-dismiss="modal"
-                      onClick={closeNotesModal}
-                    >
-                      Close
-                    </button>
-                    {!!notesUpdateObj?.notes &&
-                      (notesUpdateObj?.notes).trim().length > 0 && (
-                        <button
-                          type="button"
-                          className="btn w-sm btn-success"
-                          data-bs-dismiss="modal"
-                          onClick={updateNotes}
-                        >
-                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                          Save
-                        </button>
-                      )}
-                  </div>
-                </Col>
-              </Row>
-            </form>
-          </div>
-        </ModalBody>
-      </Modal>
+        onClose={closeNotesModal}
+        date={date}
+        notes={notesList}
+        resolveEmployee={(n) =>
+          !!EmployeeData && EmployeeData.find((e) => e.id === n.employee_id)
+        }
+        canWrite
+        value={notesUpdateObj?.notes}
+        onChange={(v) => setNotesUpdateObj({ ...notesUpdateObj, notes: v })}
+        onSave={updateNotes}
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import { generateToken } from "../../firebase";
 // Default avatar image (optional)
 import avatar1 from "../../assets/images/users/avatar-1.jpg";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import "./ProfileDropdown.scss";
 
 const ProfileDropdown = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const ProfileDropdown = () => {
 
   const [userName, setUserName] = useState("Admin");
   const [isProfileDropdown, setIsProfileDropdown] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
@@ -33,6 +35,7 @@ const ProfileDropdown = () => {
     } else {
       setUserName("Admin");
     }
+    setImgError(false);
   }, [profile_data]);
 
   const toggleProfileDropdown = () => {
@@ -74,9 +77,10 @@ const ProfileDropdown = () => {
         window.logoutChannel.postMessage("logoutEvent");
 
         dispatch(setShowTeamTable(false));
+        dispatch(setLoaderVisible(false));
 
         toast.success("Logged Out Successfully");
-        navigate("/auth/login");
+        navigate("/auth/login", { replace: true });
       } else {
         dispatch(setLoaderVisible(false))
         toast.error(Api?.data?.message || Api?.data?.detail || "Logout failed");
@@ -99,63 +103,81 @@ const ProfileDropdown = () => {
     }
   }
 
+  const fullName =
+    [profile_data?.first_name, profile_data?.last_name].filter(Boolean).join(" ") || userName;
+  const email = profile_data?.email;
+  const isAdmin = profile_data?.is_admin === true;
+
+  const avatar = (size) =>
+    profile_data?.profile_url && !imgError ? (
+      <img
+        className={`pdd-avatar ${size}`}
+        src={profile_data.profile_url}
+        alt={fullName}
+        onError={() => setImgError(true)}
+      />
+    ) : (
+      <span className={`pdd-avatar is-text ${size}`} title={fullName}>
+        {userName.charAt(0).toUpperCase()}
+      </span>
+    );
+
   return (
     <Dropdown
       isOpen={isProfileDropdown}
       toggle={toggleProfileDropdown}
-      className="ms-sm-3 header-item topbar-user"
+      className="ms-sm-3 header-item topbar-user pdd"
     >
-      <DropdownToggle tag="button" type="button" className="btn">
+      <DropdownToggle data-testid="profile-menu-administrator-trigger" tag="button" type="button" className="btn pdd-toggle">
         <span className="d-flex align-items-center">
-          {profile_data?.profile_url ? (
-            <img
-              className="rounded-circle header-profile-user"
-              style={{ objectFit: "cover" }}
-              src={profile_data.profile_url}
-              alt={profile_data.first_name || "Profile"}
-            />
-          ) : (
-            <div
-              className="avatar-xs rounded-circle"
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#0ab39c",
-              }}
-              title={userName}
-            >
-              <span
-                className="first_letter"
-                style={{ color: "white", fontWeight: 500 }}
-              >
-                {userName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-
-          <span className="text-start ms-xl-2">
-            <span className="d-none d-xl-inline-block ms-1 fw-medium user-name-text">
-              {userName}
-            </span>
+          <span className="pdd-avatar-wrap">
+            {avatar("is-sm")}
+            <span className="pdd-online" />
           </span>
+          <span className="d-none d-xl-flex flex-column text-start ms-2 pdd-toggle-text">
+            <span className="pdd-toggle-name">{userName}</span>
+            <span className="pdd-toggle-role">{isAdmin ? "Administrator" : "Employee"}</span>
+          </span>
+          <i className={`ri-arrow-down-s-line d-none d-xl-inline ms-1 pdd-caret ${isProfileDropdown ? "is-open" : ""}`}></i>
         </span>
       </DropdownToggle>
 
-      <DropdownMenu className="dropdown-menu-end">
-        <h6 className="dropdown-header">Welcome {userName}!</h6>
-
-        <DropdownItem onClick={goToProfile}>
-          <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle">Profile</span>
-        </DropdownItem>
-
-        <DropdownItem onClick={logout}>
-          <i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i>
-          <span className="align-middle" data-key="t-logout">
-            Logout
+      <DropdownMenu className="dropdown-menu-end pdd-menu">
+        <div className="pdd-hero">
+          <span className="pdd-avatar-wrap">
+            {avatar("is-lg")}
+            <span className="pdd-online" />
           </span>
-        </DropdownItem>
+          <div className="pdd-hero-text">
+            <span className="pdd-greet">Welcome back 👋</span>
+            <h6 className="pdd-name" title={fullName}>{fullName}</h6>
+            {email && <span className="pdd-mail" title={email}>{email}</span>}
+            <span className={`pdd-role ${isAdmin ? "is-admin" : ""}`}>
+              <i className={isAdmin ? "ri-shield-star-line" : "ri-user-line"}></i>
+              {isAdmin ? "Administrator" : "Employee"}
+            </span>
+          </div>
+        </div>
+
+        <div className="pdd-list">
+          <DropdownItem data-testid="profile-menu-my-profile-view-and-update-option" className="pdd-item" onClick={goToProfile}>
+            <span className="pdd-item-icon">
+              <i className="ri-user-3-line"></i>
+            </span>
+            <span className="pdd-item-text">
+              <b>My Profile</b>
+              <small>View and update your details</small>
+            </span>
+            <i className="ri-arrow-right-s-line pdd-item-arrow"></i>
+          </DropdownItem>
+        </div>
+
+        <div className="pdd-foot">
+          <DropdownItem data-testid="profile-menu-logout-option" className="pdd-logout" onClick={logout} disabled={showLoader}>
+            <i className="ri-logout-box-r-line"></i>
+            <span data-key="t-logout">Logout</span>
+          </DropdownItem>
+        </div>
       </DropdownMenu>
     </Dropdown>
   );

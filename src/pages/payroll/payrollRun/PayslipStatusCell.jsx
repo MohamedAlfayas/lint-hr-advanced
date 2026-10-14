@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
 import { fetchStatusMaster, isZeroSettlement, labelFor, nextStatusCodes } from "./statusHelpers";
 import StatusBadge from "./StatusBadge";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const PayslipStatusCell = ({ payslip, runStatus, onChanged }) => {
   const [rows, setRows] = useState([]);
@@ -54,9 +55,9 @@ const PayslipStatusCell = ({ payslip, runStatus, onChanged }) => {
     <div className="d-flex align-items-center gap-1">
       <StatusBadge scope="payslip" code={payslip.status} />
       {options.length > 0 && (
-        <Input type="select" bsSize="sm" style={{ width: 140, fontSize: 11 }} value="" onChange={handleChange}>
-          <option value="">Move to…</option>
-          {options.map((c) => <option key={c} value={c}>{labelFor(rows, c)}</option>)}
+        <Input data-testid={testId("payslip-row", itemTestKey(payslip), "status-select")} type="select" bsSize="sm" style={{ width: 140, fontSize: 11 }} value="" onChange={handleChange}>
+          <option data-testid={testId("payslip-row", itemTestKey(payslip), "status-option-placeholder")} value="">Move to…</option>
+          {options.map((c) => <option key={c} data-testid={testId("payslip-row", itemTestKey(payslip), "status-option", c)} value={c}>{labelFor(rows, c)}</option>)}
         </Input>
       )}
     </div>

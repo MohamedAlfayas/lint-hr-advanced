@@ -9,7 +9,7 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 
 import ReactApexChart from "react-apexcharts";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import { employeeTypeOptions } from "../../common/constant/Constants";
 import {
   VIEW_HIERARCHY_ATTENDANCE_ACCESS_KEY,
@@ -277,6 +277,7 @@ const AttendanceStatistics = () => {
                   <UncontrolledDropdown className="card-header-dropdown">
                     <DropdownToggle
                       tag="a"
+                      data-testid="attendance-statistics-period-trigger"
                       className="text-reset dropdown-btn"
                       role="button"
                     >
@@ -290,6 +291,7 @@ const AttendanceStatistics = () => {
                     <DropdownMenu className="dropdown-menu-end">
                       {showAllAttendance && (
                         <DropdownItem
+                          data-testid="attendance-statistics-period-option-all"
                           onClick={() => {
                             onAttStasticsTypeChange("All", 0);
                           }}
@@ -300,6 +302,7 @@ const AttendanceStatistics = () => {
 
                       {showTeamAttendance && (
                         <DropdownItem
+                          data-testid="attendance-statistics-period-option-my-team"
                           onClick={() => {
                             onAttStasticsTypeChange("My Team", 1);
                           }}

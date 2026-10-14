@@ -1,559 +1,366 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import PropTypes from "prop-types";
-
-
-
-import {
-    Card,
-    CardBody,
-    Container,
-    Form,
-    FormFeedback,
-    Input,
-    Label,
-    Modal,
-    ModalBody,
-    ModalHeader,
-    Row,
-    Col
-} from "reactstrap";
-
-import * as Yup from "yup";
-import { useFormik } from "formik";
+import React, { useMemo, useRef, useState } from "react";
+import { Container, Modal } from "reactstrap";
+import dayjs from "dayjs";
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin, { Draggable } from "@fullcalendar/interaction";
-import BootstrapTheme from "@fullcalendar/bootstrap";
-import Flatpickr from "react-flatpickr";
+import interactionPlugin from "@fullcalendar/interaction";
+import listPlugin from "@fullcalendar/list";
 
-//redux
-import { useSelector, useDispatch } from "react-redux";
-
-
-
-
-//Simple bar
-
-
-import listPlugin from '@fullcalendar/list';
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { MetaTitle } from "../../common/data/MetaTitle";
+import "./Calendar.scss";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 
+const VIEWS = [
+  { key: "dayGridMonth", label: "Month", icon: "ri-layout-grid-line" },
+  { key: "listYear", label: "List", icon: "ri-list-check" },
+];
 
+const UPCOMING_LIMIT = 6;
 
+const daysFromToday = (d) => d.startOf("day").diff(dayjs().startOf("day"), "day");
 
-const Calender = () => {
-    const dispatch = useDispatch();
-
-    const [modal, setModal] = useState(false);
-
-    const [selectedDay, setSelectedDay] = useState(0);
-    const [selectedNewDay, setSelectedNewDay] = useState(0);
-    const [isEdit, setIsEdit] = useState(false);
-    const [isEditButton, setIsEditButton] = useState(true);
-
-    const events = GetLocalStorageData('holiday') || []
-
-    
-    /**
-     * Handling the modal state
-     */
-    const toggle = () => {
-        if (modal) {
-            setModal(false);
-            // setEvents(null);
-            setIsEdit(false);
-            setIsEditButton(true);
-        } else {
-            setModal(true);
-        }
-    };
-    /**
-     * Handling date click on calendar
-     */
-
-    const handleDateClick = (arg) => {
-        const date = arg["date"];
-        const day = date.getDate();
-        const month = date.getMonth();
-        const year = date.getFullYear();
-
-        const currectDate = new Date();
-        const currentHour = currectDate.getHours();
-        const currentMin = currectDate.getMinutes();
-        const currentSec = currectDate.getSeconds();
-        const modifiedDate = new Date(
-            year,
-            month,
-            day,
-            currentHour,
-            currentMin,
-            currentSec
-        );
-
-        const modifiedData = { ...arg, date: modifiedDate };
-
-        setSelectedNewDay(date);
-        setSelectedDay(modifiedData);
-        toggle();
-    };
-
-    const str_dt = function formatDate(date) {
-        var monthNames = [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
-        ];
-        var d = new Date(date),
-            month = "" + monthNames[d.getMonth()],
-            day = "" + d.getDate(),
-            year = d.getFullYear();
-        if (month.length < 2) month = "0" + month;
-        if (day.length < 2) day = "0" + day;
-        return [day + " " + month, year].join(",");
-    };
-
-    const date_r = function formatDate(date) {
-        var d = new Date(date),
-            month = "" + (d.getMonth() + 1),
-            day = "" + d.getDate(),
-            year = d.getFullYear();
-        if (month.length < 2) month = "0" + month;
-        if (day.length < 2) day = "0" + day;
-        return [year, month, day].join("-");
-    };
-
-    /**
-     * Handling click on events on calendar
-     */
-    const handleEventClick = (arg) => {
-        const events = arg.events;
-
-        const st_date = events.start;
-        const ed_date = events.end;
-        const r_date =
-            ed_date == null
-                ? str_dt(st_date)
-                : str_dt(st_date) + " to " + str_dt(ed_date);
-        const er_date =
-            ed_date == null
-                ? date_r(st_date)
-                : date_r(st_date) + " to " + date_r(ed_date);
-
-        // setEvents({
-        //     id: events.id,
-        //     title: events.title,
-        //     start: events.start,
-        //     end: events.end,
-        //     className: events.classNames,
-        //     category: events.classNames[0],
-        //     location: events._def.extendedProps.location,
-        //     description: events._def.extendedProps.description,
-        //     defaultDate: er_date,
-        //     datetag: r_date,
-        // });
-
-        setIsEdit(true);
-        setIsEditButton(false);
-        toggle();
-    };
-    const validation = useFormik({
-        // enableReinitialize : use this flag when initial values needs to be changed
-        enableReinitialize: true,
-
-        initialValues: {
-            title: (events && events.title) || "",
-            category: (events && events.category) || "",
-            location: (events && events.location) || "",
-            description: (events && events.description) || "",
-            defaultDate: (events && events.defaultDate) || "",
-            datetag: (events && events.datetag) || "",
-        },
-
-        validationSchema: Yup.object({
-            title: Yup.string().required("Please Enter Your Event Name"),
-            category: Yup.string().required("Please Select Your Category"),
-        }),
-        onSubmit: (values) => {
-            var updatedDay = "";
-            if (selectedNewDay) {
-                updatedDay = new Date(selectedNewDay[1]);
-                updatedDay.setDate(updatedDay.getDate() + 1);
-            }
-
-            if (isEdit) {
-                const updateEvent = {
-                    id: events.id,
-                    title: values.title,
-                    className: values.category,
-                    start: selectedNewDay ? selectedNewDay[0] : events.start,
-                    end: selectedNewDay ? updatedDay : events.end,
-                    location: values.location,
-                    description: values.description,
-                };
-                // update events
-                dispatch(onUpdateEvent(updateEvent));
-                validation.resetForm();
-            } else {
-                const newEvent = {
-                    id: Math.floor(Math.random() * 100),
-                    title: values["title"],
-                    start: selectedDay ? selectedNewDay[0] : new Date(),
-                    end: selectedDay ? updatedDay : new Date(),
-                    className: values.category,
-                    location: values["location"],
-                    description: values["description"],
-                };
-                // save new events
-                dispatch(onAddNewEvent(newEvent));
-                validation.resetForm();
-            }
-            setSelectedDay(null);
-            setSelectedNewDay(null);
-            toggle();
-        },
-    });
-
-    document.title = `Holiday Calendar | ${MetaTitle}`;
-    return (
-        <React.Fragment>
-
-            <div className="page-content">
-                <Container fluid>
-
-                    <Row>
-                        <Col xs={12}>
-                            <Row>
-
-
-                                <Col xl={14}>
-                                    <Card className="card-h-100">
-                                        <CardBody>
-                                            <FullCalendar
-                                                plugins={[
-                                                    BootstrapTheme,
-                                                    dayGridPlugin,
-                                                    interactionPlugin,
-                                                    listPlugin
-                                                ]}
-                                                initialView="dayGridMonth"
-                                                slotDuration={"00:15:00"}
-                                                handleWindowResize={true}
-                                                themeSystem="bootstrap"
-                                                headerToolbar={{
-                                                    left: "prev,next today",
-                                                    center: "title",
-                                                    right: "dayGridMonth,dayGridWeek,dayGridDay,listWeek",
-                                                }}
-
-                                                editable={true}
-                                                droppable={true}
-                                                selectable={true}
-                                                // events={eee}
-                                                events={events.map(obj =>({
-                                                    ...obj,
-                                                    title : obj.name,
-                                                    className : obj.is_restricted ? "bg-danger-subtle text-danger" : "bg-success-subtle text-success",
-                                                    start : (obj.date)
-                                                }))}
-                                            // dateClick={handleDateClick}
-                                            // eventsClick={handleEventClick}
-
-                                            />
-                                        </CardBody>
-                                    </Card>
-                                </Col>
-                            </Row>
-
-                            <div style={{ clear: "both" }}></div>
-
-                            <Modal isOpen={modal} id="events-modal" centered>
-                                <ModalHeader toggle={toggle} tag="h5" className="p-3 bg-info-subtle modal-title">
-                                    {!!isEdit ? "Edit Event" : "Add Event"}
-                                </ModalHeader>
-                                <ModalBody>
-                                    <Form
-                                        className={
-                                            !!isEdit
-                                                ? "needs-validation view-events"
-                                                : "needs-validation"
-                                        }
-                                        name="events-form"
-                                        id="form-events"
-                                        onSubmit={(e) => {
-                                            e.preventsDefault();
-                                            validation.handleSubmit();
-                                            return false;
-                                        }}
-                                    >
-                                        {!!isEdit ? (
-                                            <div className="text-end">
-                                                <Link
-                                                    to="#"
-                                                    className="btn btn-sm btn-soft-primary"
-                                                    id="edit-events-btn"
-                                                    onClick={(e) => {
-                                                        e.preventsDefault();
-                                                        submitOtherEvent();
-                                                        return false;
-                                                    }}
-                                                >
-                                                    Edit
-                                                </Link>
-                                            </div>
-                                        ) :
-                                            null
-                                        }
-
-
-                                        <div className="events-details">
-                                            <div className="d-flex mb-2">
-                                                <div className="flex-grow-1 d-flex align-items-center">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <i className="ri-calendar-events-line text-muted fs-16"></i>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6
-                                                            className="d-block fw-semibold mb-0"
-                                                            id="events-start-date-tag"
-                                                        >
-                                                            {events ? events.datetag : ""}
-                                                        </h6>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="d-flex align-items-center mb-2">
-                                                <div className="flex-shrink-0 me-3">
-                                                    <i className="ri-map-pin-line text-muted fs-16"></i>
-                                                </div>
-                                                <div className="flex-grow-1">
-                                                    <h6 className="d-block fw-semibold mb-0">
-                                                        {" "}
-                                                        <span id="events-location-tag">
-                                                            {events && events.location !== undefined ? events.location : "No Location"}
-                                                        </span>
-                                                    </h6>
-                                                </div>
-                                            </div>
-                                            <div className="d-flex mb-3">
-                                                <div className="flex-shrink-0 me-3">
-                                                    <i className="ri-discuss-line text-muted fs-16"></i>
-                                                </div>
-                                                <div className="flex-grow-1">
-                                                    <p
-                                                        className="d-block text-muted mb-0"
-                                                        id="events-description-tag"
-                                                    >
-                                                        {events && events.description !== undefined ? events.description : "No Description"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <Row className="events-form">
-                                            <Col xs={12}>
-                                                <div className="mb-3">
-                                                    <Label className="form-label">Type</Label>
-                                                    <Input
-                                                        className={
-                                                            !!isEdit
-                                                                ? "form-select d-none"
-                                                                : "form-select d-block"
-                                                        }
-                                                        name="category"
-                                                        id="events-category"
-                                                        type="select"
-                                                        onChange={validation.handleChange}
-                                                        onBlur={validation.handleBlur}
-                                                        value={validation.values.category || ""}
-                                                    >
-                                                        <option value="bg-danger-subtle">Danger</option>
-                                                        <option value="bg-success-subtle">Success</option>
-                                                        <option value="bg-primary-subtle">Primary</option>
-                                                        <option value="bg-info-subtle">Info</option>
-                                                        <option value="bg-dark-subtle">Dark</option>
-                                                        <option value="bg-warning-subtle">Warning</option>
-                                                    </Input>
-                                                    {validation.touched.category &&
-                                                        validation.errors.category ? (
-                                                        <FormFeedback type="invalid">
-                                                            {validation.errors.category}
-                                                        </FormFeedback>
-                                                    ) : null}
-                                                </div>
-                                            </Col>
-                                            <Col xs={12}>
-                                                <div className="mb-3">
-                                                    <Label className="form-label">Event Name</Label>
-                                                    <Input
-                                                        className={
-                                                            !!isEdit
-                                                                ? "form-control d-none"
-                                                                : "form-control d-block"
-                                                        }
-                                                        placeholder="Enter events name"
-                                                        type="text"
-                                                        name="title"
-                                                        id="events-title"
-                                                        onChange={validation.handleChange}
-                                                        onBlur={validation.handleBlur}
-                                                        value={validation.values.title || ""}
-                                                    // invalid={
-                                                    //   validation.touched.title &&
-                                                    //   validation.errors.title
-                                                    //     ? true
-                                                    //     : false
-                                                    // }
-                                                    />
-                                                    {validation.touched.title &&
-                                                        validation.errors.title ? (
-                                                        <FormFeedback type="invalid">
-                                                            {validation.errors.title}
-                                                        </FormFeedback>
-                                                    ) : null}
-                                                </div>
-                                            </Col>
-                                            <Col xs={12}>
-                                                <div className="mb-3">
-                                                    <Label>Event Date</Label>
-                                                    <div
-                                                        className={
-                                                            !!isEdit ? "input-group d-none" : "input-group"
-                                                        }
-                                                    >
-                                                        <Flatpickr
-                                                            className="form-control"
-                                                            id="events-start-date"
-                                                            name="defaultDate"
-                                                            placeholder="Select Date"
-                                                            value={validation.values.defaultDate || ""}
-                                                            options={{
-                                                                mode: "range",
-                                                                dateFormat: "Y-m-d",
-                                                            }}
-                                                            onChange={(date) => {
-                                                                setSelectedNewDay(date);
-                                                            }}
-                                                        />
-                                                        <span className="input-group-text">
-                                                            <i className="ri-calendar-events-line"></i>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </Col>
-                                            <Col xs={12}>
-                                                <div className="mb-3">
-                                                    <Label htmlFor="events-location">Location</Label>
-                                                    <div>
-                                                        <Input
-                                                            type="text"
-                                                            className={
-                                                                !!isEdit
-                                                                    ? "form-control d-none"
-                                                                    : "form-control d-block"
-                                                            }
-                                                            name="location"
-                                                            id="events-location"
-                                                            placeholder="Event location"
-                                                            onChange={validation.handleChange}
-                                                            onBlur={validation.handleBlur}
-                                                            value={validation.values.location || "No Location"}
-                                                        // invalid={
-                                                        //   validation.touched.location &&
-                                                        //   validation.errors.location
-                                                        //     ? true
-                                                        //     : false
-                                                        // }
-                                                        />
-                                                        {validation.touched.location &&
-                                                            validation.errors.location ? (
-                                                            <FormFeedback type="invalid">
-                                                                {validation.errors.location}
-                                                            </FormFeedback>
-                                                        ) : null}
-                                                    </div>
-                                                </div>
-                                            </Col>
-                                            <Col xs={12}>
-                                                <div className="mb-3">
-                                                    <Label className="form-label">Description</Label>
-                                                    <textarea
-                                                        className={
-                                                            !!isEdit
-                                                                ? "form-control d-none"
-                                                                : "form-control d-block"
-                                                        }
-                                                        id="events-description"
-                                                        name="description"
-                                                        placeholder="Enter a description"
-                                                        rows="3"
-                                                        onChange={validation.handleChange}
-                                                        onBlur={validation.handleBlur}
-                                                        value={validation.values.description || "No Description"}
-                                                    // invalid={
-                                                    //   validation.touched.description &&
-                                                    //   validation.errors.description
-                                                    //     ? true
-                                                    //     : false
-                                                    // }
-                                                    ></textarea>
-                                                    {validation.touched.description &&
-                                                        validation.errors.description ? (
-                                                        <FormFeedback type="invalid">
-                                                            {validation.errors.description}
-                                                        </FormFeedback>
-                                                    ) : null}
-                                                </div>
-                                            </Col>
-                                        </Row>
-                                        <div className="hstack gap-2 justify-content-end">
-                                            {!!isEdit && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-soft-danger"
-                                                    id="btn-delete-events"
-
-                                                >
-                                                    <i className="ri-close-line align-bottom"></i> Delete
-                                                </button>
-                                            )}
-                                            {isEditButton && <button
-                                                type="submit"
-                                                className="btn btn-success"
-                                                id="btn-save-events"
-                                            >
-                                                {!!isEdit ? "Edit Event" : "Add Event"}
-                                            </button>}
-                                        </div>
-                                    </Form>
-                                </ModalBody>
-                            </Modal>
-                        </Col>
-                    </Row>
-                </Container>
-            </div>
-        </React.Fragment>
-    );
+const relativeLabel = (d) => {
+  const n = daysFromToday(d);
+  if (n === 0) return "Today";
+  if (n === 1) return "Tomorrow";
+  return `In ${n} days`;
 };
 
-Calender.propTypes = {
-    events: PropTypes.any,
-    className: PropTypes.string,
-    onGetEvents: PropTypes.func,
-    onAddNewEvent: PropTypes.func,
-    onUpdateEvent: PropTypes.func,
-    onDeleteEvent: PropTypes.func,
-    onGetCategories: PropTypes.func,
+const Calender = () => {
+  document.title = `Holiday Calendar | ${MetaTitle}`;
+
+  const calendarRef = useRef(null);
+  const [title, setTitle] = useState("");
+  const [view, setView] = useState("dayGridMonth");
+  const [selected, setSelected] = useState(null);
+
+  const holidays = useMemo(
+    () =>
+      (GetLocalStorageData("holiday") || [])
+        .filter((h) => h?.date && dayjs(h.date).isValid())
+        .map((h) => ({ ...h, day: dayjs(h.date) }))
+        .sort((a, b) => a.day.valueOf() - b.day.valueOf()),
+    []
+  );
+
+  const holidayDates = useMemo(
+    () => new Set(holidays.map((h) => h.day.format("YYYY-MM-DD"))),
+    [holidays]
+  );
+
+  const events = useMemo(
+    () =>
+      holidays.map((h, i) => ({
+        id: String(h.id ?? i),
+        title: h.name,
+        start: h.day.format("YYYY-MM-DD"),
+        allDay: true,
+        classNames: ["hcal-ev", h.is_restricted ? "is-restricted" : "is-public"],
+        extendedProps: { holiday: h },
+      })),
+    [holidays]
+  );
+
+  const stats = useMemo(() => {
+    const year = dayjs().year();
+    const thisYear = holidays.filter((h) => h.day.year() === year);
+    const upcoming = holidays.filter((h) => daysFromToday(h.day) >= 0);
+    return {
+      year,
+      total: thisYear.length,
+      upcoming,
+      restricted: thisYear.filter((h) => h.is_restricted).length,
+      next: upcoming[0],
+    };
+  }, [holidays]);
+
+  const api = () => calendarRef.current?.getApi();
+
+  const goToHoliday = (h) => {
+    api()?.gotoDate(h.day.toDate());
+    setSelected(h);
+  };
+
+  const renderEvent = ({ event, view: v }) => {
+    const h = event.extendedProps.holiday;
+    if (v.type.startsWith("list")) {
+      const idx = holidays.indexOf(h);
+      const prev = holidays[idx - 1];
+      const monthStart = !prev || !prev.day.isSame(h.day, "month");
+      const monthCount = holidays.filter((x) => x.day.isSame(h.day, "month")).length;
+      const diff = daysFromToday(h.day);
+      const when = diff >= 0 ? relativeLabel(h.day) : `${Math.abs(diff)} days ago`;
+      const tone = h.is_restricted ? "is-restricted" : "is-public";
+      return (
+        <>
+          {monthStart && (
+            <div className="hcal-lmonth">
+              <span>{h.day.format("MMMM YYYY")}</span>
+              <em>
+                {monthCount} holiday{monthCount > 1 ? "s" : ""}
+              </em>
+            </div>
+          )}
+          <div
+            className={`hcal-lrow ${tone}${diff < 0 ? " is-past" : ""}${diff === 0 ? " is-today" : ""}`}
+            data-testid={testId("holiday-calendar-list", itemTestKey(h), "item")}
+          >
+            <span className="hcal-up-date">
+              <span className="hcal-up-mon">{h.day.format("MMM")}</span>
+              <span className="hcal-up-day">{h.day.format("DD")}</span>
+            </span>
+            <span className="hcal-lrow-text">
+              <span className="hcal-lrow-name" title={event.title}>
+                {event.title}
+              </span>
+              <span className="hcal-lrow-meta">
+                <span>
+                  <i className="ri-calendar-line"></i>
+                  {h.day.format("dddd")}
+                </span>
+                <span className={`hcal-lrow-when${diff >= 0 ? " is-upcoming" : ""}`}>
+                  <i className={diff >= 0 ? "ri-time-line" : "ri-history-line"}></i>
+                  {when}
+                </span>
+              </span>
+            </span>
+            <span className={`hcal-tag ${tone}`}>
+              <i className={h.is_restricted ? "ri-lock-line" : "ri-global-line"}></i>
+              {h.is_restricted ? "Restricted" : "Public"}
+            </span>
+            <i className="ri-arrow-right-s-line hcal-lrow-go"></i>
+          </div>
+        </>
+      );
+    }
+    return (
+      <div className="hcal-ev-inner" title={event.title}>
+        <span className="hcal-ev-dot" />
+        <span className="hcal-ev-title">{event.title}</span>
+      </div>
+    );
+  };
+
+  const statCards = [
+    { tone: "primary", icon: "ri-calendar-2-line", label: `Holidays in ${stats.year}`, value: stats.total },
+    { tone: "success", icon: "ri-calendar-check-line", label: "Upcoming", value: stats.upcoming.length },
+    { tone: "danger", icon: "ri-lock-line", label: "Restricted", value: stats.restricted },
+    {
+      tone: "warning",
+      icon: "ri-timer-2-line",
+      label: stats.next ? stats.next.name : "Next holiday",
+      value: stats.next ? relativeLabel(stats.next.day) : "—",
+    },
+  ];
+
+  return (
+    <div className="page-content">
+      <Container fluid className="hcal">
+        {/* ── Header ── */}
+        <div className="hcal-hero">
+          <div className="hcal-hero-title">
+            <span className="hcal-hero-icon">
+              <i className="ri-calendar-event-line"></i>
+            </span>
+            <div>
+              <h4>Holiday Calendar</h4>
+              <p>Public and restricted holidays for your organisation</p>
+            </div>
+          </div>
+
+          <div className="hcal-stats">
+            {statCards.map((s) => (
+              <div key={s.label} className={`hcal-stat is-${s.tone}`}>
+                <span className="hcal-stat-icon">
+                  <i className={s.icon}></i>
+                </span>
+                <div className="hcal-stat-text">
+                  <div className="hcal-stat-value">{s.value}</div>
+                  <div className="hcal-stat-label" title={s.label}>
+                    {s.label}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="hcal-grid">
+          {/* ── Calendar ── */}
+          <section className="hcal-card hcal-main">
+            <div className="hcal-toolbar">
+              <div className="hcal-nav">
+                <button data-testid="holiday-calendar-previous-button" type="button" className="hcal-icon-btn" onClick={() => api()?.prev()} title="Previous">
+                  <i className="ri-arrow-left-s-line"></i>
+                </button>
+                <button data-testid="holiday-calendar-next-button" type="button" className="hcal-icon-btn" onClick={() => api()?.next()} title="Next">
+                  <i className="ri-arrow-right-s-line"></i>
+                </button>
+                <button data-testid="holiday-calendar-today-button" type="button" className="hcal-today-btn" onClick={() => api()?.today()}>
+                  Today
+                </button>
+              </div>
+
+              <h5 className="hcal-title">{title}</h5>
+
+              <div className="hcal-views">
+                {VIEWS.map((v) => (
+                  <button
+                    data-testid={testId("holiday-calendar", itemTestKey(v), "button")}
+                    key={v.key}
+                    type="button"
+                    className={`hcal-view-btn ${view === v.key ? "active" : ""}`}
+                    onClick={() => api()?.changeView(v.key)}
+                  >
+                    <i className={v.icon}></i>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="hcal-body">
+              <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, interactionPlugin, listPlugin]}
+                initialView="dayGridMonth"
+                headerToolbar={false}
+                height="auto"
+                fixedWeekCount={false}
+                dayMaxEvents={2}
+                events={events}
+                eventContent={renderEvent}
+                eventClick={({ event }) => setSelected(event.extendedProps.holiday)}
+                datesSet={({ view: v }) => {
+                  setTitle(v.title);
+                  setView(v.type);
+                }}
+                dayCellClassNames={({ date }) =>
+                  holidayDates.has(dayjs(date).format("YYYY-MM-DD")) ? ["has-holiday"] : []
+                }
+                noEventsContent={() => (
+                  <div className="hcal-empty">
+                    <i className="ri-calendar-2-line"></i>
+                    No holidays in this period
+                  </div>
+                )}
+              />
+            </div>
+          </section>
+
+          {/* ── Upcoming ── */}
+          <aside className="hcal-card hcal-side">
+            <div className="hcal-side-head">
+              <h6>
+                <i className="ri-calendar-todo-line"></i>
+                Upcoming holidays
+              </h6>
+              <span className="hcal-count">{stats.upcoming.length}</span>
+            </div>
+
+            {stats.upcoming.length === 0 ? (
+              <div className="hcal-empty">
+                <i className="ri-sun-line"></i>
+                No upcoming holidays
+              </div>
+            ) : (
+              <ul className="hcal-up-list">
+                {stats.upcoming.slice(0, UPCOMING_LIMIT).map((h, i) => (
+                  <li key={h.id ?? i}>
+                    <button
+                      data-testid={testId("holiday-calendar-mmm", itemTestKey(h), "button")}
+                      type="button"
+                      className={`hcal-up ${h.is_restricted ? "is-restricted" : "is-public"}`}
+                      onClick={() => goToHoliday(h)}
+                    >
+                      <span className="hcal-up-date">
+                        <span className="hcal-up-mon">{h.day.format("MMM")}</span>
+                        <span className="hcal-up-day">{h.day.format("DD")}</span>
+                      </span>
+                      <span className="hcal-up-text">
+                        <span className="hcal-up-name" title={h.name}>
+                          {h.name}
+                        </span>
+                        <span className="hcal-up-meta">
+                          {h.day.format("dddd")} · {relativeLabel(h.day)}
+                        </span>
+                      </span>
+                      <span className={`hcal-tag ${h.is_restricted ? "is-restricted" : "is-public"}`}>
+                        {h.is_restricted ? "Restricted" : "Public"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="hcal-legend">
+              <span>
+                <i className="hcal-legend-dot is-public"></i>Public holiday
+              </span>
+              <span>
+                <i className="hcal-legend-dot is-restricted"></i>Restricted holiday
+              </span>
+              <span>
+                <i className="hcal-legend-dot is-today"></i>Today
+              </span>
+            </div>
+          </aside>
+        </div>
+      </Container>
+
+      {/* ── Holiday details ── */}
+      <Modal data-testid="holiday-calendar-selected-dialog" isOpen={!!selected} toggle={() => setSelected(null)} centered className="hcal-modal">
+        {selected && (
+          <div className="hcal-detail">
+            <div className={`hcal-detail-head ${selected.is_restricted ? "is-restricted" : "is-public"}`}>
+              <span className="hcal-detail-date">
+                <span className="hcal-up-mon">{selected.day.format("MMM")}</span>
+                <span className="hcal-up-day">{selected.day.format("DD")}</span>
+              </span>
+              <div className="hcal-detail-title">
+                <h5>{selected.name}</h5>
+                <span className={`hcal-tag ${selected.is_restricted ? "is-restricted" : "is-public"}`}>
+                  {selected.is_restricted ? "Restricted holiday" : "Public holiday"}
+                </span>
+              </div>
+              <button data-testid="holiday-calendar-selected-close-button" type="button" className="hcal-icon-btn" onClick={() => setSelected(null)} title="Close">
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+
+            <div className="hcal-detail-body">
+              <div className="hcal-detail-row">
+                <i className="ri-calendar-2-line"></i>
+                <div>
+                  <span>Date</span>
+                  {selected.day.format("dddd, DD MMMM YYYY")}
+                </div>
+              </div>
+              <div className="hcal-detail-row">
+                <i className="ri-time-line"></i>
+                <div>
+                  <span>When</span>
+                  {daysFromToday(selected.day) >= 0
+                    ? relativeLabel(selected.day)
+                    : `${Math.abs(daysFromToday(selected.day))} days ago`}
+                </div>
+              </div>
+              <div className="hcal-detail-row">
+                <i className="ri-file-text-line"></i>
+                <div>
+                  <span>Description</span>
+                  {selected.description || "No description"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
 };
 
 export default Calender;

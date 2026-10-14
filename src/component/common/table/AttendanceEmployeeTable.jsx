@@ -1,15 +1,6 @@
 import React, { Fragment, useEffect, useRef, useState } from "react";
-import {
-  Table,
-  IconButton,
-  Dropdown,
-  Icon,
-  Whisper,
-  Popover,
-  ButtonToolbar,
-  Menu,
-  Affix,
-} from "rsuite";
+import { IconButton, Dropdown, Whisper, Popover, ButtonToolbar } from "rsuite";
+import { Table } from "../../../shared/ui/table/RsuiteCompatTable";
 import AlignJustifyIcon from "@rsuite/icons/legacy/AlignJustify";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import {
@@ -19,10 +10,10 @@ import {
   CardHeader,
   Col,
   Input,
-  Label,
   Button,
   Modal,
   ModalBody,
+  ModalFooter,
   ModalHeader,
   Row,
   UncontrolledDropdown,
@@ -39,15 +30,18 @@ import {
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import SimpleBar from "simplebar-react";
+import NotesModal from "../modal/NotesModal";
 import { useDispatch, useSelector } from "react-redux";
 import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
 import { ParseTime } from "../../../common/js/ParseTime";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { ToastContainer, toast } from "react-toastify";
 import { PostApi } from "../../../common/api/PostApi";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
-import { updateIndividualAttendanceReportData } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
-import { GetAmPmDateTime } from "../../../common/js/ConvertDateTimeToAmPm";
+import {
+  requestAttendanceRefresh,
+  updateIndividualAttendanceReportData,
+} from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { differenceInMinutes } from "date-fns";
 import { setFormObj } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../../redux/reducers/ChildReducer/LeaveTypeReducer";
@@ -67,6 +61,8 @@ import CustomStatusTimeline from "./CustomStatusTimeLine";
 // NOTE: adjust this path to wherever ApplyLeaveForm.jsx lives in your project
 import ApplyLeaveForm from "../../forms/ApplyLeaveForm";
 import { EDIT_TEAM_ATTENDANCE_ACCESS_KEY } from "../../../common/constant/RoleConstants";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 // ------------------------------------------------------------
 // Device type -> icon + label helper (used in the IN/OUT
@@ -99,24 +95,6 @@ const getDeviceIcon = (punchedBy) => {
 const AttendanceEmployeeTable = () => {
   const dispatch = useDispatch();
 
-  const allColumns = [
-    { key: "date", label: "Date" },
-    { key: "in", label: "IN" },
-    { key: "inLocation", label: "IN Location" },
-    { key: "out", label: "OUT" },
-    { key: "outLocation", label: "OUT Location" },
-    { key: "workSchedule", label: "Work Schedule" },
-    { key: "break", label: "Break" },
-    { key: "totalIn", label: "Total IN" },
-    { key: "ot", label: "OT" },
-    { key: "paidHr", label: "Paid Hr" },
-    { key: "status", label: "Status" },
-    { key: "activity", label: "Activity" },
-    { key: "customStatus", label: "Activity Status" },
-    { key: "notes", label: "Notes" },
-    { key: "action", label: "Action" },
-  ];
-
   const { Column, HeaderCell, Cell } = Table;
   const [loading, setLoading] = React.useState(false);
   const employee_data = GetLocalStorageData("employee") || [];
@@ -145,40 +123,13 @@ const AttendanceEmployeeTable = () => {
   const [locationType, setLocationType] = useState("");
   const [allLocationData, setAllLocationData] = useState([]);
 
-  const DEFAULT_COLUMNS = [
-    "date",
-    "in",
-    "inLocation",
-    "out",
-    "outLocation",
-    "workSchedule",
-    "break",
-    "totalIn",
-    "paidHr",
-    "status",
-    "activity",
-    "customStatus",
-    "notes",
-    "action",
-  ];
-
-  const [selectedColumns, setSelectedColumns] = useState(() => {
-    try {
-      const saved = localStorage.getItem("attendance_selected_columns");
-      return saved ? JSON.parse(saved) : DEFAULT_COLUMNS;
-    } catch {
-      return DEFAULT_COLUMNS;
-    }
-  });
   const containerRef = useRef(null);
-  const [tableWidth, setTableWidth] = useState(0);
-
   // Fixed table height -> header stays fixed, only body rows scroll.
   const [tableHeight, setTableHeight] = useState(500);
 
   useEffect(() => {
     const updateHeight = () => {
-      // 280 = space used by page header, filters, columns button, paddings.
+      // 280 = space used by page header, filters, table toolbar, paddings.
       // Tune this number to fit your layout.
       setTableHeight(Math.max(300, window.innerHeight - 280));
     };
@@ -187,37 +138,8 @@ const AttendanceEmployeeTable = () => {
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
 
-  // Watch container width and re-set so RSuite recalculates flexGrow
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setTableWidth(entry.contentRect.width);
-      }
-    });
-
-    ro.observe(containerRef.current);
-    // Set initial width
-    setTableWidth(containerRef.current.offsetWidth);
-
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "attendance_selected_columns",
-        JSON.stringify(selectedColumns),
-      );
-    } catch {
-      // fail silently
-    }
-  }, [selectedColumns]);
-
   console.log("timeline", timelineList);
 
-  const whisperRef = React.useRef();
 
   const { individual_attendance_report_data } = useSelector(
     (state) => state.AttendanceReportReducer,
@@ -385,6 +307,7 @@ const AttendanceEmployeeTable = () => {
           {!!thisCellTime && thisCellTime}
           {!!thisCellTime && (
             <Link
+              data-testid="attendance-employee-in-link"
               className="link-opacity-75 ms-1"
               href="#"
               onClick={() => {
@@ -461,6 +384,7 @@ const AttendanceEmployeeTable = () => {
               ) : (
                 <Link
                   href="#"
+                  data-testid={testId("attendance-employee-row", rowData?.date, dataKey, "location-link")}
                   onClick={() => {
                     open_location(rowData, dataKey);
                   }}
@@ -625,6 +549,7 @@ const AttendanceEmployeeTable = () => {
       return (
         <Cell {...props} className="link-group">
           <Link
+            data-testid="attendance-employee-notes-link"
             className="link-opacity-75 ms-1"
             href="#"
             onClick={() => viewNotes(rowData)}
@@ -728,6 +653,7 @@ const AttendanceEmployeeTable = () => {
               >
                 <ButtonToolbar>
                   <IconButton
+                    data-testid="attendance-employee-more-button"
                     appearance="subtle"
                     icon={
                       <span className="text-primary d-inline-block edit-item-btn fs-16">
@@ -940,221 +866,13 @@ const AttendanceEmployeeTable = () => {
 
   return (
     <Fragment>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: 10,
-        }}
-      >
-        <Whisper
-          ref={whisperRef}
-          placement="bottomEnd"
-          trigger="click"
-          speaker={
-            <Popover
-              style={{
-                padding: "0px",
-                width: "230px",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-              }}
-            >
-              {/* Header */}
-              <div
-                style={{
-                  background: "#405189",
-                  padding: "10px 14px",
-                  borderRadius: "4px 4px 0 0",
-                }}
-              >
-                <p
-                  style={{
-                    fontWeight: "bold",
-                    margin: 0,
-                    color: "#fff",
-                    fontSize: "13px",
-                  }}
-                >
-                  <i
-                    className="mdi mdi-table-column"
-                    style={{ marginRight: 6 }}
-                  ></i>
-                  Show / Hide Columns
-                </p>
-              </div>
-
-              <div style={{ padding: "10px 12px" }}>
-                {/* Select All / Clear All */}
-                <div
-                  style={{ display: "flex", gap: "6px", marginBottom: "10px" }}
-                >
-                  <button
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSelectedColumns(allColumns.map((c) => c.key));
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "5px 8px",
-                      fontSize: "12px",
-                      background: "#405189",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✓ Select All
-                  </button>
-                  <button
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSelectedColumns(["date", "action"]);
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "5px 8px",
-                      fontSize: "12px",
-                      background: "#fff",
-                      color: "#f5222d",
-                      border: "1px solid #f5222d",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontWeight: "600",
-                    }}
-                  >
-                    ✕ Clear All
-                  </button>
-                </div>
-
-                {/* Divider */}
-                <div
-                  style={{
-                    borderTop: "1px solid #f0f0f0",
-                    marginBottom: "8px",
-                  }}
-                />
-
-                {/* Scrollable Column List */}
-                <div
-                  style={{
-                    maxHeight: "260px",
-                    overflowY: "auto",
-                    paddingRight: "2px",
-                  }}
-                >
-                  {allColumns.map((col) => {
-                    const isLocked = ["date", "action"].includes(col.key);
-                    const isChecked = selectedColumns.includes(col.key);
-                    return (
-                      <div
-                        key={col.key}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (isLocked) return;
-                          if (isChecked) {
-                            setSelectedColumns(
-                              selectedColumns.filter((k) => k !== col.key),
-                            );
-                          } else {
-                            setSelectedColumns([...selectedColumns, col.key]);
-                          }
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          padding: "7px 8px",
-                          borderRadius: "5px",
-                          marginBottom: "3px",
-                          cursor: isLocked ? "not-allowed" : "pointer",
-                          background: isChecked ? "#e6f4ff" : "#fafafa",
-                          border: `1px solid ${isChecked ? "#405189" : "#f0f0f0"}`,
-                          transition: "all 0.15s",
-                        }}
-                      >
-                        {/* Custom Checkbox */}
-                        <div
-                          style={{
-                            width: "16px",
-                            height: "16px",
-                            borderRadius: "3px",
-                            border: `2px solid ${isChecked ? "#405189" : "#d9d9d9"}`,
-                            background: isChecked ? "#405189" : "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            marginRight: "10px",
-                            flexShrink: 0,
-                            transition: "all 0.15s",
-                          }}
-                        >
-                          {isChecked && (
-                            <svg
-                              width="10"
-                              height="8"
-                              viewBox="0 0 10 8"
-                              fill="none"
-                            >
-                              <path
-                                d="M1 4L3.5 6.5L9 1"
-                                stroke="white"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                        </div>
-
-                        <span
-                          style={{
-                            fontSize: "13px",
-                            color: isLocked ? "#bbb" : "#333",
-                            userSelect: "none",
-                            flex: 1,
-                          }}
-                        >
-                          {col.label}
-                        </span>
-
-                        {isLocked && (
-                          <span
-                            style={{
-                              fontSize: "10px",
-                              color: "#bbb",
-                              background: "#f5f5f5",
-                              border: "1px solid #e8e8e8",
-                              padding: "1px 5px",
-                              borderRadius: "3px",
-                            }}
-                          >
-                            locked
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </Popover>
-          }
-        >
-          <button type="button" className="btn btn-primary mt-4 mt-md-0">
-            <i className="ri-align-left me-1"></i> Columns
-          </button>
-        </Whisper>
-      </div>
-
       {/* Table */}
       <div ref={containerRef} style={{ width: "100%" }}>
         <Table
-          // Measured width so RSuite knows how much space to distribute
-          width={tableWidth || undefined}
-          // Fixed height (no autoHeight): header stays fixed, only body scrolls
+          variant="app"
+          columnMenu
+          storageKey="attendance_employee"
+          onRefresh={() => dispatch(requestAttendanceRefresh())}
           height={tableHeight}
           data={individual_attendance_report_data || []}
           loading={loading}
@@ -1163,387 +881,435 @@ const AttendanceEmployeeTable = () => {
           headerHeight={40}
           className="mb-5"
         >
-          {/* ── DATE (fixed left, never flex) ─────────────────────────── */}
-          {selectedColumns.includes("date") && (
-            <Column width={140} fixed="left" align="center">
-              <HeaderCell>Date</HeaderCell>
-              <DateCell />
-            </Column>
-          )}
+          <Column width={140} fixed="left" align="center" enableHiding={false}>
+            <HeaderCell>Date</HeaderCell>
+            <DateCell />
+          </Column>
 
-          {/* ── IN ───────────────────────────────────────────────────── */}
-          {selectedColumns.includes("in") && (
-            <Column flexGrow={1} minWidth={110}>
-              <HeaderCell>IN</HeaderCell>
-              <InOutCell dataKey="in" />
-            </Column>
-          )}
+          <Column flexGrow={1} minWidth={110}>
+            <HeaderCell>IN</HeaderCell>
+            <InOutCell dataKey="in" />
+          </Column>
 
-          {/* ── IN LOCATION ──────────────────────────────────────────── */}
-          {selectedColumns.includes("inLocation") && (
-            <Column flexGrow={1.5} minWidth={140}>
-              <HeaderCell>IN Location</HeaderCell>
-              <LocationCell dataKey="in" />
-            </Column>
-          )}
+          <Column flexGrow={1.5} minWidth={140} defaultHidden>
+            <HeaderCell>IN Location</HeaderCell>
+            <LocationCell dataKey="in" />
+          </Column>
 
-          {/* ── OUT ──────────────────────────────────────────────────── */}
-          {selectedColumns.includes("out") && (
-            <Column flexGrow={1} minWidth={110}>
-              <HeaderCell>OUT</HeaderCell>
-              <InOutCell dataKey="out" />
-            </Column>
-          )}
+          <Column flexGrow={1} minWidth={110}>
+            <HeaderCell>OUT</HeaderCell>
+            <InOutCell dataKey="out" />
+          </Column>
 
-          {/* ── OUT LOCATION ─────────────────────────────────────────── */}
-          {selectedColumns.includes("outLocation") && (
-            <Column flexGrow={1.5} minWidth={140}>
-              <HeaderCell>OUT Location</HeaderCell>
-              <LocationCell dataKey="out" />
-            </Column>
-          )}
+          <Column flexGrow={1.5} minWidth={140} defaultHidden>
+            <HeaderCell>OUT Location</HeaderCell>
+            <LocationCell dataKey="out" />
+          </Column>
 
-          {/* ── WORK SCHEDULE ────────────────────────────────────────── */}
-          {selectedColumns.includes("workSchedule") && (
-            <Column flexGrow={1} minWidth={110}>
-              <HeaderCell>Work Schedule</HeaderCell>
-              <WorkScheduleCell dataKey="ws" />
-            </Column>
-          )}
+          <Column flexGrow={1} minWidth={110} defaultHidden>
+            <HeaderCell>Work Schedule</HeaderCell>
+            <WorkScheduleCell dataKey="ws" />
+          </Column>
 
-          {/* ── BREAK ────────────────────────────────────────────────── */}
-          {selectedColumns.includes("break") && (
+          <Column flexGrow={1} minWidth={90}>
+            <HeaderCell>Break</HeaderCell>
+            <BreakHourCell dataKey="total_break_duration" />
+          </Column>
+
+          <Column flexGrow={1} minWidth={90}>
+            <HeaderCell>Total IN</HeaderCell>
+            <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
+          </Column>
+
+          {employeeWorkSchedule?.has_ot && (
             <Column flexGrow={1} minWidth={90}>
-              <HeaderCell>Break</HeaderCell>
-              <BreakHourCell dataKey="total_break_duration" />
+              <HeaderCell>OT</HeaderCell>
+              <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
             </Column>
           )}
 
-          {/* ── TOTAL IN ─────────────────────────────────────────────── */}
-          {selectedColumns.includes("totalIn") && (
-            <Column flexGrow={1} minWidth={90}>
-              <HeaderCell>Total IN</HeaderCell>
-              <SecondsToTimeCell dataKey="final_checked_in_hr_in_seconds" />
-            </Column>
-          )}
+          <Column flexGrow={1} minWidth={90}>
+            <HeaderCell>Paid Hr</HeaderCell>
+            <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
+          </Column>
 
-          {/* ── OT (conditional) ─────────────────────────────────────── */}
-          {employeeWorkSchedule?.has_ot &&
-            // selectedColumns.includes("totalIn") && (
-            selectedColumns.includes("ot") && (
-              <Column flexGrow={1} minWidth={90}>
-                <HeaderCell>OT</HeaderCell>
-                <SecondsToTimeCell dataKey="final_ot_hr_in_seconds" />
-              </Column>
-            )}
+          <Column flexGrow={1} minWidth={100}>
+            <HeaderCell>Status</HeaderCell>
+            <HrStatusCell dataKey="hr_status" />
+          </Column>
 
-          {/* ── PAID HR ──────────────────────────────────────────────── */}
-          {selectedColumns.includes("paidHr") && (
-            <Column flexGrow={1} minWidth={90}>
-              <HeaderCell>Paid Hr</HeaderCell>
-              <SecondsToTimeCell dataKey="final_paid_hr_in_seconds" />
-            </Column>
-          )}
+          <Column flexGrow={1} minWidth={100} defaultHidden>
+            <HeaderCell>Activity</HeaderCell>
+            <ActivityCell />
+          </Column>
 
-          {/* ── STATUS ───────────────────────────────────────────────── */}
-          {selectedColumns.includes("status") && (
-            <Column flexGrow={1} minWidth={100}>
-              <HeaderCell>Status</HeaderCell>
-              <HrStatusCell dataKey="hr_status" />
-            </Column>
-          )}
+          <Column flexGrow={1.2} minWidth={140} align="center" defaultHidden>
+            <HeaderCell>Activity Status</HeaderCell>
+            <CustomStatusTimeline dataKey="custom_status_timeline" />
+          </Column>
 
-          {/* ── ACTIVITY ─────────────────────────────────────────────── */}
-          {selectedColumns.includes("activity") && (
-            <Column flexGrow={1} minWidth={100}>
-              <HeaderCell>Activity</HeaderCell>
-              <ActivityCell />
-            </Column>
-          )}
+          <Column flexGrow={1} minWidth={110} defaultHidden>
+            <HeaderCell>Notes</HeaderCell>
+            <NotesCell dataKey="notes" />
+          </Column>
 
-          {selectedColumns.includes("customStatus") && (
-            <Column flexGrow={1.2} minWidth={140} align="center">
-              <HeaderCell>Activity Status</HeaderCell>
-              <CustomStatusTimeline dataKey="custom_status_timeline" />
-            </Column>
-          )}
-
-          {/* ── NOTES ────────────────────────────────────────────────── */}
-          {selectedColumns.includes("notes") && (
-            <Column flexGrow={1} minWidth={110}>
-              <HeaderCell>Notes</HeaderCell>
-              <NotesCell dataKey="notes" />
-            </Column>
-          )}
-
-          {/* ── ACTION (fixed right, never flex) ─────────────────────── */}
-          {selectedColumns.includes("action") && (
-            <Column width={80} fixed="right">
-              <HeaderCell>Action</HeaderCell>
-              <EditableCell />
-            </Column>
-          )}
+          <Column width={80} fixed="right" enableHiding={false}>
+            <HeaderCell>Action</HeaderCell>
+            <EditableCell />
+          </Column>
         </Table>
       </div>
 
       {/* Edit Modal */}
-      <Modal isOpen={editModalOpen} toggle={closeEditModal} centered>
-        <ModalBody className="text-left">
-          {/* Display the values based on attendanceEditData */}
-          {!!attendanceEditData && (
-            <div>
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <ModalHeader>
-                    <Col>
-                      Date:
-                      <Label>
-                        {format(
-                          new Date(attendanceEditData.date),
-                          "dd MMM, yyyy",
-                        )}
-                      </Label>
-                    </Col>
-                  </ModalHeader>
-                </Row>
-              </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
-                      Work Schedule Hour:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <Label>
+      <Modal
+        data-testid="attendance-employee-edit-attendance-dialog"
+        isOpen={editModalOpen}
+        toggle={closeEditModal}
+        centered
+        className="aem-modal"
+      >
+        <ModalHeader close={<ModalCloseButton onClick={closeEditModal} testId="attendance-employee-edit-attendance-close-button" />} toggle={closeEditModal}>
+          <span className="aem-head">
+            <span className="aem-head-icon">
+              <i className="ri-time-line" />
+            </span>
+            <span>
+              <span className="aem-head-title">Edit Attendance</span>
+              {!!attendanceEditData && (
+                <span className="aem-head-date">
+                  <i className="ri-calendar-2-line" />
+                  {format(new Date(attendanceEditData.date), "EEEE, dd MMM yyyy")}
+                </span>
+              )}
+            </span>
+          </span>
+        </ModalHeader>
+
+        {!!attendanceEditData && (
+          <>
+            <ModalBody>
+              <div className="aem-stats">
+                <div className="aem-stat is-primary">
+                  <div className="aem-stat-top">
+                    <span className="aem-stat-icon"><i className="ri-briefcase-4-line" /></span>
+                    <span className="aem-stat-label">Schedule</span>
+                  </div>
+                  <div>
+                    <div className="aem-stat-value">
                       {ConvertSecondsToTime(
                         attendanceEditData?.work_schedule_duration_without_break,
                       )}
-                    </Label>
-                  </Col>
-                </Row>
-              </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
-                      Total IN:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <Label>
-                      {" "}
+                    </div>
+                  </div>
+                </div>
+                <div className="aem-stat is-info">
+                  <div className="aem-stat-top">
+                    <span className="aem-stat-icon"><i className="ri-login-circle-line" /></span>
+                    <span className="aem-stat-label">Total In</span>
+                  </div>
+                  <div>
+                    <div className="aem-stat-value">
+                      {ConvertSecondsToTime(attendanceEditData.total_work_duration)}
+                    </div>
+                  </div>
+                </div>
+                <div className="aem-stat is-success">
+                  <div className="aem-stat-top">
+                    <span className="aem-stat-icon"><i className="ri-money-dollar-circle-line" /></span>
+                    <span className="aem-stat-label">Paid Hours</span>
+                  </div>
+                  <div>
+                    <div className="aem-stat-value">
                       {ConvertSecondsToTime(
-                        attendanceEditData.total_work_duration,
+                        attendanceEditData?.final_paid_hr_in_seconds,
                       )}
-                    </Label>
-                  </Col>
-                </Row>
-              </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
-                      Checked In Hours:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <div style={{ display: "flex" }}>
-                      <b className="mt-2 me-1 ms-2">H</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="aem-section-title">
+                <i className="ri-edit-2-line" /> Adjust hours
+              </div>
+
+              <div className="aem-field">
+                <label className="aem-label">Checked In Hours</label>
+                <div className="aem-time">
+                  <div className="aem-time-part">
+                    <Select
+                      testId="attendance-employee-edit-attendance-paid-hours-hr"
+                      id="paid_hours_hr"
+                      name="paid_hours_hr"
+                      placeholder={"00"}
+                      classNamePrefix="aem-rs"
+                      isSearchable={false}
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
+                      options={hourOptions || []}
+                      value={hourOptions.find(
+                        (option) =>
+                          option.value ===
+                          String(
+                            Math.floor(
+                              attendanceEditData.final_checked_in_hr_in_seconds /
+                                3600,
+                            ),
+                          ).padStart(2, "0"),
+                      )}
+                      onChange={(selectedOption) => {
+                        EditHourChange(
+                          selectedOption.value,
+                          Math.floor(
+                            (attendanceEditData.final_checked_in_hr_in_seconds %
+                              3600) /
+                              60,
+                          ),
+                          "final_checked_in_hr_in_seconds",
+                        );
+                      }}
+                    />
+                    <span className="aem-time-unit">hrs</span>
+                  </div>
+                  <span className="aem-time-sep">:</span>
+                  <div className="aem-time-part">
+                    <Select
+                      testId="attendance-employee-edit-attendance-paid-hours-min"
+                      id="paid_hours_min"
+                      name="paid_hours_min"
+                      placeholder={"00"}
+                      classNamePrefix="aem-rs"
+                      isSearchable={false}
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
+                      options={AllMinuteOptions || []}
+                      value={AllMinuteOptions.find(
+                        (option) =>
+                          option.value ===
+                          String(
+                            Math.floor(
+                              (attendanceEditData.final_checked_in_hr_in_seconds %
+                                3600) /
+                                60,
+                            ),
+                          ).padStart(2, "0"),
+                      )}
+                      onChange={(selectedOption) => {
+                        EditHourChange(
+                          Math.floor(
+                            attendanceEditData.final_checked_in_hr_in_seconds /
+                              3600,
+                          ),
+                          selectedOption.value,
+                          "final_checked_in_hr_in_seconds",
+                        );
+                      }}
+                    />
+                    <span className="aem-time-unit">min</span>
+                  </div>
+                  <span className="aem-time-total">
+                    <i className="ri-timer-line" />
+                    {Math.floor((attendanceEditData.final_checked_in_hr_in_seconds || 0) / 3600)}h{" "}
+                    {String(
+                      Math.floor(((attendanceEditData.final_checked_in_hr_in_seconds || 0) % 3600) / 60),
+                    ).padStart(2, "0")}m
+                  </span>
+                </div>
+              </div>
+
+              {employeeWorkSchedule.has_ot === true && (
+                <div className="aem-field">
+                  <label className="aem-label">Overtime</label>
+                  <div className="aem-time">
+                    <div className="aem-time-part">
                       <Select
-                        id="paid_hours_hr"
-                        name="paid_hours_hr"
+                        testId="attendance-employee-edit-attendance-ot-hr"
+                        id="ot_hr"
+                        name="ot_hr"
                         placeholder={"00"}
+                        classNamePrefix="aem-rs"
+                        isSearchable={false}
+                        menuPortalTarget={document.body}
+                        styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
                         options={hourOptions || []}
                         value={hourOptions.find(
                           (option) =>
                             option.value ===
                             String(
                               Math.floor(
-                                attendanceEditData.final_checked_in_hr_in_seconds /
-                                  3600,
+                                attendanceEditData.final_ot_hr_in_seconds / 3600,
                               ),
                             ).padStart(2, "0"),
                         )}
-                        onChange={(selectedOption) => {
+                        onChange={(selectedOption) =>
                           EditHourChange(
                             selectedOption.value,
                             Math.floor(
-                              (attendanceEditData.final_checked_in_hr_in_seconds %
-                                3600) /
+                              (attendanceEditData.final_ot_hr_in_seconds % 3600) /
                                 60,
                             ),
-                            "final_checked_in_hr_in_seconds",
-                          );
-                        }}
+                            "final_ot_hr_in_seconds",
+                          )
+                        }
                       />
-                      <b className="mt-2 me-1 ms-2">M</b>
+                      <span className="aem-time-unit">hrs</span>
+                    </div>
+                    <span className="aem-time-sep">:</span>
+                    <div className="aem-time-part">
                       <Select
-                        id="paid_hours_min"
-                        name="paid_hours_min"
+                        testId="attendance-employee-edit-attendance-ot-min"
+                        id="ot_min"
+                        name="ot_min"
                         placeholder={"00"}
+                        classNamePrefix="aem-rs"
+                        isSearchable={false}
+                        menuPortalTarget={document.body}
+                        styles={{ menuPortal: (base) => ({ ...base, zIndex: 2000 }) }}
                         options={AllMinuteOptions || []}
                         value={AllMinuteOptions.find(
                           (option) =>
                             option.value ===
                             String(
                               Math.floor(
-                                (attendanceEditData.final_checked_in_hr_in_seconds %
+                                (attendanceEditData.final_ot_hr_in_seconds %
                                   3600) /
                                   60,
                               ),
                             ).padStart(2, "0"),
                         )}
-                        onChange={(selectedOption) => {
+                        onChange={(selectedOption) =>
                           EditHourChange(
                             Math.floor(
-                              attendanceEditData.final_checked_in_hr_in_seconds /
-                                3600,
+                              attendanceEditData.final_ot_hr_in_seconds / 3600,
                             ),
                             selectedOption.value,
-                            "final_checked_in_hr_in_seconds",
-                          );
-                        }}
+                            "final_ot_hr_in_seconds",
+                          )
+                        }
                       />
+                      <span className="aem-time-unit">min</span>
                     </div>
-                  </Col>
-                </Row>
-              </Col>
-              {employeeWorkSchedule.has_ot === true && (
-                <Col md={12} lg={12} xxl={12}>
-                  <Row className="mb-2">
-                    <Col>
-                      <Label htmlFor="calculation" className="form-label">
-                        OT:
-                      </Label>
-                    </Col>
-                    <Col>
-                      <div style={{ display: "flex" }}>
-                        <b className="mt-2 me-1 ms-2">H</b>
-                        <Select
-                          id="ot_hr"
-                          name="ot_hr"
-                          placeholder={"00"}
-                          options={hourOptions || []}
-                          value={hourOptions.find(
-                            (option) =>
-                              option.value ===
-                              String(
-                                Math.floor(
-                                  attendanceEditData.final_ot_hr_in_seconds /
-                                    3600,
-                                ),
-                              ).padStart(2, "0"),
-                          )}
-                          onChange={(selectedOption) =>
-                            EditHourChange(
-                              selectedOption.value,
-                              Math.floor(
-                                (attendanceEditData.final_ot_hr_in_seconds %
-                                  3600) /
-                                  60,
-                              ),
-                              "final_ot_hr_in_seconds",
-                            )
-                          }
-                        />
-                        <b className="mt-2 me-1 ms-2">M</b>
-                        <Select
-                          id="ot_min"
-                          name="ot_min"
-                          placeholder={"00"}
-                          options={AllMinuteOptions || []}
-                          value={AllMinuteOptions.find(
-                            (option) =>
-                              option.value ===
-                              String(
-                                Math.floor(
-                                  (attendanceEditData.final_ot_hr_in_seconds %
-                                    3600) /
-                                    60,
-                                ),
-                              ).padStart(2, "0"),
-                          )}
-                          onChange={(selectedOption) =>
-                            EditHourChange(
-                              Math.floor(
-                                attendanceEditData.final_ot_hr_in_seconds /
-                                  3600,
-                              ),
-                              selectedOption.value,
-                              "final_ot_hr_in_seconds",
-                            )
-                          }
-                        />
-                      </div>
-                    </Col>
-                  </Row>
-                </Col>
+                    <span className="aem-time-total is-ot">
+                      <i className="ri-flashlight-line" />
+                      {Math.floor((attendanceEditData.final_ot_hr_in_seconds || 0) / 3600)}h{" "}
+                      {String(
+                        Math.floor(((attendanceEditData.final_ot_hr_in_seconds || 0) % 3600) / 60),
+                      ).padStart(2, "0")}m
+                    </span>
+                  </div>
+                </div>
               )}
 
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
-                      Total Paid Hours:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <span>
-                      {ConvertSecondsToTime(
-                        attendanceEditData?.final_paid_hr_in_seconds,
-                      )}{" "}
-                    </span>
-                  </Col>
-                </Row>
-              </Col>
-              <Col md={12} lg={12} xxl={12}>
-                <Row className="mb-2">
-                  <Col>
-                    <Label htmlFor="calculation" className="form-label">
-                      Notes:
-                    </Label>
-                  </Col>
-                  <Col>
-                    <textarea
-                      className="form-control me-2"
-                      id="notes"
-                      name="notes"
-                      value={attendanceEditData?.notes || ""}
-                      onChange={(e) => handleNotesChange(e)}
-                    />
-                  </Col>
-                </Row>
-              </Col>
-
-              <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-                <button
-                  type="button"
-                  className="btn w-sm btn-light"
-                  data-bs-dismiss="modal"
-                  onClick={closeEditModal}
-                >
-                  Close
-                </button>
-
-                {showSaveBtn && (
-                  <button
-                    type="button"
-                    className="btn w-sm btn-success"
-                    data-bs-dismiss="modal"
-                    onClick={updateAttendance}
-                  >
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                    Save
-                  </button>
-                )}
+              <div className="aem-field mb-0">
+                <label className="aem-label" htmlFor="notes">
+                  Notes
+                </label>
+                <textarea
+                  data-testid="attendance-employee-edit-attendance-notes-textarea"
+                  className="form-control aem-notes"
+                  id="notes"
+                  name="notes"
+                  rows={3}
+                  placeholder="Add a note about this change…"
+                  value={attendanceEditData?.notes || ""}
+                  onChange={(e) => handleNotesChange(e)}
+                />
               </div>
-            </div>
-          )}
-        </ModalBody>
+            </ModalBody>
+
+            <ModalFooter className="aem-foot">
+              {!showSaveBtn && (
+                <span className="aem-foot-hint">
+                  <i className="ri-information-line" />
+                  Change hours or notes to save
+                </span>
+              )}
+              <button
+                data-testid="attendance-employee-edit-attendance-footer-close-button"
+                type="button"
+                className="btn aem-btn-close"
+                onClick={closeEditModal}
+              >
+                Close
+              </button>
+              {showSaveBtn && (
+                <button
+                  data-testid="attendance-employee-edit-attendance-save-changes-button"
+                  type="button"
+                  className="btn aem-btn-save"
+                  onClick={updateAttendance}
+                >
+                  <i className="ri-check-double-line" />
+                  Save Changes
+                </button>
+              )}
+            </ModalFooter>
+          </>
+        )}
       </Modal>
+      <style>{`
+        .aem-modal .modal-header{padding:16px 20px}
+        .aem-modal .modal-header .modal-title{flex:1;min-width:0}
+        .aem-modal .modal-header .modal-title::before{display:none}
+        .aem-head{display:flex;align-items:center;gap:12px}
+        .aem-head-icon{width:42px;height:42px;flex-shrink:0;border-radius:12px;display:grid;place-items:center;font-size:20px;color:#fff;
+          background:linear-gradient(135deg,var(--vz-primary),var(--vz-info));box-shadow:0 8px 18px -8px rgba(var(--vz-primary-rgb),.8)}
+        .aem-head-title{display:block;font-size:1.02rem;font-weight:600;color:var(--vz-heading-color);line-height:1.2}
+        .aem-head-date{display:inline-flex;align-items:center;gap:5px;margin-top:3px;font-size:.78rem;font-weight:500;color:var(--vz-secondary-color)}
+
+        .aem-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}
+        @media (max-width:480px){.aem-stats{grid-template-columns:1fr}}
+        .aem-stat{--t:var(--vz-primary-rgb);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;
+          border:1px solid rgba(var(--t),.2);background:linear-gradient(160deg,rgba(var(--t),.1),rgba(var(--t),.02) 70%)}
+        .aem-stat::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:rgb(var(--t));opacity:.8}
+        .aem-stat.is-info{--t:var(--vz-info-rgb)}
+        .aem-stat.is-success{--t:var(--vz-success-rgb)}
+        .aem-stat-top{display:flex;align-items:center;gap:8px;min-width:0}
+        .aem-stat-icon{width:28px;height:28px;flex-shrink:0;border-radius:8px;display:grid;place-items:center;font-size:15px;color:rgb(var(--t));background:rgba(var(--t),.15)}
+        .aem-stat-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--vz-secondary-color);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .aem-stat-value{font-size:1.15rem;font-weight:700;line-height:1.1;color:var(--vz-heading-color);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+        .aem-section-title{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--vz-heading-color)}
+        .aem-section-title i{color:var(--vz-primary);font-size:14px}
+        .aem-section-title::after{content:"";flex:1;height:1px;background:var(--vz-border-color)}
+
+        .aem-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+        .aem-label{margin:0;font-size:.8rem;font-weight:600;color:var(--vz-heading-color)}
+        .aem-time{display:flex;align-items:center;gap:4px;padding:4px;border-radius:14px;border:1px solid var(--vz-border-color);
+          background:var(--vz-tertiary-bg);transition:border-color .15s,box-shadow .15s}
+        .aem-time:focus-within{border-color:var(--vz-primary);box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
+        .aem-time-part{position:relative;flex:1;max-width:150px}
+        .aem-time-unit{position:absolute;right:34px;top:50%;transform:translateY(-50%);font-size:.72rem;font-weight:500;color:var(--vz-secondary-color);pointer-events:none}
+        .aem-time-sep{font-size:1.2rem;font-weight:700;color:var(--vz-primary);padding:0 2px}
+        .aem-time .aem-rs__control{min-height:40px;border-radius:10px;border:0;background:var(--vz-secondary-bg);box-shadow:0 1px 2px rgba(15,23,42,.06);cursor:pointer}
+        .aem-time .aem-rs__control:hover{box-shadow:0 0 0 1px rgba(var(--vz-primary-rgb),.35)}
+        .aem-time .aem-rs__control--is-focused{box-shadow:0 0 0 1px var(--vz-primary) !important}
+        .aem-time-total{margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:999px;font-size:.8rem;font-weight:700;
+          font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--vz-primary);background:rgba(var(--vz-primary-rgb),.1)}
+        .aem-time-total.is-ot{color:var(--vz-warning);background:rgba(var(--vz-warning-rgb),.14)}
+
+        .aem-notes.form-control{border-radius:12px;background:var(--vz-tertiary-bg);border-color:var(--vz-border-color)}
+        .aem-notes.form-control:focus{background:var(--vz-secondary-bg);border-color:var(--vz-primary);box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
+
+        .aem-modal .aem-foot{padding:14px 20px}
+        .aem-foot-hint{margin-right:auto !important;display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--vz-secondary-color)}
+        .aem-foot .btn{height:40px;padding:0 18px;border-radius:10px;font-weight:600}
+        .aem-foot .aem-btn-close{background:var(--vz-secondary-bg);border:1px solid var(--vz-border-color);color:var(--vz-body-color);box-shadow:none}
+        .aem-foot .aem-btn-close:hover{border-color:var(--vz-secondary-color);color:var(--vz-heading-color)}
+        .aem-foot .aem-btn-save{border:0;color:#fff;background:linear-gradient(135deg,var(--vz-success),#34d3b9);box-shadow:0 8px 18px -8px rgba(var(--vz-success-rgb),.8)}
+        .aem-foot .aem-btn-save:hover{color:#fff;transform:translateY(-1px)}
+        .aem-time .aem-rs__single-value,.aem-time .aem-rs__placeholder{font-size:1rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--vz-heading-color)}
+        .aem-time .aem-rs__indicator-separator{display:none}
+        .aem-time .aem-rs__indicator{color:var(--vz-secondary-color);padding:0 8px}
+        .aem-rs__menu{border-radius:12px !important;overflow:hidden;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg) !important;box-shadow:0 16px 40px -12px rgba(0,0,0,.3) !important}
+        .aem-rs__menu-list{padding:6px !important;max-height:220px !important}
+        .aem-rs__option{border-radius:8px;font-size:.88rem;font-variant-numeric:tabular-nums;color:var(--vz-heading-color) !important;cursor:pointer !important}
+        .aem-rs__option--is-focused{background:rgba(var(--vz-primary-rgb),.08) !important}
+        .aem-rs__option--is-selected{background:rgba(var(--vz-primary-rgb),.14) !important;color:var(--vz-primary) !important;font-weight:600}
+        .aem-notes{min-height:84px;resize:vertical;font-size:.86rem}
+      `}</style>
       {/* IN/OUT List Modal */}
       <Modal
+        data-testid="attendance-employee-date-dialog"
         size="lg"
         isOpen={timeline_modal}
         toggle={() => {
@@ -1555,7 +1321,12 @@ const AttendanceEmployeeTable = () => {
           <AllDistanceCalculater allLocationData={allLocationData} />
         ) : null}
 
-        <ModalHeader className="text-center">
+        <ModalHeader
+          close={<ModalCloseButton onClick={() => {
+          close_timeLine();
+        }} testId="attendance-employee-date-close-button" />} className="text-center" toggle={() => {
+          close_timeLine();
+        }}>
           <h5
             className="modal-title text-center"
             id="exampleModalToggleLabel"
@@ -1566,10 +1337,10 @@ const AttendanceEmployeeTable = () => {
         </ModalHeader>
         <ModalBody
           className="text-left"
-          style={{ maxHeight: "250px", overflowY: "auto" }}
+          style={{ maxHeight: "70vh", overflowY: "auto" }}
         >
           <div>
-            <SimpleBar style={{ maxHeight: "215px" }}>
+            <SimpleBar style={{ maxHeight: "calc(70vh - 110px)" }}>
               <table className="table">
                 <thead>
                   <tr>
@@ -1724,6 +1495,7 @@ const AttendanceEmployeeTable = () => {
                                   >
                                     {checkInData.location_id !== null ? (
                                       <a
+                                        data-testid={testId("attendance-employee-date-check-in-location", itemTestKey(data), "link")}
                                         href={`https://maps.google.com/?q=${checkInData.latitude},${checkInData.longitude}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -1837,6 +1609,7 @@ const AttendanceEmployeeTable = () => {
                                     {checkOutData &&
                                     checkOutData.location_id !== null ? (
                                       <a
+                                        data-testid={testId("attendance-employee-date-check-out-location", itemTestKey(data), "link")}
                                         href={`https://maps.google.com/?q=${checkOutData.latitude},${checkOutData.longitude}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
@@ -1877,7 +1650,8 @@ const AttendanceEmployeeTable = () => {
             </SimpleBar>
             <div className="text-center mt-3">
               <Button
-                className="btn btn-warning"
+                data-testid="attendance-employee-date-footer-close-button"
+                className="btn btn-light modal-dismiss-btn"
                 onClick={() => {
                   close_timeLine();
                 }}
@@ -1890,6 +1664,7 @@ const AttendanceEmployeeTable = () => {
       </Modal>
       {/*Location Modal */}
       <Modal
+        data-testid="attendance-employee-location-dialog"
         size="lg"
         isOpen={locationModal}
         toggle={() => {
@@ -1901,6 +1676,7 @@ const AttendanceEmployeeTable = () => {
       </Modal>
       {/* Image Preview Modal */}
       <Modal
+        data-testid="attendance-employee-image-preview-dialog"
         isOpen={imagePreviewModal}
         toggle={() => {
           close_image_preview();
@@ -1920,7 +1696,8 @@ const AttendanceEmployeeTable = () => {
           />
           <div className="text-center mt-3">
             <Button
-              className="btn btn-warning"
+              data-testid="attendance-employee-image-preview-close-button"
+              className="btn btn-light modal-dismiss-btn"
               onClick={() => {
                 close_image_preview();
               }}
@@ -1931,187 +1708,101 @@ const AttendanceEmployeeTable = () => {
         </ModalBody>
       </Modal>
       {/* Notes Modal */}
-      <Modal
+      <NotesModal
         isOpen={notes_modal}
-        toggle={() => {
-          closeNotesModal();
-        }}
-        centered
-        className="custom-modal"
-      >
-        <ModalHeader>
-          <h5
-            className="modal-title"
-            id="exampleModalToggleLabel"
-            style={{ fontSize: "smaller" }}
-          >
-            Notes - {format(new Date(date), "dd MMM, yyyy")}
-          </h5>
-        </ModalHeader>
-        <ModalBody className="text-left">
-          <div>
-            <SimpleBar style={{ height: "200px" }} className="px-3 mx-n3 mb-2">
-              {notesList && notesList.length > 0 ? (
-                notesList.map((d, noteIdx) => {
-                  let emp_details =
-                    !!employee_data &&
-                    employee_data.find((e) => e.id === d.employee_id);
-                  console.log("DETAILS", emp_details);
-
-                  return (
-                    <div className="d-flex mb-4" key={d?.id ?? noteIdx}>
-                      <div className="flex-shrink-0">
-                        {emp_details?.profile_url ? (
-                          <img
-                            src={emp_details?.profile_url}
-                            alt=""
-                            className="avatar-xs rounded-circle"
-                            style={{ objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div
-                            className="avatar-xs rounded-circle"
-                            style={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              background: "#0ab39c",
-                              objectFit: "cover",
-                            }}
-                            data-bs-toggle="tooltip"
-                            title={emp_details?.first_name || ""}
-                          >
-                            <span
-                              className="first_letter"
-                              style={{ color: "white" }}
-                            >
-                              {emp_details?.first_name?.charAt(0) || ""}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-grow-1 ms-3">
-                        <h5 className="fs-13">
-                          {emp_details?.first_name || ""}{" "}
-                          <small className="text-muted ms-2">
-                            {/* 20 Dec 2021 - 05:47AM */}
-                            {GetAmPmDateTime(d?.created_time)}
-                          </small>
-                        </h5>
-                        <p className="text-muted">{d?.message}</p>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "25vh",
-                  }}
-                >
-                  <lord-icon
-                    src="https://cdn.lordicon.com/msoeawqm.json"
-                    trigger="loop"
-                    colors="primary:#405189,secondary:#0ab39c"
-                    style={{
-                      marginTop: "20px",
-                      width: "150px",
-                      height: "80px",
-                      marginBottom: "20px",
-                    }}
-                  ></lord-icon>
-                  <p
-                    style={{
-                      width: "300px",
-                      color: "#405189",
-                      fontSize: "20px",
-                      textAlign: "center",
-                    }}
-                  >
-                    No Notes Found!
-                  </p>
-                </div>
-              )}
-            </SimpleBar>
-            <form className="mt-4">
-              <Row className="g-3">
-                {hrStatus != 2 && <Col xs={12}></Col>}
-                <Col xs={12} className="text-end">
-                  <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-                    <button
-                      type="button"
-                      className="btn btn-warning"
-                      data-bs-dismiss="modal"
-                      onClick={closeNotesModal}
-                    >
-                      Close
-                    </button>
-
-                    {!!notesUpdateObj?.notes &&
-                      (notesUpdateObj?.notes).trim().length > 0 &&
-                      hrStatus != 2 && (
-                        <button
-                          type="button"
-                          className="btn w-sm btn-success"
-                          data-bs-dismiss="modal"
-                          onClick={updateNotes}
-                        >
-                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                          Save
-                        </button>
-                      )}
-                  </div>
-                </Col>
-              </Row>
-            </form>
-          </div>
-        </ModalBody>
-      </Modal>
+        onClose={closeNotesModal}
+        date={date}
+        notes={notesList}
+        resolveEmployee={(n) =>
+          !!employee_data && employee_data.find((e) => e.id === n.employee_id)
+        }
+        canWrite={false}
+        value={notesUpdateObj?.notes}
+        onChange={(v) => setNotesUpdateObj({ ...notesUpdateObj, notes: v })}
+        onSave={updateNotes}
+      />
 
       {/* Apply Leave Modal — renders the shared ApplyLeaveForm */}
       <Modal
+        data-testid="attendance-employee-apply-leave-dialog"
         isOpen={leave_modal}
         toggle={closeLeaveModal}
         centered
-        size="lg"
-        className="custom-modal"
+        className="alm-modal"
       >
-        <div className="modal-header justify-content-center position-relative">
-          <h5
-            className="modal-title text-center"
-            style={{ fontSize: "smaller" }}
-          >
-            Apply Leave
-            {leaveDate
-              ? ` - ${format(new Date(leaveDate), "dd MMM, yyyy")}`
-              : ""}
-          </h5>
+        <div className="alm-head">
+          <span className="alm-head-icon">
+            <i className="ri-calendar-event-line" />
+          </span>
+          <div className="alm-head-text">
+            <h5>Apply Leave</h5>
+            <p>Request time off for this attendance day</p>
+          </div>
+          {leaveDate && (
+            <div className="alm-date">
+              <span className="alm-date-day">{format(new Date(leaveDate), "dd")}</span>
+              <span className="alm-date-rest">
+                <strong>{format(new Date(leaveDate), "MMM yyyy")}</strong>
+                {format(new Date(leaveDate), "EEEE")}
+              </span>
+            </div>
+          )}
           <button
+            data-testid="attendance-employee-apply-leave-close-button"
             type="button"
-            className="btn-close"
+            className="alm-close"
             aria-label="Close"
             onClick={closeLeaveModal}
-            style={{
-              position: "absolute",
-              right: "16px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              margin: 0,
-            }}
-          ></button>
+          >
+            <i className="ri-close-line" />
+          </button>
         </div>
-        <ModalBody>
+        <ModalBody className="alm-body">
           {/* antd picker popups default to z-index 1050, which sits behind
               the Bootstrap modal (1055). Lift them while this modal is open. */}
           <style>{`
             .ant-picker-dropdown { z-index: 1100 !important; }
+
+            .alm-modal{max-width:540px}
+            .alm-modal .modal-content{overflow:hidden;border-radius:18px}
+            .alm-head{position:relative;display:flex;align-items:center;gap:14px;padding:18px 20px;
+              background:linear-gradient(135deg,rgba(var(--vz-success-rgb),.12),rgba(var(--vz-info-rgb),.05) 60%,transparent);
+              border-bottom:1px solid var(--vz-border-color)}
+            .alm-head::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--vz-success),var(--vz-info))}
+            .alm-head-icon{width:44px;height:44px;flex-shrink:0;border-radius:12px;display:grid;place-items:center;font-size:21px;color:#fff;
+              background:linear-gradient(135deg,var(--vz-success),#34d3b9);box-shadow:0 8px 18px -6px rgba(var(--vz-success-rgb),.6)}
+            .alm-head-text{flex:1;min-width:0}
+            .alm-head-text h5{margin:0;font-size:16px;font-weight:700;color:var(--vz-heading-color)}
+            .alm-head-text p{margin:2px 0 0;font-size:12.5px;color:var(--vz-secondary-color)}
+            .alm-date{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:12px;
+              background:var(--vz-secondary-bg);border:1px solid var(--vz-border-color)}
+            .alm-date-day{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:700;font-size:15px;color:#fff;
+              background:linear-gradient(135deg,var(--vz-primary),var(--vz-info))}
+            .alm-date-rest{display:flex;flex-direction:column;font-size:11px;line-height:1.25;color:var(--vz-secondary-color)}
+            .alm-date-rest strong{font-size:12.5px;color:var(--vz-heading-color)}
+            .alm-close{width:34px;height:34px;flex-shrink:0;border-radius:10px;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg);
+              color:var(--vz-secondary-color);display:grid;place-items:center;font-size:18px;transition:all .18s ease}
+            .alm-close:hover{color:var(--vz-danger);border-color:rgba(var(--vz-danger-rgb),.4);background:rgba(var(--vz-danger-rgb),.08);transform:rotate(90deg)}
+
+            .alm-modal .modal-body.alm-body{padding:24px}
+            .alm-body .MuiTypography-overline{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--vz-heading-color)}
+            .alm-body .MuiTypography-overline::before{content:"";width:6px;height:6px;border-radius:50%;
+              background:var(--vz-success);box-shadow:0 0 0 3px rgba(var(--vz-success-rgb),.18)}
+            .alm-body .MuiOutlinedInput-root{border-radius:12px;background:var(--vz-tertiary-bg);transition:background .18s,box-shadow .18s}
+            .alm-body .MuiOutlinedInput-root.Mui-focused{background:var(--vz-secondary-bg);box-shadow:0 0 0 3px rgba(var(--vz-success-rgb),.15)}
+            .alm-body .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--vz-success)}
+            .alm-body .MuiInputLabel-root.Mui-focused{color:var(--vz-success)}
+            .alm-body .ant-picker{border-radius:12px;background:var(--vz-tertiary-bg)}
+            .alm-body .MuiToggleButtonGroup-root{border-radius:12px;background:var(--vz-tertiary-bg);padding:3px;gap:3px}
+            .alm-body .MuiToggleButton-root{border:0 !important;border-radius:9px !important;font-weight:600;text-transform:none}
+            .alm-body .MuiToggleButton-root.Mui-selected{color:#fff;background:linear-gradient(135deg,var(--vz-success),#34d3b9)}
+            .alm-body form > .MuiStack-root:last-child{background:var(--vz-tertiary-bg)}
+            .alm-body form > .MuiStack-root:last-child .MuiButton-root{height:40px;padding:0 18px;border-radius:10px;font-weight:600;text-transform:none}
+            .alm-body form > .MuiStack-root:last-child .MuiButton-contained{background:linear-gradient(135deg,var(--vz-success),#34d3b9);
+              box-shadow:0 8px 18px -8px rgba(var(--vz-success-rgb),.8)}
+            @media (max-width:575px){.alm-date{display:none}}
           `}</style>
-          <ApplyLeaveForm lockedDate={leaveDate} />
+          <ApplyLeaveForm lockedDate={leaveDate} onCancel={closeLeaveModal} />
         </ModalBody>
       </Modal>
     </Fragment>

@@ -3,41 +3,51 @@ import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Card,
-  CardBody,
-  Col,
   Container,
   Form,
   Input,
   Label,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
   TabContent,
   TabPane,
-  Progress,
-  FormFeedback,
   Button,
 } from "reactstrap";
-import classnames from "classnames";
 import logoLight from "../../../assets/images/logo-light.png";
+import logoDark from "../../../assets/images/logo-dark.png";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
 import * as Yup from "yup";
 import { MetaTitle } from "../../../common/data/MetaTitle";
 import { validate } from "../../../common/js/EmailValidate";
-import AuthParticles from "../../../component/authparticles/AuthParticles";
 import { toast } from "react-toastify";
+import "../login/login.scss";
+import "./register.scss";
 import axios from "axios";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { getBaseUrlFromDomain } from "../../../common/api/BaseURL";
 import AuthLoader from "../loader/AuthLoader";
 import { buildRedirectUrl } from "../../../common/api/BuildRedirectURL";
+import { testId } from "../../../shared/testing/testId";
 
 defineElement(loadAnimation);
 
 const OTP_LENGTH = 6;
+
+const REG_STEPS = [
+  { title: "Your details", sub: "Name, email & password", icon: "ri-user-3-line" },
+  { title: "Company workspace", sub: "Name & company URL", icon: "ri-building-2-line" },
+  { title: "Verify email", sub: "6-digit code", icon: "ri-mail-check-line" },
+];
+
+const STRENGTH = [
+  { label: "Too weak", tone: "is-weak" },
+  { label: "Weak", tone: "is-weak" },
+  { label: "Fair", tone: "is-fair" },
+  { label: "Good", tone: "is-good" },
+  { label: "Strong", tone: "is-strong" },
+];
+
+const passwordScore = (pwd) =>
+  [/.{8,}/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((re) => re.test(pwd)).length;
 
 const Register = () => {
   const navigate = useNavigate();
@@ -308,503 +318,454 @@ const Register = () => {
   const isEmailValid = (val) =>
     /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(val);
 
+  const goToCompanyStep = () => {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      toast.error("Please Enter All Details");
+    } else if (!isEmailValid(email)) {
+      toast.error("Invalid Email Format");
+    } else {
+      toggleTab(2, 33);
+    }
+  };
+
+  const score = passwordScore(password);
+  const strength = STRENGTH[score];
+  const domainPreview = domain || "your-company";
+  const otpFilled = otp.filter(Boolean).length;
+  const stepIndex = Math.min(activeTab, 4) - 1;
+
   return (
     <React.Fragment>
       {showLoader === false ? (
-        <AuthParticles>
-          <div className="auth-page-content mt-lg-3">
-            <Container>
-              <Row>
-                <Col lg={12}>
-                  <div className="text-center mt-sm-5 mb-4 text-white-50">
-                    <div>
-                      <Link to="/" className="d-inline-block auth-logo">
-                        <img src={logoLight} alt="" height="20" />
-                      </Link>
+        <div className="lgn">
+          {/* ───────── Showcase ───────── */}
+          <aside className="lgn-hero" aria-hidden="true">
+            <span className="lgn-blob is-a" />
+            <span className="lgn-blob is-b" />
+            <span className="lgn-blob is-c" />
+            <span className="lgn-grid" />
+
+            <div className="lgn-hero-inner">
+              <div className="lgn-brand">
+                <img src={logoLight} alt="" height="24" />
+                <span className="lgn-brand-tag">HRMS · Attendance · CRM</span>
+              </div>
+
+              <div className="lgn-headline">
+                <span className="lgn-eyebrow">
+                  <span className="lgn-eyebrow-dot" />
+                  Free to get started
+                </span>
+                <h1>
+                  Set up your company
+                  <br />
+                  in <span className="lgn-word">minutes.</span>
+                </h1>
+                <p>
+                  Create your Lint HR workspace and start tracking attendance, running
+                  payroll and managing clients today.
+                </p>
+              </div>
+
+              <div className="lgn-stage">
+                {/* company URL preview */}
+                <div className="lgn-card lgn-clock reg-url-card">
+                  <div className="reg-browser">
+                    <span className="reg-dots"><i /><i /><i /></span>
+                    <span className="reg-url">
+                      <i className="ri-lock-2-line" />
+                      <b>{domainPreview}</b>.linthr.com
+                    </span>
+                  </div>
+                  <div className="lgn-ws-company">
+                    <span className="lgn-ws-avatar">
+                      {companyName.trim() ? (
+                        companyName
+                          .trim()
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((w) => w[0])
+                          .join("")
+                          .toUpperCase()
+                      ) : (
+                        <i className="ri-building-4-line" />
+                      )}
+                    </span>
+                    <div className="lgn-ws-meta">
+                      <b>{companyName.trim() || "Your company"}</b>
+                      <span className="lgn-muted">
+                        {name.trim() ? `Admin · ${name.trim()}` : "Your new workspace"}
+                      </span>
                     </div>
-                    <p className="mt-3 fs-15 fw-medium">Lint HR Dashboard</p>
                   </div>
-                </Col>
-              </Row>
+                </div>
 
-              <Row className="justify-content-center">
-                <Col md={8} lg={6} xl={5}>
-                  <Card>
-                    <CardBody>
-                      <Form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          validation.handleSubmit();
-                          return false;
+                {/* team attendance */}
+                <div className="lgn-card lgn-chart">
+                  <div className="lgn-card-head">
+                    <span className="lgn-card-title"><i className="ri-team-line" />Team present</span>
+                    <span className="lgn-up"><i className="ri-arrow-up-line" />4.2%</span>
+                  </div>
+                  <div className="lgn-chart-value">92<small>%</small></div>
+                  <div className="lgn-bars">
+                    {[62, 78, 70, 88, 94, 84, 92].map((h, i) => (
+                      <span key={i} style={{ "--h": `${h}%`, "--d": `${i * 0.08}s` }} />
+                    ))}
+                  </div>
+                  <div className="lgn-bars-days">
+                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                      <span key={i}>{d}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* signup progress */}
+                <div className="lgn-card lgn-pipe lgn-steps">
+                  <div className="lgn-card-head">
+                    <span className="lgn-card-title"><i className="ri-route-line" />Your setup</span>
+                    <span className="lgn-muted">{Math.min(stepIndex, 3)} / 3 done</span>
+                  </div>
+                  {REG_STEPS.map((s, i) => (
+                    <div
+                      key={s.title}
+                      className={`lgn-step ${i < stepIndex ? "is-done" : ""} ${i === stepIndex ? "is-active" : ""}`}
+                    >
+                      <span className="lgn-step-dot">
+                        <i className={i < stepIndex ? "ri-check-line" : s.icon} />
+                      </span>
+                      <div>
+                        <b>{s.title}</b>
+                        <span className="lgn-muted">{s.sub}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="lgn-toast">
+                  <span className="lgn-toast-icon"><i className="ri-check-line" /></span>
+                  <div>
+                    <div className="lgn-toast-title">Workspace created</div>
+                    <div className="lgn-muted">Ready in under 2 minutes</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lgn-foot">
+                <div className="lgn-foot-text">
+                  <b>No credit card required</b>
+                  <span>set up attendance, payroll and CRM in one place</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ───────── Sign up ───────── */}
+          <main className="lgn-panel">
+            <div className="lgn-form-wrap">
+              <div className="lgn-mobile-brand">
+                <img src={logoDark} alt="Lint HR" height="24" />
+              </div>
+
+              <div className="lgn-form-head reg-head">
+                <span className="lgn-hello">Step into a smarter experience ✨</span>
+                <h2>{activeTab === 4 ? "You're all set" : "Create your account"}</h2>
+                <p>
+                  {activeTab === 1 && "Tell us a little about yourself."}
+                  {activeTab === 2 && "Name your company and pick its Lint HR URL."}
+                  {activeTab === 3 && "One last step — confirm your email address."}
+                  {activeTab === 4 && "Your Lint HR workspace is ready."}
+                </p>
+              </div>
+
+              {activeTab < 4 && (
+                <div className="reg-stepper" style={{ "--p": Math.min(1, (progressbarvalue * 1.5) / 100) }}>
+                  <span className="reg-stepper-line" />
+                  {REG_STEPS.map((s, i) => {
+                    const step = i + 1;
+                    const state = activeTab > step ? "is-done" : activeTab === step ? "is-active" : "";
+                    return (
+                      <button
+                        key={s.title}
+                        type="button"
+                        className={`reg-step ${state}`}
+                        data-testid={testId("register-step", s.title, "button")}
+                        disabled={step === 3 || step > activeTab + 1}
+                        onClick={() => {
+                          if (step === 1) toggleTab(1, 0);
+                          if (step === 2) goToCompanyStep();
                         }}
-                        action="#"
-                        className="form-steps"
                       >
-                        <div className="text-center pt-3 pb-4 mb-1">
-                          <h5>Step Into a Smarter Experience</h5>
-                        </div>
+                        <span className="reg-step-num">
+                          {activeTab > step ? <i className="ri-check-line" /> : step}
+                        </span>
+                        <span className="reg-step-label">{s.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-                        {/* ── Step progress bar — hide on success tab */}
-                        {activeTab < 4 && (
-                          <div className="progress-nav mb-4">
-                            <Progress
-                              value={progressbarvalue}
-                              style={{ height: "1px" }}
-                            />
-                            <Nav
-                              className="nav-pills progress-bar-tab custom-nav"
-                              role="tablist"
-                            >
-                              {/* Step 1 */}
-                              <NavItem>
-                                <NavLink
-                                  className={classnames(
-                                    {
-                                      active: activeTab === 1,
-                                      done: activeTab > 1,
-                                    },
-                                    "rounded-pill",
-                                  )}
-                                  onClick={() => toggleTab(1, 0)}
-                                  tag="button"
-                                  type="button"
-                                >
-                                  1
-                                </NavLink>
-                              </NavItem>
-                              {/* Step 2 */}
-                              <NavItem>
-                                <NavLink
-                                  className={classnames(
-                                    {
-                                      active: activeTab === 2,
-                                      done: activeTab > 2,
-                                    },
-                                    "rounded-pill",
-                                  )}
-                                  onClick={() => {
-                                    if (
-                                      !name.trim() ||
-                                      !email.trim() ||
-                                      !password.trim()
-                                    ) {
-                                      toast.error("Please Enter All Details");
-                                    } else if (!isEmailValid(email)) {
-                                      toast.error("Invalid Email Format");
-                                    } else {
-                                      toggleTab(2, 33);
-                                    }
-                                  }}
-                                  tag="button"
-                                  type="button"
-                                >
-                                  2
-                                </NavLink>
-                              </NavItem>
-                              {/* Step 3 — OTP */}
-                              <NavItem>
-                                <NavLink
-                                  className={classnames(
-                                    {
-                                      active: activeTab === 3,
-                                      done: activeTab > 3,
-                                    },
-                                    "rounded-pill",
-                                  )}
-                                  tag="button"
-                                  type="button"
-                                  disabled
-                                >
-                                  3
-                                </NavLink>
-                              </NavItem>
-                            </Nav>
-                          </div>
+              <Form
+                className="lgn-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  validation.handleSubmit();
+                  return false;
+                }}
+                action="#"
+                noValidate
+              >
+                <TabContent activeTab={activeTab}>
+                  {/* ── Step 1: personal details ── */}
+                  <TabPane tabId={1}>
+                    <div className="lgn-field">
+                      <Label htmlFor="reg-name" className="lgn-label">Full name</Label>
+                      <div className="lgn-input">
+                        <i className="ri-user-3-line lgn-input-icon" />
+                        <Input
+                          id="reg-name"
+                          name="name"
+                          placeholder="e.g. Arjun Kumar"
+                          type="text"
+                          autoComplete="name"
+                          onChange={(e) => setName(e.target.value)}
+                          onBlur={validation.handleBlur}
+                          value={name || ""}
+                          data-testid="register-name-input"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="lgn-field">
+                      <Label htmlFor="reg-email" className="lgn-label">Work email</Label>
+                      <div className={`lgn-input ${email && !isEmailValid(email) ? "is-invalid" : ""}`}>
+                        <i className="ri-mail-line lgn-input-icon" />
+                        <Input
+                          id="reg-email"
+                          name="email"
+                          placeholder="you@company.com"
+                          type="email"
+                          autoComplete="email"
+                          onChange={(e) => setEmail(e.target.value)}
+                          onBlur={validation.handleBlur}
+                          value={email || ""}
+                          data-testid="register-email-input"
+                        />
+                        {email && isEmailValid(email) && (
+                          <span className="lgn-eye lgn-ws-ok"><i className="ri-checkbox-circle-fill" /></span>
                         )}
+                      </div>
+                    </div>
 
-                        <TabContent activeTab={activeTab}>
-                          {/* ── TAB 1: Personal Info ── */}
-                          <TabPane tabId={1}>
-                            <Row>
-                              <Col lg={6}>
-                                <div className="mb-3">
-                                  <Label className="form-label">Name</Label>
-                                  <Input
-                                    name="name"
-                                    placeholder="Enter name"
-                                    type="text"
-                                    onChange={(e) => setName(e.target.value)}
-                                    onBlur={validation.handleBlur}
-                                    value={name || ""}
-                                    invalid={
-                                      !!(
-                                        validation.touched.name &&
-                                        validation.errors.name
-                                      )
-                                    }
-                                  />
-                                  {validation.touched.name &&
-                                    validation.errors.name && (
-                                      <FormFeedback>
-                                        {validation.errors.name}
-                                      </FormFeedback>
-                                    )}
-                                </div>
-                              </Col>
-                              <Col lg={6}>
-                                <div className="mb-3">
-                                  <Label className="form-label">Email</Label>
-                                  <Input
-                                    name="email"
-                                    placeholder="Enter email"
-                                    type="email"
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    onBlur={validation.handleBlur}
-                                    value={email || ""}
-                                    invalid={
-                                      !!(
-                                        validation.touched.email &&
-                                        validation.errors.email
-                                      )
-                                    }
-                                  />
-                                  {validation.touched.email &&
-                                    validation.errors.email && (
-                                      <FormFeedback>
-                                        {validation.errors.email}
-                                      </FormFeedback>
-                                    )}
-                                </div>
-                              </Col>
-                            </Row>
-                            <div className="mb-3">
-                              <Label className="form-label">Password</Label>
-                              <div className="position-relative auth-pass-inputgroup mb-3">
-                                <Input
-                                  name="password"
-                                  value={password || ""}
-                                  type={passwordShow ? "text" : "password"}
-                                  className="form-control pe-5"
-                                  placeholder="Enter Password"
-                                  onChange={(e) => setPassword(e.target.value)}
-                                  onBlur={validation.handleBlur}
-                                  invalid={
-                                    !!(
-                                      validation.touched.password &&
-                                      validation.errors.password
-                                    )
-                                  }
-                                />
-                                {validation.touched.password &&
-                                  validation.errors.password && (
-                                    <FormFeedback>
-                                      {validation.errors.password}
-                                    </FormFeedback>
-                                  )}
-                                <button
-                                  className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
-                                  type="button"
-                                  onClick={() => setPasswordShow(!passwordShow)}
-                                >
-                                  <i
-                                    className={`ri-${passwordShow ? "eye-off" : "eye"}-fill align-middle`}
-                                  ></i>
-                                </button>
-                              </div>
-                            </div>
-                            <div className="d-flex align-items-start gap-3 mt-4">
-                              <button
-                                type="button"
-                                className="btn btn-success btn-label right ms-auto nexttab"
-                                onClick={() => {
-                                  if (
-                                    !name.trim() ||
-                                    !email.trim() ||
-                                    !password.trim()
-                                  ) {
-                                    toast.error("Please Enter All Details");
-                                  } else if (!isEmailValid(email)) {
-                                    toast.error("Invalid Email Format");
-                                  } else {
-                                    toggleTab(2, 33);
-                                  }
-                                }}
-                              >
-                                <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                                Continue
-                              </button>
-                            </div>
-                          </TabPane>
+                    <div className="lgn-field">
+                      <Label htmlFor="reg-password" className="lgn-label">Password</Label>
+                      <div className="lgn-input">
+                        <i className="ri-lock-2-line lgn-input-icon" />
+                        <Input
+                          id="reg-password"
+                          name="password"
+                          value={password || ""}
+                          type={passwordShow ? "text" : "password"}
+                          placeholder="Create a password"
+                          autoComplete="new-password"
+                          onChange={(e) => setPassword(e.target.value)}
+                          onBlur={validation.handleBlur}
+                          data-testid="register-password-input"
+                        />
+                        <button
+                          type="button"
+                          className="lgn-eye"
+                          onClick={() => setPasswordShow(!passwordShow)}
+                          aria-label={passwordShow ? "Hide password" : "Show password"}
+                          data-testid="register-password-toggle-button"
+                        >
+                          <i className={passwordShow ? "ri-eye-off-line" : "ri-eye-line"} />
+                        </button>
+                      </div>
+                      {password && (
+                        <div className={`reg-strength ${strength.tone}`}>
+                          <div className="reg-strength-bars">
+                            {[0, 1, 2, 3].map((i) => (
+                              <span key={i} className={i < score ? "is-on" : ""} />
+                            ))}
+                          </div>
+                          <span>{strength.label}</span>
+                        </div>
+                      )}
+                    </div>
 
-                          {/* ── TAB 2: Company Info ── */}
-                          <TabPane tabId={2}>
-                            <Row>
-                              <Col lg={12}>
-                                <div className="mb-3">
-                                  <Label className="form-label">
-                                    Company Name
-                                  </Label>
-                                  <Input
-                                    name="companyName"
-                                    placeholder="Enter Company Name"
-                                    type="text"
-                                    onChange={(e) =>
-                                      setCompanyName(e.target.value)
-                                    }
-                                    onBlur={validation.handleBlur}
-                                    value={companyName || ""}
-                                    invalid={
-                                      !!(
-                                        validation.touched.companyName &&
-                                        validation.errors.companyName
-                                      )
-                                    }
-                                  />
-                                  {validation.touched.companyName &&
-                                    validation.errors.companyName && (
-                                      <FormFeedback>
-                                        {validation.errors.companyName}
-                                      </FormFeedback>
-                                    )}
-                                </div>
-                              </Col>
-                              <Col lg={12}>
-                                <div className="mb-3">
-                                  <Label className="form-label">Domain</Label>
-                                  <div className="input-group">
-                                    <Input
-                                      name="domain"
-                                      placeholder="Enter Domain"
-                                      type="text"
-                                      onChange={handleDomainChange}
-                                      value={domain || ""}
-                                      invalid={
-                                        !!(
-                                          validation.touched.domain &&
-                                          validation.errors.domain
-                                        )
-                                      }
-                                    />
-                                    <span className="input-group-text">
-                                      .linthr.com
-                                    </span>
-                                    {validation.touched.domain &&
-                                      validation.errors.domain && (
-                                        <FormFeedback>
-                                          {validation.errors.domain}
-                                        </FormFeedback>
-                                      )}
-                                  </div>
-                                  <div className="form-text">
-                                    {companyName
-                                      ? `Your company domain will be: https://${domain}.linthr.com`
-                                      : "(*) We will create a unique company URL for you to log into Lint HR"}
-                                  </div>
-                                </div>
-                              </Col>
-                            </Row>
-                            <div className="d-flex align-items-start gap-3 mt-4">
-                              <button
-                                type="button"
-                                className="btn btn-link text-decoration-none btn-label previestab"
-                                onClick={() => toggleTab(1, 0)}
-                              >
-                                <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>
-                                Back
-                              </button>
-                              <Button
-                                type="button"
-                                className="btn btn-success btn-label right ms-auto nexttab"
-                                onClick={(e) => GetOtp(e)}
-                                disabled={otpLoading}
-                              >
-                                {otpLoading ? (
-                                  <>
-                                    <span
-                                      className="spinner-border spinner-border-sm me-2"
-                                      role="status"
-                                    ></span>
-                                    Sending...
-                                  </>
-                                ) : (
-                                  <>
-                                    <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                                    Get OTP
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </TabPane>
+                    <Button type="button" className="lgn-submit" onClick={goToCompanyStep} data-testid="register-continue-button">
+                      <span>Continue</span>
+                      <i className="ri-arrow-right-line" />
+                    </Button>
+                  </TabPane>
 
-                          {/* ── TAB 3: OTP Verification (NEW) ── */}
-                          <TabPane tabId={3}>
-                            <div className="text-center mb-4">
-                              <div
-                                style={{
-                                  width: 56,
-                                  height: 56,
-                                  borderRadius: "50%",
-                                  background: "#e6f1fb",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  margin: "0 auto 16px",
-                                }}
-                              >
-                                <i
-                                  className="ri-mail-send-line"
-                                  style={{ fontSize: 24, color: "#185FA5" }}
-                                ></i>
-                              </div>
-                              <h5 className="mb-1">Verify your email</h5>
-                              <p
-                                className="text-muted mb-0"
-                                style={{ fontSize: 13 }}
-                              >
-                                We sent a 6-digit code to
-                              </p>
-                              <p
-                                className="fw-semibold"
-                                style={{ fontSize: 13 }}
-                              >
-                                {email}
-                              </p>
-                            </div>
+                  {/* ── Step 2: company ── */}
+                  <TabPane tabId={2}>
+                    <div className="lgn-field">
+                      <Label htmlFor="reg-company" className="lgn-label">Company name</Label>
+                      <div className="lgn-input">
+                        <i className="ri-building-2-line lgn-input-icon" />
+                        <Input
+                          id="reg-company"
+                          name="companyName"
+                          placeholder="e.g. Lintcloud Technologies"
+                          type="text"
+                          autoComplete="organization"
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          onBlur={validation.handleBlur}
+                          value={companyName || ""}
+                          data-testid="register-company-name-input"
+                        />
+                      </div>
+                    </div>
 
-                            {/* OTP boxes */}
-                            <div
-                              className="d-flex justify-content-center gap-2 mb-3"
-                              onPaste={handleOtpPaste}
-                            >
-                              {otp.map((digit, index) => (
-                                <input
-                                  key={index}
-                                  ref={(el) => (otpRefs.current[index] = el)}
-                                  type="text"
-                                  inputMode="numeric"
-                                  maxLength={1}
-                                  value={digit}
-                                  onChange={(e) => handleOtpChange(e, index)}
-                                  onKeyDown={(e) => handleOtpKeyDown(e, index)}
-                                  style={{
-                                    width: 46,
-                                    height: 52,
-                                    textAlign: "center",
-                                    fontSize: 22,
-                                    fontWeight: 500,
-                                    border: otpError
-                                      ? "1.5px solid #e24b4a"
-                                      : digit
-                                        ? "1.5px solid #185FA5"
-                                        : "1.5px solid #ddd",
-                                    borderRadius: 8,
-                                    outline: "none",
-                                    background: digit
-                                      ? "#e6f1fb"
-                                      : "transparent",
-                                    color: "#185FA5",
-                                    transition:
-                                      "border 0.15s, background 0.15s",
-                                  }}
-                                />
-                              ))}
-                            </div>
+                    <div className="lgn-field">
+                      <Label htmlFor="reg-domain" className="lgn-label">Company URL</Label>
+                      <div className="lgn-input reg-domain">
+                        <i className="ri-global-line lgn-input-icon" />
+                        <Input
+                          id="reg-domain"
+                          name="domain"
+                          placeholder="your-company"
+                          type="text"
+                          onChange={handleDomainChange}
+                          value={domain || ""}
+                          data-testid="register-domain-input"
+                        />
+                        <span className="reg-domain-suffix">.linthr.com</span>
+                      </div>
+                      <div className="lgn-hint">
+                        <i className="ri-information-line" />
+                        {companyName
+                          ? <span>Your team will sign in at <b>https://{domain}.linthr.com</b></span>
+                          : "We'll create a unique URL for your team to sign in to Lint HR."}
+                      </div>
+                    </div>
 
-                            {otpError && (
-                              <p
-                                className="text-center text-danger"
-                                style={{ fontSize: 12 }}
-                              >
-                                {otpError}
-                              </p>
-                            )}
-
-                            {/* Resend */}
-                            <p
-                              className="text-center text-muted mb-4"
-                              style={{ fontSize: 13 }}
-                            >
-                              {canResend ? (
-                                <>
-                                  Didn't receive the code?{" "}
-                                  <span
-                                    onClick={handleResendOtp}
-                                    style={{
-                                      color: "#185FA5",
-                                      cursor: "pointer",
-                                      fontWeight: 500,
-                                    }}
-                                  >
-                                    Resend OTP
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  Resend OTP in <strong>{resendTimer}s</strong>
-                                </>
-                              )}
-                            </p>
-
-                            <div className="d-flex align-items-start gap-3">
-                              <button
-                                type="button"
-                                className="btn btn-link text-decoration-none btn-label previestab"
-                                onClick={() => toggleTab(2, 33)}
-                              >
-                                <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>
-                                Back
-                              </button>
-                              <button
-                                type="submit"
-                                className="btn btn-success btn-label right ms-auto"
-                              >
-                                <i className="ri-shield-check-line label-icon align-middle fs-16 ms-2"></i>
-                                Verify & Continue
-                              </button>
-                            </div>
-                          </TabPane>
-
-                          {/* ── TAB 4: Success (was tab 3) ── */}
-                          <TabPane tabId={4}>
-                            <div className="text-center">
-                              <div className="mb-4">
-                                <lord-icon
-                                  src="https://cdn.lordicon.com/lupuorrc.json"
-                                  trigger="loop"
-                                  colors="primary:#0ab39c,secondary:#405189"
-                                  style={{ width: "120px", height: "120px" }}
-                                ></lord-icon>
-                              </div>
-                              <h5>Well Done!</h5>
-                              <p className="text-muted">
-                                You have successfully signed up.
-                              </p>
-                              <p className="text-muted">
-                                Redirecting to login…
-                              </p>
-                            </div>
-                          </TabPane>
-                        </TabContent>
-                      </Form>
-                    </CardBody>
-                  </Card>
-
-                  <div className="mt-4 text-center">
-                    <p className="mb-0">
-                      Already have an account?{" "}
-                      <Link
-                        to="/auth/workspace"
-                        className="fw-semibold text-primary text-decoration-underline"
+                    <div className="reg-actions">
+                      <button type="button" className="reg-back" onClick={() => toggleTab(1, 0)} data-testid="register-company-back-button">
+                        <i className="ri-arrow-left-line" />
+                        Back
+                      </button>
+                      <Button
+                        type="button"
+                        className="lgn-submit"
+                        onClick={(e) => GetOtp(e)}
+                        disabled={otpLoading}
+                        data-testid="register-get-otp-button"
                       >
-                        Sign in
-                      </Link>
-                    </p>
-                  </div>
-                </Col>
-              </Row>
-            </Container>
-          </div>
-        </AuthParticles>
+                        {otpLoading ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm" role="status" />
+                            <span>Sending code…</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Get OTP</span>
+                            <i className="ri-arrow-right-line" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </TabPane>
+
+                  {/* ── Step 3: OTP ── */}
+                  <TabPane tabId={3}>
+                    <div className="reg-otp-head">
+                      <span className="reg-otp-icon"><i className="ri-mail-send-line" /></span>
+                      <div>
+                        <b>Check your inbox</b>
+                        <span>We sent a 6-digit code to <strong>{email}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="reg-otp" onPaste={handleOtpPaste}>
+                      {otp.map((digit, index) => (
+                        <input
+                          key={index}
+                          ref={(el) => (otpRefs.current[index] = el)}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          aria-label={`Digit ${index + 1}`}
+                          className={`${digit ? "is-filled" : ""} ${otpError ? "is-invalid" : ""}`}
+                          onChange={(e) => handleOtpChange(e, index)}
+                          onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                          data-testid={`register-otp-digit-${index + 1}-input`}
+                        />
+                      ))}
+                    </div>
+
+                    {otpError && (
+                      <div className="lgn-error reg-center" data-testid="register-otp-error">
+                        <i className="ri-error-warning-line" />
+                        {otpError}
+                      </div>
+                    )}
+
+                    <div className="reg-resend">
+                      {canResend ? (
+                        <>
+                          Didn't receive the code?
+                          <button type="button" onClick={handleResendOtp} data-testid="register-resend-otp-button">
+                            <i className="ri-refresh-line" />
+                            Resend OTP
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <i className="ri-time-line" />
+                          Resend code in <b>{resendTimer}s</b>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="reg-actions">
+                      <button type="button" className="reg-back" onClick={() => toggleTab(2, 33)} data-testid="register-otp-back-button">
+                        <i className="ri-arrow-left-line" />
+                        Back
+                      </button>
+                      <Button type="submit" className="lgn-submit" disabled={otpFilled < OTP_LENGTH} data-testid="register-verify-button">
+                        <i className="ri-shield-check-line" />
+                        <span>Verify & continue</span>
+                      </Button>
+                    </div>
+                  </TabPane>
+
+                  {/* ── Step 4: success ── */}
+                  <TabPane tabId={4}>
+                    <div className="reg-done" data-testid="register-success-message">
+                      <lord-icon
+                        src="https://cdn.lordicon.com/lupuorrc.json"
+                        trigger="loop"
+                        colors="primary:#0ab39c,secondary:#405189"
+                        style={{ width: "120px", height: "120px" }}
+                      ></lord-icon>
+                      <h5>Well done!</h5>
+                      <p>You have successfully signed up.</p>
+                      <span className="reg-done-chip">
+                        <span className="spinner-border spinner-border-sm" role="status" />
+                        Redirecting to login…
+                      </span>
+                    </div>
+                  </TabPane>
+                </TabContent>
+              </Form>
+
+              <div className="reg-signin">
+                Already have an account?
+                <Link to="/auth/workspace" className="lgn-link" data-testid="register-sign-in-link">Sign in</Link>
+              </div>
+
+              <div className="lgn-panel-foot">
+                <span><i className="ri-shield-check-line" />Your data is encrypted and secure</span>
+                <span>© {new Date().getFullYear()} Lint HR · Crafted with <i className="ri-heart-3-fill lgn-heart" /> by Lintcloud</span>
+              </div>
+            </div>
+          </main>
+        </div>
       ) : (
         <Container>
           <AuthLoader />

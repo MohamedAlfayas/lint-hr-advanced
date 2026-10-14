@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { setAttendanceApprovalTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 import { DatePicker } from "antd";
@@ -112,6 +112,7 @@ const HolidayFilter = () => {
 
       <Col md={4}>
         <Select
+          testId="holiday-filter-select-month"
           options={monthOptions}
           placeholder="Select Month"
           getOptionLabel={(option) => option.label}

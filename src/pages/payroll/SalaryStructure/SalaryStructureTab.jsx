@@ -16,9 +16,12 @@ import EmployeeSalary from "../EmployeeSalary/EmployeeSalary";
 
 const SalaryStructureTab = ({ onEarningAdd }) => {
   const [activeTab, setActiveTab] = useState("1");
+  const [mountedTabs, setMountedTabs] = useState({ 1: true });
 
   const toggleTab = (tab) => {
-    if (activeTab !== tab) setActiveTab(tab);
+    if (activeTab === tab) return;
+    setActiveTab(tab);
+    setMountedTabs((prev) => (prev[tab] ? prev : { ...prev, [tab]: true }));
   };
 
   return (
@@ -31,6 +34,7 @@ const SalaryStructureTab = ({ onEarningAdd }) => {
         >
         <NavItem>
             <NavLink
+              data-testid="salary-structure-salary-structure-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "1" })}
               onClick={() => toggleTab("1")}
@@ -41,6 +45,7 @@ const SalaryStructureTab = ({ onEarningAdd }) => {
 
           <NavItem>
             <NavLink
+              data-testid="salary-structure-assign-structure-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "2" })}
               onClick={() => toggleTab("2")}
@@ -55,18 +60,16 @@ const SalaryStructureTab = ({ onEarningAdd }) => {
 
         {/* Tab Content */}
         <TabContent activeTab={activeTab}>
-      
-         {/*    Salary Structure */}
-          <TabPane tabId="1">
-            <SalaryStructureTable />
-          </TabPane>   
-
-       
-  <TabPane tabId="2">
-    
-
-    <EmployeeSalary/>
-  </TabPane>
+          {mountedTabs["1"] && (
+            <TabPane tabId="1">
+              <SalaryStructureTable />
+            </TabPane>
+          )}
+          {mountedTabs["2"] && (
+            <TabPane tabId="2">
+              <EmployeeSalary />
+            </TabPane>
+          )}
 
 
       

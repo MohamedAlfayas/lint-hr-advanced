@@ -13,13 +13,12 @@ import { Container } from "reactstrap";
 const Sidebar = ({ layoutType }) => {
 
   useEffect(() => {
-    var verticalOverlay = document.getElementsByClassName("vertical-overlay");
-    if (verticalOverlay) {
-      verticalOverlay[0].addEventListener("click", function () {
-        document.body.classList.remove("vertical-sidebar-enable");
-      });
-    }
-  });
+    const overlay = document.getElementsByClassName("vertical-overlay")[0];
+    if (!overlay) return undefined;
+    const closeSidebar = () => document.body.classList.remove("vertical-sidebar-enable");
+    overlay.addEventListener("click", closeSidebar);
+    return () => overlay.removeEventListener("click", closeSidebar);
+  }, []);
 
   const addEventListenerOnSmHoverMenu = () => {
     // add listener Sidebar Hover icon on change layout from setting
@@ -36,7 +35,7 @@ const Sidebar = ({ layoutType }) => {
     <React.Fragment>
       <div className="app-menu navbar-menu">
         <div className="navbar-brand-box">
-          <Link to="/" className="logo logo-dark">
+          <Link to="/" className="logo logo-dark" data-testid="sidebar-logo-dark-link">
             <span className="logo-sm">
               <img src={logoSm} alt="" height="22" />
             </span>
@@ -45,7 +44,7 @@ const Sidebar = ({ layoutType }) => {
             </span>
           </Link>
 
-          <Link to="/" className="logo logo-light">
+          <Link to="/" className="logo logo-light" data-testid="sidebar-logo-light-link">
             <span className="logo-sm">
               <img src={logoSm} alt="" height="22" />
             </span>
@@ -58,6 +57,7 @@ const Sidebar = ({ layoutType }) => {
             type="button"
             className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
             id="vertical-hover"
+            data-testid="sidebar-hover-toggle-button"
           >
             <i className="ri-record-circle-line"></i>
           </button>

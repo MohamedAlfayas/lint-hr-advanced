@@ -12,7 +12,7 @@ import {
   Input,
   Badge,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, day, range, min, runChecks } from "./validators";
@@ -54,7 +54,7 @@ const ViewToggle = ({ checked, label }) => (
         width: 36,
         height: 20,
         borderRadius: 12,
-        background: checked ? "#0ab39c" : "#ced4da",
+        background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)",
         position: "relative",
         flexShrink: 0,
       }}
@@ -184,14 +184,14 @@ const GratuityPolicySettings = () => {
           <div className="text-center py-5">
             <div className="avatar-md mx-auto mb-4">
               <div className="avatar-title bg-light rounded-circle text-muted fs-28">
-                <i className="ri-money-rupee-circle-line"></i>
+                <i className="ri-hand-coin-line"></i>
               </div>
             </div>
             <h6>No Gratuity Policy Configured</h6>
             <p className="text-muted mb-4">
               Configure gratuity eligibility and calculation rules.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="gratuity-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line me-1"></i>
               Configure Policy
             </Button>
@@ -215,6 +215,7 @@ const GratuityPolicySettings = () => {
         {!isEditing && (
           <div className="d-flex gap-2">
             <Button
+              data-testid="gratuity-policy-edit-button"
               size="sm"
               color="primary"
               outline
@@ -225,7 +226,7 @@ const GratuityPolicySettings = () => {
             >
               <i className="ri-edit-line"></i> Edit
             </Button>
-            <Button size="sm" color="success" outline onClick={handleNew}>
+            <Button data-testid="gratuity-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
               <i className="ri-add-line"></i> New Version
             </Button>
           </div>
@@ -265,6 +266,7 @@ const GratuityPolicySettings = () => {
           <SettingRow label="Effective Date">
             {isEditing ? (
               <Input
+                data-testid="gratuity-policy-effective-date-input"
                 type="date"
                 value={form.effective_date || ""}
                 onChange={(e) => handleChange("effective_date", e.target.value)}
@@ -279,6 +281,7 @@ const GratuityPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="gratuity-policy-is-active-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.is_active}
@@ -297,6 +300,7 @@ const GratuityPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="gratuity-policy-include-gratuity-in-ctc-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.include_gratuity_in_ctc}
@@ -315,6 +319,7 @@ const GratuityPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="gratuity-policy-enable-gratuity-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.enable_gratuity}
@@ -331,6 +336,7 @@ const GratuityPolicySettings = () => {
               <SettingRow label="Calculation Basis">
                 {isEditing ? (
                   <Select
+                    testId="gratuity-policy-calculation-basis"
                     options={GRATUITY_BASIS_OPTIONS}
                     value={GRATUITY_BASIS_OPTIONS.find(
                       (o) => o.value === form.calculation_basis
@@ -350,7 +356,8 @@ const GratuityPolicySettings = () => {
               <SettingRow label="Days In Month">
                 {isEditing ? (
                   <div>
-                    <Input type="number" min="1" max="31" value={form.days_in_month_for_calculation ?? ""}
+                    <Input
+                      data-testid="gratuity-policy-days-in-month-for-input" type="number" min="1" max="31" value={form.days_in_month_for_calculation ?? ""}
                       onChange={(e) => {
                         let val = parseInt(e.target.value) || "";
                         if (val > 31) val = 31;
@@ -369,7 +376,8 @@ const GratuityPolicySettings = () => {
               <SettingRow label="Days Per Year Of Service">
                 {isEditing ? (
                   <div>
-                    <Input type="number" min="1" max="30" value={form.days_per_year_of_service ?? ""}
+                    <Input
+                      data-testid="gratuity-policy-days-per-year-of-input" type="number" min="1" max="30" value={form.days_per_year_of_service ?? ""}
                       onChange={(e) => {
                         let val = parseInt(e.target.value) || "";
                         if (val > 30) val = 30;
@@ -388,7 +396,8 @@ const GratuityPolicySettings = () => {
               <SettingRow label="Minimum Years Of Service">
                 {isEditing ? (
                   <div>
-                    <Input type="number" step="0.01" min="0" max="50" value={form.minimum_years_of_service || ""}
+                    <Input
+                      data-testid="gratuity-policy-minimum-years-of-service-input" type="number" step="0.01" min="0" max="50" value={form.minimum_years_of_service || ""}
                       onChange={(e) => {
                         let val = e.target.value;
                         if (val !== "" && Number(val) > 50) val = "50";
@@ -408,6 +417,7 @@ const GratuityPolicySettings = () => {
                 {isEditing ? (
                   <div className="form-check form-switch">
                     <Input
+                      data-testid="gratuity-policy-use-240-days-rule-checkbox"
                       className="form-check-input"
                       type="checkbox"
                       checked={!!form.use_240_days_rule}
@@ -422,7 +432,8 @@ const GratuityPolicySettings = () => {
               <SettingRow label="Maximum Gratuity Amount" last>
                 {isEditing ? (
                   <div>
-                    <Input type="number" step="0.01" min="1" max="2000000" value={form.maximum_gratuity_amount || ""}
+                    <Input
+                      data-testid="gratuity-policy-maximum-gratuity-amount-input" type="number" step="0.01" min="1" max="2000000" value={form.maximum_gratuity_amount || ""}
                       onChange={(e) => {
                         let val = e.target.value;
                         if (val !== "" && Number(val) > 2000000) val = "2000000";
@@ -455,6 +466,7 @@ const GratuityPolicySettings = () => {
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 border-top pt-3">
             <Button
+              data-testid="gratuity-policy-cancel-button"
               color="light"
               className="border"
               onClick={handleCancel}
@@ -462,7 +474,7 @@ const GratuityPolicySettings = () => {
             >
               Cancel
             </Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="gratuity-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line me-1"></i>
               {loading ? "Saving..." : "Save Changes"}
             </Button>

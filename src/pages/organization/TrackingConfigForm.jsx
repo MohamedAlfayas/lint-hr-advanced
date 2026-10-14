@@ -1,16 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  CardBody,
-  Form,
-  FormFeedback,
-  Label,
-  Input,
-  Button,
-} from "reactstrap";
+import { Form } from "reactstrap";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { toast } from "react-toastify";
@@ -18,6 +8,8 @@ import { GetApi } from "../../common/api/GetApi";
 import { PostApi } from "../../common/api/PostApi";
 import { PutApi } from "../../common/api/PutApi";
 import { setTrackingConfig } from "../../redux/reducers/ChildReducer/TrackingConfigReducer";
+import "./TrackingConfigForm.scss";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 
 const CONFIG_ENDPOINT = "tracking/configuration/";
 
@@ -152,6 +144,7 @@ const TrackingConfigForm = () => {
         move_mode_interval: tracking_config_data?.move_mode_interval ?? "",
         always_track_on_interval:
           tracking_config_data?.always_track_on_interval ?? false,
+        is_tracking_enabled: tracking_config_data?.is_tracking_enabled ?? false,
         tracking_radius_range:
           tracking_config_data?.tracking_radius_range ?? "",
       },
@@ -162,199 +155,162 @@ const TrackingConfigForm = () => {
   const isInvalid = (name) =>
     Boolean(formik.touched[name] && formik.errors[name]);
 
+  const locked = !isEditable || fetching;
+  const trackingOn = !!formik.values.is_tracking_enabled;
+
+  const humanSeconds = (v) => {
+    const n = Number(v);
+    if (!v || Number.isNaN(n)) return "—";
+    if (n < 60) return `every ${n} sec`;
+    const m = Math.floor(n / 60);
+    const s = n % 60;
+    return `every ${m} min${s ? ` ${s} sec` : ""}`;
+  };
+
+  const metrics = [
+    {
+      name: "still_mode_interval",
+      label: "Still mode interval",
+      icon: "ri-pause-circle-line",
+      tone: "info",
+      unit: "sec",
+      maxLen: 5,
+      hint: "Min 60 sec · must be longer than move mode",
+      readable: humanSeconds(formik.values.still_mode_interval),
+      desc: "Ping rate while the employee is stationary",
+    },
+    {
+      name: "move_mode_interval",
+      label: "Move mode interval",
+      icon: "ri-walk-line",
+      tone: "success",
+      unit: "sec",
+      maxLen: 5,
+      hint: "Min 5 sec",
+      readable: humanSeconds(formik.values.move_mode_interval),
+      desc: "Ping rate while the employee is moving",
+    },
+    {
+      name: "tracking_radius_range",
+      label: "Tracking radius",
+      icon: "ri-focus-3-line",
+      tone: "warning",
+      unit: "m",
+      maxLen: 6,
+      hint: "Min 10 m",
+      readable: formik.values.tracking_radius_range ? `${Number(formik.values.tracking_radius_range).toLocaleString("en-IN")} m movement threshold` : "—",
+      desc: "Distance that switches still → move mode",
+    },
+  ];
+
   return (
-    <Row>
-      <Col xl={9} lg={8}>
-        <Card>
-          <CardBody>
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <h6 className="mb-0 fw-semibold text-uppercase">
-                Tracking Configuration
-              </h6>
-              {!isEditable && !fetching && (
-                <button
-                  type="button"
-                  className="btn btn-icon btn-sm btn-soft-info"
-                  onClick={() => setIsEditable(true)}
-                  title="Edit"
-                >
-                  <i className="ri-pencil-fill" />
-                </button>
-              )}
+    <Form onSubmit={formik.handleSubmit} noValidate className={`tcf ${isEditable ? "is-editing" : ""}`}>
+      <div className="tcf-head">
+        <span className="tcf-head-icon"><i className="ri-map-pin-time-line"></i></span>
+        <div className="tcf-head-text">
+          <h5>Tracking Configuration</h5>
+          <p>Control how often employee locations are captured</p>
+        </div>
+        <span className={`tcf-status ${trackingOn ? "is-on" : ""}`}>
+          <span className="tcf-status-dot"></span>
+          {fetching ? "Loading…" : trackingOn ? "Tracking active" : "Tracking paused"}
+        </span>
+        {!isEditable && !fetching && (
+          <button data-testid="tracking-config-edit-button" type="button" className="it-btn is-soft" onClick={() => setIsEditable(true)}>
+            <i className="ri-pencil-line"></i>Edit
+          </button>
+        )}
+        {isEditable && <span className="tcf-editing"><i className="ri-pencil-line"></i>Editing</span>}
+      </div>
+
+      <button
+        data-testid="tracking-config-location-tracking-button"
+        type="button"
+        role="switch"
+        aria-checked={trackingOn}
+        disabled={locked}
+        className={`tcf-master ${trackingOn ? "is-on" : ""}`}
+        onClick={() => formik.setFieldValue("is_tracking_enabled", !trackingOn)}
+      >
+        <span className="tcf-master-icon"><i className="ri-radar-line"></i></span>
+        <span className="tcf-master-text">
+          <b>Location tracking</b>
+          <small>
+            {trackingOn
+              ? "Employees' locations are recorded during working hours"
+              : "No location data is collected from employees"}
+          </small>
+        </span>
+        <span className="tcf-switch is-lg"><span></span></span>
+      </button>
+
+      <div className="tcf-section-label">Intervals & range</div>
+      <div className="tcf-metrics">
+        {metrics.map((m) => (
+          <div key={m.name} className={`tcf-metric tone-${m.tone} ${isInvalid(m.name) ? "is-invalid" : ""}`}>
+            <div className="tcf-metric-top">
+              <span className="tcf-metric-icon"><i className={m.icon}></i></span>
+              <div className="tcf-metric-title">
+                <label htmlFor={m.name}>{m.label} <span>*</span></label>
+                <small>{m.desc}</small>
+              </div>
             </div>
+            <div className="tcf-input">
+              <input
+                data-testid={testId("tracking-config", m.name, "input")}
+                type="text"
+                inputMode="numeric"
+                id={m.name}
+                name={m.name}
+                disabled={locked}
+                value={formik.values[m.name]}
+                onChange={(e) => handleNumberOnly(e, m.name, m.maxLen)}
+                onBlur={() => formik.setFieldTouched(m.name, true)}
+              />
+              <span className="tcf-unit">{m.unit}</span>
+            </div>
+            {isInvalid(m.name) ? (
+              <div className="tcf-error"><i className="ri-error-warning-line"></i>{formik.errors[m.name]}</div>
+            ) : (
+              <div className="tcf-readable">
+                <span>{m.readable}</span>
+                {isEditable && <em><i className="ri-information-line"></i>{m.hint}</em>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-            <Form onSubmit={formik.handleSubmit} noValidate>
-              <Row className="gy-4">
-                <Col md={6}>
-                  <Label htmlFor="still_mode_interval" className="form-label">
-                    Still Mode Interval (sec) <span>*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    id="still_mode_interval"
-                    name="still_mode_interval"
-                    disabled={!isEditable || fetching}
-                    value={formik.values.still_mode_interval}
-                    onChange={(e) =>
-                      handleNumberOnly(e, "still_mode_interval", 5)
-                    }
-                    onBlur={() =>
-                      formik.setFieldTouched("still_mode_interval", true)
-                    }
-                    invalid={isInvalid("still_mode_interval")}
-                  />
-                  <FormFeedback>
-                    {formik.errors.still_mode_interval}
-                  </FormFeedback>
-                </Col>
+      <button
+        data-testid="tracking-config-always-track-on-interval-switch"
+        type="button"
+        role="switch"
+        aria-checked={!!formik.values.always_track_on_interval}
+        disabled={locked}
+        className={`tcf-toggle ${formik.values.always_track_on_interval ? "is-on" : ""}`}
+        onClick={() => formik.setFieldValue("always_track_on_interval", !formik.values.always_track_on_interval)}
+      >
+        <span className="tcf-toggle-icon"><i className="ri-repeat-line"></i></span>
+        <span className="tcf-toggle-text">
+          <b>Always track on interval</b>
+          <small>Capture location on every interval even when the position hasn't changed</small>
+        </span>
+        <span className="tcf-switch"><span></span></span>
+      </button>
 
-                <Col md={6}>
-                  <Label htmlFor="move_mode_interval" className="form-label">
-                    Move Mode Interval (sec) <span>*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    id="move_mode_interval"
-                    name="move_mode_interval"
-                    disabled={!isEditable || fetching}
-                    value={formik.values.move_mode_interval}
-                    onChange={(e) =>
-                      handleNumberOnly(e, "move_mode_interval", 5)
-                    }
-                    onBlur={() =>
-                      formik.setFieldTouched("move_mode_interval", true)
-                    }
-                    invalid={isInvalid("move_mode_interval")}
-                  />
-                  <FormFeedback>
-                    {formik.errors.move_mode_interval}
-                  </FormFeedback>
-                </Col>
-
-                <Col md={6}>
-                  <Label htmlFor="tracking_radius_range" className="form-label">
-                    Tracking Radius Range (m) <span>*</span>
-                  </Label>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    id="tracking_radius_range"
-                    name="tracking_radius_range"
-                    disabled={!isEditable || fetching}
-                    value={formik.values.tracking_radius_range}
-                    onChange={(e) =>
-                      handleNumberOnly(e, "tracking_radius_range", 6)
-                    }
-                    onBlur={() =>
-                      formik.setFieldTouched("tracking_radius_range", true)
-                    }
-                    invalid={isInvalid("tracking_radius_range")}
-                  />
-                  <FormFeedback>
-                    {formik.errors.tracking_radius_range}
-                  </FormFeedback>
-                </Col>
-
-                <Col md={6}>
-                  <Label
-                    htmlFor="always_track_on_interval"
-                    className="form-label d-block"
-                  >
-                    Always Track On Interval
-                  </Label>
-                  <div
-                    className="form-check form-switch form-switch-md form-switch-success"
-                    dir="ltr"
-                  >
-                    <Input
-                      id="always_track_on_interval"
-                      name="always_track_on_interval"
-                      type="checkbox"
-                      className="form-check-input"
-                      disabled={!isEditable || fetching}
-                      checked={formik.values.always_track_on_interval}
-                      onChange={(e) =>
-                        formik.setFieldValue(
-                          "always_track_on_interval",
-                          e.target.checked,
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="form-text">
-                    Currently{" "}
-                    <b>
-                      <i>
-                        {formik.values.always_track_on_interval ? "Yes" : "No"}
-                      </i>
-                    </b>
-                  </div>
-                </Col>
-                <Col md={6}>
-                  <Label
-                    htmlFor="is_tracking_enabled"
-                    className="form-label d-block"
-                  >
-                    Tracking Enable
-                  </Label>
-                  <div
-                    className="form-check form-switch form-switch-md form-switch-success"
-                    dir="ltr"
-                  >
-                    <Input
-                      id="is_tracking_enabled"
-                      name="is_tracking_enabled"
-                      type="checkbox"
-                      className="form-check-input"
-                      disabled={!isEditable || fetching}
-                      checked={formik.values.is_tracking_enabled}
-                      onChange={(e) =>
-                        formik.setFieldValue(
-                          "is_tracking_enabled",
-                          e.target.checked,
-                        )
-                      }
-                    />
-                  </div>
-                  <div className="form-text">
-                    Currently{" "}
-                    <b>
-                      <i>{formik.values.is_tracking_enabled ? "Yes" : "No"}</i>
-                    </b>
-                  </div>
-                </Col>
-
-                {isEditable && (
-                  <Col xxl={12}>
-                    <div className="d-flex gap-2">
-                      <Button
-                        type="submit"
-                        color="success"
-                        className="btn-label"
-                        disabled={loading}
-                      >
-                        <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
-                        {loading ? "Saving..." : "Update"}
-                      </Button>
-                      <Button
-                        type="button"
-                        color="light"
-                        onClick={handleCancel}
-                        disabled={loading}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </Col>
-                )}
-              </Row>
-            </Form>
-          </CardBody>
-        </Card>
-      </Col>
-    </Row>
+      {isEditable && (
+        <div className="tcf-actions">
+          <span className="tcf-actions-note"><i className="ri-information-line"></i>Changes apply to all employees with tracking enabled</span>
+          <button data-testid="tracking-config-cancel-button" type="button" className="it-btn is-soft" onClick={handleCancel} disabled={loading}>
+            Cancel
+          </button>
+          <button data-testid="tracking-config-save-changes-button" type="submit" className="it-btn is-primary" disabled={loading}>
+            <i className={loading ? "ri-loader-4-line tcf-spin" : "ri-save-3-line"}></i>
+            {loading ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      )}
+    </Form>
   );
 };
 

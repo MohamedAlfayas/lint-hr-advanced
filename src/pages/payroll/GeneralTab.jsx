@@ -7,7 +7,7 @@ import {
   Label,
   Row,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 
 const GeneralTab = ({ payrollobj, locationOption, currencyOption, salaryCalculationOption }) => {
@@ -21,6 +21,7 @@ const GeneralTab = ({ payrollobj, locationOption, currencyOption, salaryCalculat
             </Label>
             <div>
               <Select
+                testId="payroll-general-location"
                 id="location"
                 isMulti={false}
                 options={locationOption || []}
@@ -47,6 +48,7 @@ const GeneralTab = ({ payrollobj, locationOption, currencyOption, salaryCalculat
             </Label>
             <div>
               <Select
+                testId="payroll-general-currency"
                 id="currency"
                 isMulti={false}
                 options={currencyOption || []}
@@ -73,6 +75,7 @@ const GeneralTab = ({ payrollobj, locationOption, currencyOption, salaryCalculat
             </Label>
             <div>
               <Select
+                testId="payroll-general-calculation"
                 id="calculation"
                 isMulti={false}
                 options={salaryCalculationOption || []}
@@ -94,7 +97,7 @@ const GeneralTab = ({ payrollobj, locationOption, currencyOption, salaryCalculat
 
         <Col lg={12}>
           <div className="text-start">
-            <Button type="submit" color="success" className="btn-label">
+            <Button data-testid="payroll-general-save-button" type="submit" color="success" className="btn-label">
               <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
               Save
             </Button>

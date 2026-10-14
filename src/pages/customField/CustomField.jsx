@@ -15,7 +15,11 @@ import {
   custom_field_component_name,
   custom_field_types,
 } from "../../common/constant/Constants";
-import { Card, CardBody } from "reactstrap";
+import {
+  ApvChip,
+  ApvStatus,
+  ApvTitle,
+} from "../../component/common/approval/ApprovalCells";
 
 const CustomField = () => {
   // const [CustomData, setCustomdata] = useState([
@@ -89,40 +93,34 @@ const CustomField = () => {
     {
       Header: "Display Name",
 
-      accessor: (obj) => {
-        return <b>{obj.name}</b>;
-      },
+      accessor: (obj) => (
+        <ApvTitle icon="ri-input-method-line" title={obj.name} sub={obj.input_name} />
+      ),
       filterable: false,
       id: "name",
     },
     {
       Header: "Field Type",
-      accessor: (obj) => {
-        return (
-          <>
-            {custom_field_types.find((e) => e.value === obj.type)?.label || ""}
-          </>
-        );
-      },
+      accessor: (obj) => (
+        <ApvChip icon="ri-text">
+          {custom_field_types.find((e) => e.value === obj.type)?.label || obj.type}
+        </ApvChip>
+      ),
       filterable: false,
       id: "fieldtype",
     },
     {
       Header: "Applicable For",
-      accessor: (obj) => {
-        return (
-          <>
-            {obj.applicable_for_modules.map((e, index) => {
-              const label =
-                custom_field_applicable_modules.find((m) => m.value === e)
-                  ?.label || "";
-              return index === obj.applicable_for_modules.length - 1
-                ? label
-                : label + " / ";
-            })}
-          </>
-        );
-      },
+      accessor: (obj) => (
+        <ApvChip icon="ri-apps-line">
+          {(obj.applicable_for_modules || [])
+            .map(
+              (e) =>
+                custom_field_applicable_modules.find((m) => m.value === e)?.label || e,
+            )
+            .join(" / ")}
+        </ApvChip>
+      ),
       filterable: false,
       id: "applicablefor",
     },
@@ -130,18 +128,12 @@ const CustomField = () => {
       Header: "Required",
       filterable: false,
       id: "is_required",
-      accessor: (obj) => {
-        let status = obj.is_required ? "Required" : "Optional";
-        let statusClass = obj.is_required ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) =>
+        obj.is_required ? (
+          <ApvStatus tone="danger" icon="ri-asterisk" label="Required" />
+        ) : (
+          <ApvStatus tone="secondary" icon="ri-checkbox-blank-circle-line" label="Optional" />
+        ),
     },
   ];
 

@@ -12,7 +12,7 @@ const ImportExportForms = ({ open, toggleImportCanvas }) => {
   return (
     <div>
       <Offcanvas
-        style={{ width: form_width_percentage }}
+        style={{ width: form_width_percentage, maxWidth: "100vw" }}
         isOpen={open}
         toggle={toggleImportCanvas}
         direction="end"

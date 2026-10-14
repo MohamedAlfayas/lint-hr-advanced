@@ -102,6 +102,7 @@ const AttendanceLeaveApprovalTable = () => {
                 {showAttendanceApproval && (
                   <NavItem>
                     <NavLink
+                      data-testid="dashboard-approvals-attendance-approval-link"
                       href="#"
                       className={classnames(
                         { active: activeTab === "1" },
@@ -128,6 +129,7 @@ const AttendanceLeaveApprovalTable = () => {
                   <NavItem>
                     {!showAttendanceApproval ? (
                       <NavLink
+                        data-testid="dashboard-approvals-leave-approval-link"
                         href="#"
                         className={classnames(
                           { active: activeTab === "1" },
@@ -143,6 +145,7 @@ const AttendanceLeaveApprovalTable = () => {
                       </NavLink>
                     ) : (
                       <NavLink
+                        data-testid="dashboard-approvals-leave-approval-link"
                         href="#"
                         className={classnames(
                           { active: activeTab === "2" },

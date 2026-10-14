@@ -15,6 +15,7 @@ import {
   settleFullPay,
 } from "./statusHelpers";
 import PayslipPaymentModal from "./PayslipPaymentModal";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 // "paid" / "partially_paid" are intentionally NOT offered as move targets —
 // they're only ever set via the dedicated release actions below, so
@@ -129,42 +130,43 @@ const PayslipBulkStatusBar = ({ selectedIds, payslips = [], runStatus, onDone })
 
   return (
     <>
-    <div className="d-flex align-items-center gap-2 px-3 py-2 bg-light border-bottom flex-wrap flex-shrink-0">
+    <div className="d-flex align-items-center gap-2 px-3 py-2 surface-muted border-bottom flex-wrap flex-shrink-0">
       <span style={{ fontSize: 12, fontWeight: 600 }}>{selectedIds.length} selected</span>
 
       <Input
+        data-testid="payslip-bulk-status-safe-target-select"
         type="select"
         bsSize="sm"
         style={{ width: 180 }}
         value={safeTarget}
         onChange={(e) => setTarget(e.target.value)}
       >
-        <option value="">Move to…</option>
-        {targets.map((c) => <option key={c} value={c}>{labelFor(rows, c)}</option>)}
+        <option data-testid="payslip-bulk-status-safe-target-option-none" value="">Move to…</option>
+        {targets.map((c) => <option data-testid={testId("payslip-bulk-status-safe-target-option", itemTestKey(c))} key={c} value={c}>{labelFor(rows, c)}</option>)}
       </Input>
-      <Button color="primary" size="sm" onClick={apply} disabled={busy || !safeTarget}>
+      <Button data-testid="payslip-bulk-status-apply-button" color="primary" size="sm" onClick={apply} disabled={busy || !safeTarget}>
         {busy ? <Spinner size="sm" /> : "Apply"}
       </Button>
 
       {releaseAllowed && (
         <span className="border-start ps-2 d-flex align-items-center gap-2 flex-wrap">
           {fullEligible.length > 0 && (
-            <Button color="success" outline size="sm" disabled={busy} onClick={() => releaseFull(fullEligible)}>
+            <Button data-testid="payslip-bulk-status-pay-full-button" color="success" outline size="sm" disabled={busy} onClick={() => releaseFull(fullEligible)}>
               Pay Full ({fullEligible.length})
             </Button>
           )}
           {partialEligible.length > 0 && (
-            <Button color="info" outline size="sm" disabled={busy} onClick={() => setPartialOpen(true)}>
+            <Button data-testid="payslip-bulk-status-pay-partial-button" color="info" outline size="sm" disabled={busy} onClick={() => setPartialOpen(true)}>
               Pay Partial ({partialEligible.length})
             </Button>
           )}
           {salaryEligible.length > 0 && (
-            <Button color="warning" outline size="sm" disabled={busy} onClick={() => release("pay_partial", "Release salary tranche", salaryEligible)}>
+            <Button data-testid="payslip-bulk-status-release-salary-button" color="warning" outline size="sm" disabled={busy} onClick={() => release("pay_partial", "Release salary tranche", salaryEligible)}>
               Release Salary ({salaryEligible.length})
             </Button>
           )}
           {balanceEligible.length > 0 && (
-            <Button color="primary" outline size="sm" disabled={busy} onClick={() => release("pay_balance", "Release incentive balance", balanceEligible)}>
+            <Button data-testid="payslip-bulk-status-release-balance-button" color="primary" outline size="sm" disabled={busy} onClick={() => release("pay_balance", "Release incentive balance", balanceEligible)}>
               Release Balance ({balanceEligible.length})
             </Button>
           )}

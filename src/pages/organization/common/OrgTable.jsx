@@ -1,15 +1,7 @@
 import React, { useMemo } from "react";
 import TableContainer from "../../../component/common/table/TableContainer";
-import { Link } from "react-router-dom";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
-
-import {
-  Badge,
-  Button,
-  ListGroup,
-  ListGroupItem,
-  UncontrolledTooltip,
-} from "reactstrap";
+import { ApvEmployee } from "../../../component/common/approval/ApprovalCells";
 
 const OrgTable = ({ departmentId }) => {
   const EmployeeData = GetLocalStorageData("employee") || [];
@@ -27,70 +19,7 @@ const OrgTable = ({ departmentId }) => {
       accessor: "first_name",
       filterable: false,
       id: "first_name",
-      accessor: (obj) => {
-        return obj.profile_url ? (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <img
-                src={obj.profile_url}
-                alt=""
-                className="avatar-xs rounded-circle acitivity-avatar"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <div className="flex-grow-1 align-items-left">
-              <div>
-                <Link
-                  to="#"
-                  // onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  {" "}
-                  <h5 className="fs-14 mb-1 text text-start">
-                    {obj.first_name}
-                  </h5>
-                </Link>
-              </div>
-              <div className="text-start">{obj.email}</div>
-            </div>
-          </div>
-        ) : (
-          <div className="d-flex gap-2 align-items-center">
-            <div className="flex-shrink-0">
-              <div
-                className="avatar-xs rounded-circle"
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  background: "#0ab39c",
-                }}
-                data-bs-toggle="tooltip"
-                title={obj.first_name}
-              >
-                <span className="first_letter" style={{ color: "white" }}>
-                  {obj.first_name.charAt(0)}
-                </span>
-              </div>
-            </div>
-            <div className="flex-grow-1 align-items-left">
-              <div>
-                <Link
-                  to="#"
-                  onClick={() => viewEmployee(obj)}
-                  className="link-body-emphasis mb-0"
-                >
-                  {" "}
-                  <h5 className="fs-14 mb-1 text text-start">
-                    {obj.first_name}
-                  </h5>
-                </Link>
-              </div>
-              <div className="text-start">{obj.email}</div>
-            </div>
-          </div>
-        );
-      },
+      accessor: (obj) => <ApvEmployee employee={obj} />,
       // filterable: false,
       // id: "nameAndEmail",
     },
@@ -208,64 +137,7 @@ const OrgTable = ({ departmentId }) => {
         let rm_obj =
           EmployeeData.find((d) => d.id === obj.reporting_manager_id) || null;
 
-        return !!rm_obj ? (
-          rm_obj.profile_url ? (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <img
-                  src={rm_obj.profile_url}
-                  alt=""
-                  className="avatar-xs rounded-circle acitivity-avatar"
-                  style={{ objectFit: "cover" }}
-                />
-              </div>
-              <div className="flex-grow-1">
-                <div>
-                  <Link to="#" className="link-body-emphasis mb-0">
-                    {" "}
-                    <h5 className="fs-14 mb-1 text-start">
-                      {rm_obj.first_name}
-                    </h5>
-                  </Link>
-                </div>
-                <div className="text-start">{rm_obj.email}</div>
-              </div>
-            </div>
-          ) : (
-            <div className="d-flex gap-2 align-items-center">
-              <div className="flex-shrink-0">
-                <div
-                  className="avatar-xs rounded-circle acitivity-avatar"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background: "#0ab39c",
-                  }}
-                  data-bs-toggle="tooltip"
-                  title={rm_obj.first_name}
-                >
-                  <span className="first_letter" style={{ color: "white" }}>
-                    {rm_obj.first_name.charAt(0)}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-grow-1">
-                <div>
-                  <Link to="#" className="link-body-emphasis mb-0">
-                    {" "}
-                    <h5 className="fs-14 mb-1 text-start">
-                      {rm_obj.first_name}
-                    </h5>
-                  </Link>
-                </div>
-                <div className="text-start">{rm_obj.email}</div>
-              </div>
-            </div>
-          )
-        ) : (
-          "-----------------"
-        );
+        return <ApvEmployee employee={rm_obj} />;
       },
     },
     // {

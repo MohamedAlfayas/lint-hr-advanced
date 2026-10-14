@@ -85,6 +85,7 @@ const RsuiteTable = () => {
           <Cell style={{ padding: "6px" }}>
             {(rowData) => (
               <Button
+                data-testid="table-edit-button"
                 appearance="link"
                 onClick={() => alert(`name:${rowData.name}`)}
               >

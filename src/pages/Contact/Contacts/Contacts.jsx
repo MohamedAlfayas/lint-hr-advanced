@@ -1,145 +1,81 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
 
-// import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import InfoTable from "../../../component/common/table/InfoTable";
 import { MetaTitle } from "../../../common/data/MetaTitle";
-import { useMemo } from "react";
+import { useSelector } from "react-redux";
+import { contacts_component_name } from "../../../common/constant/Constants";
 import {
-  UncontrolledDropdown,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownItem, UncontrolledTooltip
-} from "reactstrap";
-import { useDispatch, useSelector } from "react-redux";
-import { contacts_component_name } from "../../../common/constant/Constants"
+  ApvActive,
+  ApvLink,
+  ApvTitle,
+  initialsOf,
+} from "../../../component/common/approval/ApprovalCells";
 
+const PHONE_ICONS = {
+  1: "ri-briefcase-line",
+  2: "ri-smartphone-line",
+  3: "ri-home-line",
+  4: "ri-whatsapp-line",
+  5: "ri-more-line",
+};
 
 const Contacts = () => {
-  const dispatch = useDispatch();
-
-  const { contacts_data } = useSelector(
-    (state) => state.ContactsReducer
-  );
-
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen((prevState) => !prevState);
-  };
-  
-
-
-
-
+  const { contacts_data } = useSelector((state) => state.ContactsReducer);
 
   const additionalColumn = [
-
     {
       Header: "Name",
-      accessor: "name",
       filterable: false,
       id: "name",
-      accessor: (obj) => {
-
-
-        return (
-          <span>
-            {obj.name}
-          </span>
-        );
-      },
+      accessor: (obj) => (
+        <ApvTitle initials={initialsOf(obj.name)} title={obj.name} sub={obj.description} />
+      ),
     },
     {
       Header: "Email",
-      accessor: "email",
       filterable: false,
       id: "email",
+      accessor: (obj) => (
+        <ApvLink href={`mailto:${obj.email}`} icon="ri-mail-line">
+          {obj.email}
+        </ApvLink>
+      ),
     },
     {
       Header: "Phone Number",
       filterable: false,
       id: "number",
       accessor: (obj) => {
-        const primaryPhone = obj.phone_numbers.find((item) => item.primary) || obj.phone_numbers[0] || { number: "" };
-        const result = primaryPhone;
-
-        // Function to get the icon by phone type
-        const getIconByType = (icon) => {
-          switch (icon) {
-            case 1:
-              return "ri-briefcase-line";
-            case 2:
-              return "ri-smartphone-line";
-            case 3:
-              return "ri-home-line";
-            case 4:
-              return "ri-whatsapp-line";
-            case 5:
-              return "ri-more-line";
-            default:
-              return "";
-          }
-        };
-
-        // Filter out primary phone from dropdown items
-        const otherPhones = obj.phone_numbers.filter((phone) => !phone.primary);
-
+        const phones = obj.phone_numbers || [];
+        const primary = phones.find((p) => p.primary) || phones[0];
+        const others = phones.filter((p) => p !== primary && p.number);
         return (
-          <UncontrolledDropdown >
-            <DropdownToggle
-              tag="a"
-              href="#"
-              onClick={(e) => e.preventDefault()}
+          <span className="d-inline-flex align-items-center gap-1">
+            <ApvLink
+              href={`tel:${primary?.number || ""}`}
+              icon={PHONE_ICONS[primary?.type] || "ri-phone-line"}
             >
-              <span className="text-primary d-inline-block edit-item-btn fs-16">
-                <i className={getIconByType(result.type)} style={{ marginRight: '8px' }} />
-                {result.number}
-                {otherPhones.length >0 && (
-                  <i
-                    className={`${isDropdownOpen ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"
-                      } lc-icon-hover`}
-                    style={{ fontSize: '20px' }}
-                  />
-                )}
+              {primary?.number}
+            </ApvLink>
+            {others.length > 0 && (
+              <span
+                className="apv-dept-more"
+                title={others.map((p) => p.number).join(", ")}
+              >
+                +{others.length}
               </span>
-            </DropdownToggle>
-
-            {otherPhones.length > 0 && (
-              <DropdownMenu
-               style={{ zIndex: 1050, marginBottom: '5px' }}>
-                {otherPhones.map((phone, index) => (
-                  <DropdownItem key={index}>
-                    <i className={getIconByType(phone.type)} style={{ marginRight: '8px' }} />
-                    {phone.number}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
             )}
-          </UncontrolledDropdown>
+          </span>
         );
-      }
-    }
-    ,
-
+      },
+    },
     {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.status ? "Active" : "Inactive";
-        let statusClass = obj.status ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) => <ApvActive active={obj.status} />,
     },
   ];
 
@@ -154,7 +90,6 @@ const Contacts = () => {
       email: "",
       project_number: "",
       contact_groups: "",
-
     };
   }, []);
 
@@ -163,14 +98,12 @@ const Contacts = () => {
     {
       option: true,
       label: "Active",
-      count:
-        contacts_data.filter((e) => e[filterKey] === true).length || 0,
+      count: contacts_data.filter((e) => e[filterKey] === true).length || 0,
     },
     {
       option: false,
       label: "Inactive",
-      count:
-        contacts_data.filter((e) => e[filterKey] === false).length || 0,
+      count: contacts_data.filter((e) => e[filterKey] === false).length || 0,
     },
   ];
 

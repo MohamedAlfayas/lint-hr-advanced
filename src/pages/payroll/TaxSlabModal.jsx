@@ -7,6 +7,7 @@ import {
   Table,
 } from "reactstrap";
 import { Link } from "react-router-dom";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
 
 const TaxSlabModal = ({ isOpen, toggle, taxSlabId, taxSlab }) => {
   const selectedSlab = taxSlabId
@@ -15,13 +16,14 @@ const TaxSlabModal = ({ isOpen, toggle, taxSlabId, taxSlab }) => {
 
   return (
     <Modal
+      data-testid="tax-slab-tax-slabs-for-lintcloud-dialog"
       id="flipModal"
       isOpen={isOpen}
       toggle={toggle}
       modalClassName="zoomIn"
       centered
     >
-      <ModalHeader>
+      <ModalHeader close={<ModalCloseButton onClick={toggle} testId="tax-slab-tax-slabs-for-lintcloud-close-button" />} toggle={toggle}>
         <h5 className="modal-title" id="staticBackdropLabel">
           Tax Slabs for Lintcloud It Service Pvt Ltd
         </h5>
@@ -51,6 +53,7 @@ const TaxSlabModal = ({ isOpen, toggle, taxSlabId, taxSlab }) => {
 
           <div className="hstack gap-2 justify-content-center mt-3">
             <Link
+              data-testid="tax-slab-tax-slabs-for-lintcloud-close-link"
               to="#"
               className="btn btn-link link-success fw-medium"
               onClick={toggle}

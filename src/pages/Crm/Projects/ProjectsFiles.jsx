@@ -36,6 +36,7 @@ const ProjectsFiles = ({ projectId, canAddFiles  }) => {
             >
               <NavItem>
                 <NavLink
+                  data-testid="project-files-tab-files-list-link"
                   href="#"
                   className={classnames({ active: activeTab === "1" })}
                   onClick={() => toggleTab("1")}
@@ -46,6 +47,7 @@ const ProjectsFiles = ({ projectId, canAddFiles  }) => {
 
               <NavItem>
                 <NavLink
+                  data-testid="project-files-tab-folders-link"
                   href="#"
                   className={classnames({ active: activeTab === "2" })}
                   onClick={() => toggleTab("2")}

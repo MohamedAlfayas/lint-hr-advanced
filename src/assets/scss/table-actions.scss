@@ -1,0 +1,61 @@
+//
+// Row edit / delete icons in the older (non-MUI) tables, styled to match the
+// MUI IconButton actions used by AppTable (Holidays, Payroll, …).
+// Targeted by icon rather than by .edit-item-btn, which is reused for other things.
+//
+
+$ta-edit: ":is(a, span, button):has(> i.ri-pencil-line.fs-16)";
+$ta-delete: ":is(a, span, button):has(> i.ri-delete-bin-line.fs-16)";
+
+#{$ta-edit},
+#{$ta-delete} {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  > i {
+    font-size: 18px !important;
+    line-height: 1;
+  }
+}
+
+#{$ta-edit} {
+  color: var(--vz-primary) !important;
+
+  &:hover {
+    background-color: rgba(var(--vz-primary-rgb), 0.08);
+  }
+
+  // Locked rows (e.g. system statuses) keep a muted, non-interactive pencil
+  &.text-muted {
+    color: var(--vz-secondary-color) !important;
+    cursor: not-allowed;
+
+    &:hover {
+      background-color: transparent;
+    }
+  }
+}
+
+#{$ta-delete} {
+  color: var(--vz-danger) !important;
+
+  &:hover {
+    background-color: rgba(var(--vz-danger-rgb), 0.08);
+  }
+}
+
+.list-inline-item:has(> :is(a, span, button) > i.ri-pencil-line.fs-16),
+.list-inline-item:has(> :is(a, span, button) > i.ri-delete-bin-line.fs-16) {
+  margin-right: 2px !important;
+}

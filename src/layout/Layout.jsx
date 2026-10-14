@@ -16,7 +16,7 @@ import {
 } from "./HtmlLayoutHelpers";
 import Sidebar from "../component/sidebar/Sidebar";
 import Footer from "../component/footer/Footer";
-import LoadingBar from "react-top-loading-bar";
+import { PageSkeleton } from "../component/common/skeleton/Skeleton";
 import { GetGlobalVersion } from "../meta/GetGlobalVersion";
 import { GetTotalWorkDuration } from "../common/js/GetTotalWorkDuration";
 import { setMyProfileDataReducer } from "../redux/reducers/ChildReducer/MyProfileReducer";
@@ -93,6 +93,8 @@ const Layout = ({ children }) => {
       "data-layout-mode",
       layoutModeType === "dark" ? "dark" : "light",
     );
+    // rsuite pickers portal into <body>, outside #layout-wrapper
+    document.body.classList.toggle("rs-theme-dark", layoutModeType === "dark");
   }, [layoutModeType]);
 
   useEffect(() => {
@@ -112,17 +114,12 @@ const Layout = ({ children }) => {
 
   // class add remove in header
   useEffect(() => {
-    window.addEventListener("scroll", scrollNavigation, true);
-  });
-
-  function scrollNavigation() {
-    var scrollup = document.documentElement.scrollTop;
-    if (scrollup > 50) {
-      setHeaderClass("topbar-shadow");
-    } else {
-      setHeaderClass("");
-    }
-  }
+    const scrollNavigation = () => {
+      setHeaderClass(document.documentElement.scrollTop > 50 ? "topbar-shadow" : "");
+    };
+    window.addEventListener("scroll", scrollNavigation, { capture: true, passive: true });
+    return () => window.removeEventListener("scroll", scrollNavigation, { capture: true });
+  }, []);
 
   useEffect(() => {
     GetGlobalVersion(dispatch);
@@ -203,15 +200,10 @@ const Layout = ({ children }) => {
         />
         <Sidebar layoutType="vertical" />
         <div className="main-content">
-          <LoadingBar progress={100} color="#405189" />
           {children}
           {showLoader && (
-            <div className="card-preloader d-block" id="spinner1">
-              <div className="card-status">
-                <div className="spinner-border text-success">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
-              </div>
+            <div className="sk-overlay" id="spinner1">
+              <PageSkeleton stats={false} />
             </div>
           )}
         </div>

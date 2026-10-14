@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Col,
   Dropdown,
   DropdownMenu,
   DropdownToggle,
-  Row,
   Spinner,
   UncontrolledTooltip,
 } from "reactstrap";
@@ -230,6 +228,7 @@ const NotificationDropdown = () => {
         className="topbar-head-dropdown ms-1 header-item"
       >
         <DropdownToggle
+          data-testid="notification-dropdown-notifications-trigger"
           type="button"
           tag="button"
           className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle shadow-none"
@@ -245,95 +244,96 @@ const NotificationDropdown = () => {
         </DropdownToggle>
 
         <DropdownMenu
-          className="dropdown-menu-lg dropdown-menu-end p-0"
+          className="dropdown-menu-end p-0 nd-menu"
           aria-labelledby="page-header-notifications-dropdown"
-          style={{ width: "360px" }}
         >
-          <div className="dropdown-head bg-primary bg-pattern rounded-top">
-            <div className="p-3">
-              <Row className="align-items-center">
-                <Col>
-                  <h6 className="m-0 fs-16 fw-semibold text-white">
-                    Notifications
-                  </h6>
-                </Col>
-                <div className="col-auto">
-                  <span className="badge bg-light-subtle text-body fs-13">
-                    {totalUnread} New
-                  </span>
-                </div>
-              </Row>
+          <div className="nd-head">
+            <div className="d-flex align-items-center gap-2">
+              <h6 className="m-0 fs-15 fw-semibold">Notifications</h6>
+              {totalUnread > 0 && (
+                <span className="nd-count">
+                  {totalUnread > 99 ? "99+" : totalUnread} new
+                </span>
+              )}
             </div>
+            <button
+              data-testid="notification-dropdown-mark-all-as-read-button"
+              type="button"
+              id="nd-mark-all"
+              className="nd-icon-btn"
+              disabled={unreadCount === 0 || markingAll}
+              onClick={markAllRead}
+              aria-label="Mark all as read"
+            >
+              {markingAll ? (
+                <Spinner size="sm" />
+              ) : (
+                <i className="ri-check-double-line"></i>
+              )}
+            </button>
+            <UncontrolledTooltip placement="left" target="nd-mark-all">
+              {unreadCount > 0 ? "Mark all as read" : "All caught up"}
+            </UncontrolledTooltip>
           </div>
 
           {loading && notifications.length === 0 ? (
-            <div className="text-center py-5">
-              <Spinner size="sm" color="primary" />
-              <p className="text-muted fs-12 mb-0 mt-2">Loading…</p>
+            <div className="nd-list">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="nd-item nd-skel-row">
+                  <span className="nd-skel nd-skel-icon" />
+                  <div className="flex-grow-1">
+                    <span className="nd-skel" style={{ width: "60%", height: 10 }} />
+                    <span className="nd-skel mt-2" style={{ width: "85%", height: 8 }} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="pt-4 pb-3 mx-auto text-center px-3">
-              <div className="avatar-md mx-auto mb-2">
-                <div className="avatar-title bg-info-subtle text-info fs-24 rounded-circle">
-                  <i className="bx bx-bell-off"></i>
-                </div>
+            <div className="nd-empty">
+              <div className="nd-empty-icon">
+                <i className="bx bx-bell-off"></i>
               </div>
-              <h6 className="fs-14 fw-semibold mb-1">No notifications</h6>
-              <p className="text-muted fs-12 mb-2">
-                You&apos;re all caught up for now.
+              <h6 className="fs-14 fw-semibold mb-1">You&apos;re all caught up</h6>
+              <p className="text-muted fs-12 mb-0">
+                New notifications will show up here.
               </p>
             </div>
           ) : (
-            <SimpleBar style={{ maxHeight: "320px" }} className="pe-2">
-              {notifications.map((item) => {
-                const meta = resolveTypeMeta(item);
-                const unread = !item.is_read;
-                const titleText = item.title || "Notification";
-                const messageText = item.message || item.data?.body || "";
-                const tipId = `notif-msg-tip-${item.id}`;
+            <SimpleBar style={{ maxHeight: "340px" }}>
+              <div className="nd-list">
+                {notifications.map((item) => {
+                  const meta = resolveTypeMeta(item);
+                  const unread = !item.is_read;
+                  const titleText = item.title || "Notification";
+                  const messageText = item.message || item.data?.body || "";
+                  const tipId = `notif-msg-tip-${item.id}`;
 
-                return (
-                  <div
-                    key={item.id}
-                    className={`text-reset notification-item d-block dropdown-item position-relative${
-                      unread ? " unread" : " seen"
-                    }`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => markOneRead(e, item)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        markOneRead(e, item);
-                      }
-                    }}
-                  >
-                    <div className="d-flex align-items-start">
-                      <div className="avatar-xs me-3 flex-shrink-0">
-                        <span
-                          className={`avatar-title ${meta.className} rounded-circle fs-16`}
-                        >
-                          <i className={meta.icon}></i>
-                        </span>
-                      </div>
+                  return (
+                    <div
+                      key={item.id}
+                      className={`nd-item${unread ? " is-unread" : " is-seen"}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => markOneRead(e, item)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          markOneRead(e, item);
+                        }
+                      }}
+                    >
+                      <span className={`nd-type ${meta.className}`}>
+                        <i className={meta.icon}></i>
+                      </span>
 
                       <div className="flex-grow-1 overflow-hidden">
-                        <h6
-                          className={`mt-0 mb-1 lh-base fs-13 text-truncate${
-                            unread ? " fw-semibold" : " fw-medium text-muted"
-                          }`}
-                          title={titleText}
-                        >
+                        <div className="nd-title text-truncate" title={titleText}>
                           {titleText}
-                        </h6>
-
+                        </div>
                         {messageText ? (
                           <>
-                            <p
-                              id={tipId}
-                              className="mb-1 fs-12 text-muted text-truncate"
-                            >
+                            <div id={tipId} className="nd-msg text-truncate">
                               {messageText}
-                            </p>
+                            </div>
                             <UncontrolledTooltip
                               placement="left"
                               target={tipId}
@@ -349,87 +349,111 @@ const NotificationDropdown = () => {
                             </UncontrolledTooltip>
                           </>
                         ) : null}
-
-                        <p className="mb-0 fs-11 fw-medium text-uppercase text-muted">
-                          <span>
-                            <i className="mdi mdi-clock-outline align-middle me-1"></i>
-                            {formatCreatedOn(item.created_on)}
-                          </span>
-                        </p>
+                        <div className="nd-time">
+                          <i className="ri-time-line"></i>
+                          {formatCreatedOn(item.created_on)}
+                        </div>
                       </div>
 
                       {unread ? (
-                        <div className="px-2 fs-15 flex-shrink-0">
-                          <span
-                            className="d-inline-block rounded-circle bg-primary align-middle"
-                            style={{ width: 8, height: 8 }}
-                            title="Unread"
-                          />
-                        </div>
+                        <span className="nd-dot" title="Unread" />
                       ) : (
-                        <div className="px-2 fs-15 flex-shrink-0 text-success">
-                          <i className="ri-check-double-line" title="Seen"></i>
-                        </div>
+                        <i className="ri-check-double-line nd-seen" title="Seen"></i>
                       )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </SimpleBar>
           )}
 
-          <div className="p-2 border-top d-grid gap-2">
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              onClick={handleSeeAll}
-            >
-              See all notifications
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm btn-soft-success"
-              disabled={unreadCount === 0 || markingAll}
-              onClick={markAllRead}
-            >
-              {markingAll ? (
-                <>
-                  <Spinner size="sm" className="me-1" /> Marking…
-                </>
-              ) : (
-                <>
-                  <i className="ri-check-double-line align-middle me-1"></i>
-                  {unreadCount > 0 ? "Mark all as read" : "All caught up"}
-                </>
-              )}
-            </button>
-          </div>
+          <button data-testid="notification-dropdown-view-all-notifications-button" type="button" className="nd-footer" onClick={handleSeeAll}>
+            View all notifications
+            <i className="ri-arrow-right-line"></i>
+          </button>
         </DropdownMenu>
       </Dropdown>
 
       <style>{`
-        .notification-item {
-          transition: background-color 0.15s ease, opacity 0.15s ease;
-          border-left: 3px solid transparent;
+        .nd-menu {
+          width: 370px;
+          border-radius: 14px !important;
+          overflow: hidden;
+          border: 1px solid var(--vz-border-color) !important;
+          box-shadow: 0 12px 32px rgba(30, 41, 59, 0.14) !important;
         }
-        .notification-item:hover,
-        .notification-item:focus {
-          background-color: var(--vz-tertiary-bg, #f3f6f9) !important;
-          outline: none;
+        [data-bs-theme="dark"] .nd-menu { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5) !important; }
+        .nd-head {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 14px 16px; border-bottom: 1px solid var(--vz-border-color);
         }
-        .notification-item.unread {
-          background-color: rgba(64, 81, 137, 0.04);
-          border-left-color: var(--vz-primary, #405189);
+        .nd-count {
+          font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+          color: var(--vz-primary); background: rgba(var(--vz-primary-rgb), 0.12);
         }
-        .notification-item.unread:hover,
-        .notification-item.unread:focus {
-          background-color: rgba(64, 81, 137, 0.08) !important;
+        .nd-icon-btn {
+          width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--vz-border-color);
+          background: transparent; color: var(--vz-success); font-size: 16px;
+          display: inline-flex; align-items: center; justify-content: center;
+          transition: background-color .15s ease;
         }
-        .notification-item.seen {
-          opacity: 0.72;
-          background-color: transparent;
-          border-left-color: transparent;
+        .nd-icon-btn:hover:not(:disabled) { background: rgba(var(--vz-success-rgb), 0.1); }
+        .nd-icon-btn:disabled { color: var(--vz-secondary-color); opacity: .6; }
+
+        .nd-list { padding: 6px; }
+        .nd-item {
+          display: flex; align-items: flex-start; gap: 12px; padding: 10px;
+          border-radius: 10px; cursor: pointer; position: relative;
+          transition: background-color .15s ease, opacity .15s ease;
         }
+        .nd-item + .nd-item { margin-top: 2px; }
+        .nd-item:hover, .nd-item:focus { background: var(--vz-tertiary-bg); outline: none; }
+        .nd-item.is-unread { background: rgba(var(--vz-primary-rgb), 0.05); }
+        .nd-item.is-unread:hover, .nd-item.is-unread:focus { background: rgba(var(--vz-primary-rgb), 0.1); }
+        .nd-item.is-seen { opacity: .7; }
+        .nd-type {
+          flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px;
+          display: inline-flex; align-items: center; justify-content: center; font-size: 18px;
+        }
+        .nd-title { font-size: 13px; font-weight: 600; color: var(--vz-heading-color, var(--vz-body-color)); }
+        .nd-item.is-seen .nd-title { font-weight: 500; }
+        .nd-msg { font-size: 12px; color: var(--vz-secondary-color); margin-top: 2px; }
+        .nd-time {
+          display: flex; align-items: center; gap: 4px; margin-top: 6px;
+          font-size: 11px; color: var(--vz-secondary-color);
+        }
+        .nd-dot {
+          flex-shrink: 0; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%;
+          background: var(--vz-primary); box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.18);
+        }
+        .nd-seen { flex-shrink: 0; color: var(--vz-success); font-size: 15px; }
+
+        .nd-empty { text-align: center; padding: 32px 24px 28px; }
+        .nd-empty-icon {
+          width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center; font-size: 28px;
+          color: var(--vz-primary);
+          background: radial-gradient(circle, rgba(var(--vz-primary-rgb), 0.16) 0%, rgba(var(--vz-primary-rgb), 0.06) 70%);
+        }
+
+        .nd-footer {
+          width: 100%; border: 0; border-top: 1px solid var(--vz-border-color);
+          background: transparent; padding: 12px; font-size: 13px; font-weight: 600;
+          color: var(--vz-primary); display: flex; align-items: center; justify-content: center; gap: 6px;
+          transition: background-color .15s ease;
+        }
+        .nd-footer:hover { background: rgba(var(--vz-primary-rgb), 0.06); }
+        .nd-footer i { transition: transform .15s ease; }
+        .nd-footer:hover i { transform: translateX(3px); }
+
+        .nd-skel-row { pointer-events: none; }
+        .nd-skel {
+          display: block; height: 10px; border-radius: 4px;
+          background: linear-gradient(90deg, var(--vz-tertiary-bg) 25%, var(--vz-border-color) 37%, var(--vz-tertiary-bg) 63%);
+          background-size: 400% 100%; animation: nd-shimmer 1.4s ease infinite;
+        }
+        .nd-skel-icon { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 10px; }
+        @keyframes nd-shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
       `}</style>
     </React.Fragment>
   );

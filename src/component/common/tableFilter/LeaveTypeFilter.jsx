@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { Col, Label } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { leave_type_options } from "../../../common/constant/Constants";
 import { useDispatch, useSelector } from "react-redux";
 import { setLeaveTypeTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
@@ -42,6 +42,7 @@ const LeaveTypeFilter = () => {
     <React.Fragment>
       <Col md={4}>
         <Select
+          testId="leave-type-filter-status-filter"
           id="status_filter"
           name="status_filter"
           isClearable={true}
@@ -49,6 +50,8 @@ const LeaveTypeFilter = () => {
           isMulti={false}
           options={leave_type_options || []}
           className="basic-multi-select"
+          menuPortalTarget={document.body}
+          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
           filterOption={handleLeaveTypeSearch}
           placeholder="Select Leave Type"
           value={

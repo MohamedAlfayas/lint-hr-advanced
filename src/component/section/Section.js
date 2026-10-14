@@ -67,6 +67,7 @@ const capitalizedFirstName = profile_data?.first_name
                       type="button"
                       className="btn btn-soft-info btn-icon waves-effect waves-light layout-rightside-btn"
                       onClick={props.rightClickBtn}
+                      data-testid="section-right-sidebar-toggle-button"
                     >
                       <i className="ri-pulse-line"></i>
                     </button>

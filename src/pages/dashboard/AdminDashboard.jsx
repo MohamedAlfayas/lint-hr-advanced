@@ -1,8 +1,13 @@
-import React, { useState } from "react";
-import { Row, Col, Card, CardBody, CardHeader, Badge, Table } from "reactstrap";
+import React, { useMemo, useState } from "react";
+import { Row, Col, Card, CardBody, CardHeader, Badge } from "reactstrap";
+import { Box, Chip, IconButton, Tooltip } from "@mui/material";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import ReactApexChart from "react-apexcharts";
 import ReactEcharts from "echarts-for-react";
 import { Link } from "react-router-dom";
+import AppTable from "../../shared/ui/table/AppTable";
 
 // ════════════════════════════════════════════════
 //  ADMIN DASHBOARD — HR Manager / Super Admin
@@ -397,7 +402,7 @@ const statusColor = {
   Active: "success",
   "On Leave": "warning",
   Remote: "info",
-  Inactive: "danger",
+  Inactive: "error",
 };
 
 // ─── PENDING APPROVALS ────────────────────────
@@ -435,6 +440,55 @@ const pendingApprovals = [
 // ─── COMPONENT ────────────────────────────────
 export default function AdminDashboard() {
   const [activePeriod, setActivePeriod] = useState("1Y");
+
+  const recentJoinerColumns = useMemo(
+    () => [
+      {
+        id: "index",
+        accessorFn: (e) => recentJoiners.indexOf(e) + 1,
+        header: "#",
+        size: 50,
+        Cell: ({ row }) => (
+          <span className="fw-medium text-muted">
+            {String(row.index + 1).padStart(2, "0")}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "name",
+        header: "Employee",
+        Cell: ({ row }) => (
+          <div className="d-flex align-items-center gap-2">
+            <div className="avatar-xs flex-shrink-0">
+              <span
+                className={`avatar-title bg-${row.original.color}-subtle text-${row.original.color} rounded-circle fw-bold`}
+              >
+                {row.original.av}
+              </span>
+            </div>
+            <p className="mb-0 fw-semibold">{row.original.name}</p>
+          </div>
+        ),
+      },
+      { accessorKey: "dept", header: "Department" },
+      { accessorKey: "role", header: "Role" },
+      {
+        accessorKey: "status",
+        header: "Status",
+        Cell: ({ cell }) => (
+          <Chip
+            size="small"
+            variant="outlined"
+            color={statusColor[cell.getValue()] || "default"}
+            label={cell.getValue()}
+            sx={{ fontWeight: 600 }}
+          />
+        ),
+      },
+      { accessorKey: "joined", header: "Joined" },
+    ],
+    [],
+  );
 
   return (
     <div>
@@ -525,71 +579,43 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="border-0 d-flex align-items-center">
               <h4 className="card-title mb-0 flex-grow-1">Recent Joiners</h4>
-              <button className="btn btn-soft-info btn-sm">
+              <button data-testid="admin-dashboard-view-all-button" className="btn btn-soft-info btn-sm">
                 View All{" "}
                 <i className="ri-arrow-right-line align-middle ms-1"></i>
               </button>
             </CardHeader>
             <CardBody className="pt-0">
-              <div className="table-responsive">
-                <Table className="table table-hover table-nowrap align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th>#</th>
-                      <th>Employee</th>
-                      <th>Department</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Joined</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentJoiners.map((e, i) => (
-                      <tr key={i}>
-                        <td className="fw-medium text-muted">
-                          {String(i + 1).padStart(2, "0")}
-                        </td>
-                        <td>
-                          <div className="d-flex align-items-center gap-2">
-                            <div className="avatar-xs flex-shrink-0">
-                              <span
-                                className={`avatar-title bg-${e.color}-subtle text-${e.color} rounded-circle fw-bold`}
-                              >
-                                {e.av}
-                              </span>
-                            </div>
-                            <p className="mb-0 fw-semibold">{e.name}</p>
-                          </div>
-                        </td>
-                        <td className="text-muted">{e.dept}</td>
-                        <td>{e.role}</td>
-                        <td>
-                          <span
-                            className={`badge bg-${statusColor[e.status]}-subtle text-${statusColor[e.status]}`}
-                          >
-                            {e.status}
-                          </span>
-                        </td>
-                        <td className="text-muted">{e.joined}</td>
-                        <td>
-                          <div className="hstack gap-2">
-                            <button className="btn btn-sm btn-soft-primary">
-                              <i className="ri-eye-line"></i>
-                            </button>
-                            <button className="btn btn-sm btn-soft-success">
-                              <i className="ri-pencil-line"></i>
-                            </button>
-                            <button className="btn btn-sm btn-soft-danger">
-                              <i className="ri-delete-bin-line"></i>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
+              <AppTable
+                columns={recentJoinerColumns}
+                data={recentJoiners}
+                enablePagination={false}
+                enableRowSelection={false}
+                initialState={{ density: "compact" }}
+                enableRowActions
+                positionActionsColumn="last"
+                displayColumnDefOptions={{
+                  "mrt-row-actions": { header: "Action", size: 120 },
+                }}
+                renderRowActions={() => (
+                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                    <Tooltip title="View">
+                      <IconButton data-testid="admin-dashboard-view-button" size="small" color="primary">
+                        <VisibilityOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Edit">
+                      <IconButton data-testid="admin-dashboard-edit-button" size="small" color="success">
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton data-testid="admin-dashboard-delete-outline-button" size="small" color="error">
+                        <DeleteOutlineRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                )}
+              />
             </CardBody>
           </Card>
         </Col>

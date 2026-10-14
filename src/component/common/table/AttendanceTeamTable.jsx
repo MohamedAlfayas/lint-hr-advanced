@@ -1,5 +1,5 @@
 import React, { Fragment, useMemo, useState } from "react";
-import { Table } from "rsuite";
+import { Table } from "../../../shared/ui/table/RsuiteCompatTable";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import {
   Badge,
@@ -21,6 +21,8 @@ import SimpleBar from "simplebar-react";
 import { useDispatch, useSelector } from "react-redux";
 import { ConvertSecondsToTime } from "../../../common/js/ConvertSecondsToTime";
 import { setAttendancePagination } from "../../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 25, 50, 100];
 
@@ -68,7 +70,7 @@ const AttendanceTeamTable = () => {
   const pagination = attendance_pagination || {
     count: 0,
     page: 1,
-    page_size: 20,
+    page_size: 10,
     total_pages: 0,
   };
 
@@ -136,7 +138,7 @@ const AttendanceTeamTable = () => {
         </div>
         <div className="flex-grow-1">
           <div>
-            <Link to="#" className="link-body-emphasis mb-0">
+            <Link to="#" className="link-body-emphasis mb-0" data-testid={testId("attendance-team-row", at_employee_data.emp_id, "employee-link")}>
               {" "}
               <h5 className="fs-14 mb-1">{at_employee_data.first_name}</h5>
             </Link>
@@ -165,7 +167,7 @@ const AttendanceTeamTable = () => {
         </div>
         <div className="flex-grow-1">
           <div>
-            <Link to="#" className="link-body-emphasis mb-0">
+            <Link to="#" className="link-body-emphasis mb-0" data-testid={testId("attendance-team-row", at_employee_data.emp_id, "employee-link")}>
               {" "}
               <h5 className="fs-14 mb-1">{at_employee_data.first_name}</h5>
             </Link>
@@ -199,6 +201,7 @@ const AttendanceTeamTable = () => {
       <Cell {...props} className="link-group">
         <span>
           <Button
+            data-testid="attendance-team-sub-dep-list-length-0-button"
             color="light"
             id={`depListRef-${rowData.employee_id}`}
             className="position-relative"
@@ -360,6 +363,7 @@ const AttendanceTeamTable = () => {
   return (
     <Fragment>
       <Table
+        variant="app"
         height={400}
         data={team_attendance_report_data || []}
         rowHeight={60}
@@ -444,6 +448,7 @@ const AttendanceTeamTable = () => {
             )}
 
             <Input
+              data-testid="attendance-team-employees-per-page-select"
               type="select"
               value={pagination.page_size}
               onChange={handlePageSizeChange}
@@ -452,7 +457,7 @@ const AttendanceTeamTable = () => {
               style={{ width: "auto", minWidth: 110 }}
             >
               {PAGE_SIZE_OPTIONS.map((n) => (
-                <option key={n} value={n}>
+                <option data-testid={testId("attendance-team-employees-per-page-option", itemTestKey(n))} key={n} value={n}>
                   Show {n}
                 </option>
               ))}
@@ -462,8 +467,8 @@ const AttendanceTeamTable = () => {
       )}
 
       {/* IN/OUT List Modal */}
-      <Modal isOpen={timeline_modal} toggle={open_timeline} centered>
-        <ModalHeader>
+      <Modal data-testid="attendance-team-date-dialog" isOpen={timeline_modal} toggle={open_timeline} centered>
+        <ModalHeader close={<ModalCloseButton onClick={open_timeline} testId="attendance-team-date-close-button" />} toggle={open_timeline}>
           <h5 className="modal-title" id="exampleModalToggleLabel">
             Date :
           </h5>
@@ -520,7 +525,7 @@ const AttendanceTeamTable = () => {
                 </div>
               </div>
             </SimpleBar>
-            <Button className="btn btn-warning" onClick={open_timeline}>
+            <Button data-testid="attendance-team-date-continue-button" className="btn btn-warning" onClick={open_timeline}>
               Continue
             </Button>
           </div>
@@ -528,7 +533,7 @@ const AttendanceTeamTable = () => {
       </Modal>
 
       {/* Notes Modal */}
-      <Modal isOpen={notes_modal} toggle={open_notes_modal} centered>
+      <Modal data-testid="attendance-team-notes-dialog" isOpen={notes_modal} toggle={open_notes_modal} centered>
         <ModalBody className="text-left">
           <div>
             <SimpleBar style={{ height: "300px" }} className="px-3 mx-n3 mb-2">
@@ -605,6 +610,7 @@ const AttendanceTeamTable = () => {
                     Leave a Notes
                   </label>
                   <textarea
+                    data-testid="attendance-team-notes-textarea"
                     className="form-control bg-light border-light"
                     id="exampleFormControlTextarea1"
                     rows="3"
@@ -613,12 +619,13 @@ const AttendanceTeamTable = () => {
                 </Col>
                 <Col xs={12} className="text-end">
                   <button
+                    data-testid="attendance-team-notes-attach-button"
                     type="button"
                     className="btn btn-ghost-secondary btn-icon waves-effect me-1"
                   >
                     <i className="ri-attachment-line fs-16"></i>
                   </button>
-                  <Link to="#" className="btn btn-success">
+                  <Link data-testid="attendance-team-notes-post-notes-link" to="#" className="btn btn-success">
                     Post Notes
                   </Link>
                 </Col>

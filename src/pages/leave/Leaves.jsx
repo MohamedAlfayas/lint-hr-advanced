@@ -8,12 +8,19 @@ import { useDispatch, useSelector } from "react-redux";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { leave_application_component_name } from "../../common/constant/Constants";
 import { Api } from "../../common/api/Api";
-import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
+import {
+  ApvChip,
+  ApvDate,
+  ApvDuration,
+  ApvLeaveStatus,
+  ApvLeaveType,
+  ApvReason,
+} from "../../component/common/approval/ApprovalCells";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setLeaveApplication } from "../../redux/reducers/ChildReducer/LeaveApplyReducer";
 import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 
-const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_PAGE_SIZE = 10;
 
 const LeaveDashboard = () => {
   const dispatch = useDispatch();
@@ -121,47 +128,9 @@ const LeaveDashboard = () => {
     [leave_application_data],
   );
 
-  // ── deleted row style helper ─────────────────
-  const deletedStyle = {
-    textDecoration: "line-through",
-    opacity: 0.55,
-    color: "inherit",
-  };
-
-  const getCellStyle = (obj) => (obj.is_deleted ? deletedStyle : {});
-
-  // ── status helpers ───────────────────────────
-  const getStatusLabel = (status, is_deleted) => {
-    if (is_deleted) return "Cancelled";
-    switch (status) {
-      case 1:
-        return "Pending";
-      case 2:
-        return "Approved";
-      case 3:
-        return "Rejected";
-      case 4:
-        return "Cancel Request";
-      default:
-        return "Unknown";
-    }
-  };
-
-  const getStatusColor = (status, is_deleted) => {
-    if (is_deleted) return "danger";
-    switch (status) {
-      case 1:
-        return "warning";
-      case 2:
-        return "success";
-      case 3:
-        return "danger";
-      case 4:
-        return "info";
-      default:
-        return "secondary";
-    }
-  };
+  // Cancelled (deleted) leaves are shown struck through and faded.
+  const struck = (obj, node) =>
+    obj.is_deleted ? <span className="apv-struck">{node}</span> : node;
 
   // ── Approve handler ──────────────────────────
   const handleApprove = (record) => {
@@ -193,59 +162,37 @@ const LeaveDashboard = () => {
       Header: "Leave Type",
       filterable: false,
       id: "leave_type_id",
-      accessor: (obj) => {
-        const data = GetLocalStorageData("leave_types");
-        const thisLeaveType = data.find((d) => d.id === obj.leave_type_id);
-        return <b style={getCellStyle(obj)}>{thisLeaveType?.name}</b>;
-      },
+      accessor: (obj) =>
+        struck(
+          obj,
+          <ApvLeaveType name={LeaveTypeData.find((d) => d.id === obj.leave_type_id)?.name} />,
+        ),
     },
     {
       Header: "Reason",
       filterable: false,
       id: "reason",
-      accessor: (obj) => <b style={getCellStyle(obj)}>{obj.reason}</b>,
+      accessor: (obj) => struck(obj, <ApvReason text={obj.reason} />),
     },
     {
       Header: "Start Date",
       filterable: false,
       id: "start",
-      accessor: (obj) => {
-        const date = convertDate(new Date(obj.start).toDateString());
-        const time = convertTime(new Date(obj.start).toTimeString());
-        return (
-          <b style={getCellStyle(obj)}>
-            {getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`}
-          </b>
-        );
-      },
+      accessor: (obj) =>
+        struck(obj, <ApvDate value={obj.start} withTime={getUnitId(obj.leave_type_id) !== 1} />),
     },
     {
       Header: "End Date",
       filterable: false,
       id: "end",
-      accessor: (obj) => {
-        const date = convertDate(new Date(obj.end).toDateString());
-        const time = convertTime(new Date(obj.end).toTimeString());
-        return (
-          <b style={getCellStyle(obj)}>
-            {getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`}
-          </b>
-        );
-      },
+      accessor: (obj) =>
+        struck(obj, <ApvDate value={obj.end} withTime={getUnitId(obj.leave_type_id) !== 1} />),
     },
     {
       Header: "Work Date",
       filterable: false,
       id: "comp_off_work_date",
-      accessor: (obj) => {
-        if (!obj.comp_off_work_date) {
-          return <b style={getCellStyle(obj)}>—</b>;
-        }
-        const date = convertDate(
-          new Date(obj.comp_off_work_date).toDateString(),
-        );
-        return <b style={getCellStyle(obj)}>{date}</b>;
-      },
+      accessor: (obj) => struck(obj, <ApvDate value={obj.comp_off_work_date} />),
     },
     {
       Header: "Holiday",
@@ -256,99 +203,28 @@ const LeaveDashboard = () => {
         const matchedHoliday = globalData.find(
           (h) => h.date === (obj.start ? obj.start.split(" ")[0] : null),
         );
-        return (
-          <b style={getCellStyle(obj)}>{matchedHoliday?.name?.trim() || "—"}</b>
-        );
+        const name = matchedHoliday?.name?.trim();
+        return struck(obj, <ApvChip icon="ri-sun-line">{name}</ApvChip>);
       },
     },
     {
       Header: "Total",
       filterable: false,
       id: "Total",
-      accessor: (obj) => (
-        <b style={getCellStyle(obj)}>{`${obj.requested_leave_count} ${
-          getUnitId(obj.leave_type_id) === 1 ? "Days" : "Hour"
-        }`}</b>
-      ),
+      accessor: (obj) =>
+        struck(
+          obj,
+          <ApvDuration
+            count={obj.requested_leave_count}
+            days={getUnitId(obj.leave_type_id) === 1}
+          />,
+        ),
     },
     {
-      Header: () => (
-        <div style={{ textAlign: "center", width: "100%" }}>Status</div>
-      ),
+      Header: "Status",
       id: "status",
       filterable: false,
-      Cell: ({ row }) => {
-        const obj = row.original;
-
-        const label = getStatusLabel(obj.status, obj.is_deleted);
-        const color = getStatusColor(obj.status, obj.is_deleted);
-
-        let cancelBadge = null;
-
-        if (obj.leave_cancellation_details) {
-          const cancelStatus = obj.leave_cancellation_details.status;
-
-          let cancelLabel = "";
-          let cancelColor = "";
-
-          if (cancelStatus === 1) {
-            cancelLabel = "Pending";
-            cancelColor = "warning";
-          } else if (cancelStatus === 2) {
-            cancelLabel = "Cancelled Leave Req Approved";
-            cancelColor = "success";
-          } else {
-            cancelLabel = "Cancelled Leave Req Rejected";
-            cancelColor = "danger";
-          }
-
-          cancelBadge = (
-            <span
-              className={`badge text-uppercase bg-${cancelColor}-subtle text-${cancelColor}`}
-            >
-              {cancelLabel}
-            </span>
-          );
-        }
-
-        return (
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "25px",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: "8px",
-                  bottom: "8px",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  borderLeft: "2px dotted #ccc",
-                }}
-              />
-              <span
-                className={`badge text-uppercase bg-${color}-subtle text-${color}`}
-                style={{ zIndex: 1 }}
-              >
-                {label}
-              </span>
-              {cancelBadge && <div style={{ zIndex: 1 }}>{cancelBadge}</div>}
-            </div>
-          </div>
-        );
-      },
+      Cell: ({ row }) => <ApvLeaveStatus leave={row.original} />,
     },
   ];
 

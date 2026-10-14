@@ -1,27 +1,22 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import { toast } from "react-toastify";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  Container,
-  Form,
-  Input,
-  Label,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
-  TabContent,
-  FormFeedback,
-  TabPane,
-  Progress,
-} from "reactstrap";
-import Select from "react-select";
-import { Api } from "../../common/api/Api";
-
-import classnames from "classnames";
+  Box,
+  Checkbox,
+  FormControlLabel,
+  Grid,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
+import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import {
   hourOptions,
   minuteOptions,
@@ -30,1388 +25,625 @@ import {
   graceHourOptions,
   week_list,
 } from "../../common/constant/Constants";
-
-import { loadAnimation } from "lottie-web";
-import { defineElement } from "lord-icon-element";
 import {
   addWorkSchedule,
   editWorkSchedule,
 } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
-import { toast } from "react-toastify";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import { diffDates } from "@fullcalendar/core/internal";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
+import SidebarFormLayout from "../../shared/ui/SidebarFormLayout";
+import {
+  FormSection,
+  FormSwitch,
+  FormTextField,
+  FormTimePicker,
+  FormToggleGroup,
+} from "../../shared/ui/form";
 
-// register lottie and define custom element
-defineElement(loadAnimation);
+const NAME_MAX = 100;
+const DESCRIPTION_MAX = 200;
+const NAME_CHARS = /[^a-zA-Z0-9\s.,'_\-()&:;/]/g;
+const DESCRIPTION_CHARS = /[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g;
+
+const PARTIAL_HOURS = 1;
+const TWENTY_FOUR_HOURS = 2;
+
+const workScheduleOptions = [
+  { label: "Partial Hours", value: PARTIAL_HOURS },
+  { label: "24 Hours", value: TWENTY_FOUR_HOURS },
+];
+
+const WEEK_DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
+const DAY_OFF = {
+  e_day: "",
+  s_hr: "00",
+  s_min: "00",
+  e_hr: "00",
+  e_min: "00",
+  is_day_on: false,
+  total_work_duration: 0,
+  break_duration: 0,
+  total_work_duration_without_break: 0,
+};
+
+const pad2 = (v) => String(v ?? "00").padStart(2, "0");
+
+// `start` / `end` exist only in form state (bound to the time pickers);
+// the API receives s_hr / s_min / e_hr / e_min.
+const withTimes = (d) => ({
+  ...d,
+  start: `${pad2(d.s_hr)}:${pad2(d.s_min)}`,
+  end: `${pad2(d.e_hr)}:${pad2(d.e_min)}`,
+});
+
+const stripTimes = ({ start, end, ...d }) => d;
+
+const initialWorkday = () =>
+  WEEK_DAYS.map((day) =>
+    withTimes({ id: 0, s_day: day, weekday: day, ...DAY_OFF }),
+  );
+
+const schema = Yup.object({
+  name: Yup.string()
+    .trim()
+    .matches(
+      /^[A-Za-z0-9\s.,'_\-()&:;/]+$/,
+      "Only alphabets, numbers, spaces and . , ' - _ ( ) & : ; / are allowed",
+    )
+    .min(1, "Work Schedule Name must be at least 1 characters")
+    .max(NAME_MAX, "Work Schedule Name must not exceed 100 characters")
+    .required("Please Enter Work Schedule Name")
+    .test(
+      "not-only-spaces",
+      "Please Enter Work Schedule Name",
+      (value) => !value || value.trim().length > 0,
+    ),
+  description: Yup.string()
+    .trim()
+    .max(DESCRIPTION_MAX, "Description must not exceed 200 characters")
+    .matches(
+      /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
+      "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; / are allowed",
+    )
+    .test(
+      "not-only-spaces",
+      "Description cannot contain only spaces",
+      (value) => !value || value.trim().length > 0,
+    ),
+});
+
+const toFormValues = (obj) => ({
+  ...obj,
+  name: obj?.name ?? "",
+  description: obj?.description ?? "",
+  workday: obj?.workday?.map(withTimes),
+});
+
+const getNextDay = (currentDay) => {
+  const daysOfWeek = week_list.map((day) => day.label);
+  const currentIndex = daysOfWeek.indexOf(currentDay);
+  return daysOfWeek[(currentIndex + 1) % 7];
+};
+
+const calculateTotalWorkDuration = (wd_obj, break_duration) => {
+  let startHour = parseInt(wd_obj.s_hr, 10);
+  let startMinute = parseInt(wd_obj.s_min, 10);
+  let endHour = parseInt(wd_obj.e_hr, 10);
+  let endMinute = parseInt(wd_obj.e_min, 10);
+
+  let e_day_name;
+
+  // Night shift: end time on the next day
+  if (
+    endHour < startHour ||
+    (endHour === startHour && endMinute < startMinute)
+  ) {
+    endHour += 24;
+    e_day_name = getNextDay(wd_obj?.weekday);
+  } else {
+    e_day_name = wd_obj?.weekday;
+  }
+
+  const total_work_duration =
+    endHour * 3600 + endMinute * 60 - (startHour * 3600 + startMinute * 60);
+
+  return {
+    ...wd_obj,
+    e_day: e_day_name,
+    total_work_duration,
+    break_duration,
+    total_work_duration_without_break:
+      parseInt(total_work_duration) - parseInt(break_duration),
+  };
+};
+
+const validateDurations = (values) => {
+  const fullday = values.fullday_work_duration || 0;
+
+  if (values.type === 1) {
+    if (values.halfday_work_duration >= fullday) {
+      toast.error("Half Day duration cannot exceed Full Day duration!");
+      return false;
+    }
+    if (values.grace_time_duration >= fullday) {
+      toast.error("Grace Period cannot exceed Full Day duration!");
+      return false;
+    }
+    if (values.maximum_break_duration >= fullday) {
+      toast.error("Maximum Break Duration cannot exceed Full Day duration!");
+      return false;
+    }
+  }
+
+  if (values.type === 2) {
+    if (values.halfday_work_duration >= fullday) {
+      toast.error("Half Day duration cannot exceed Full Day duration!");
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const formatHrs = (seconds) =>
+  `${String(Math.floor(seconds / 3600)).padStart(2, "0")}:${String(
+    Math.floor((seconds % 3600) / 60),
+  ).padStart(2, "0")} Hrs`;
+
+/** Hours + minutes selects for a duration stored in seconds. */
+const DurationField = ({ name, control, label, hint, hours, minutes }) => (
+  <Controller
+    name={name}
+    control={control}
+    render={({ field }) => {
+      const seconds = field.value || 0;
+      const h = String(Math.floor(seconds / 3600)).padStart(2, "0");
+      const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+      const update = (nextH, nextM) =>
+        field.onChange(parseInt(nextH, 10) * 3600 + parseInt(nextM, 10) * 60);
+
+      return (
+        <Box>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+            {label}
+            {hint && (
+              <Typography
+                component="span"
+                variant="caption"
+                color="text.secondary"
+                sx={{ ml: 1 }}
+              >
+                {hint}
+              </Typography>
+            )}
+          </Typography>
+          <Stack direction="row" spacing={1.5}>
+            <TextField
+              select
+              label="Hours"
+              value={hours.some((o) => o.value === h) ? h : ""}
+              onChange={(e) => update(e.target.value, m)}
+              onBlur={field.onBlur}
+            >
+              {hours.map((o) => (
+                <MenuItem key={o.value} value={o.value}>
+                  {o.label}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="Minutes"
+              value={minutes.some((o) => o.value === m) ? m : ""}
+              onChange={(e) => update(h, e.target.value)}
+              onBlur={field.onBlur}
+            >
+              {minutes.map((o) => (
+                <MenuItem key={o.value} value={o.value}>
+                  {o.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+        </Box>
+      );
+    }}
+  />
+);
 
 const WorkScheduleForm = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  const [workScheduleData, setWorkScheduleData] = useState({});
-  const [activeArrowTab, setactiveArrowTab] = useState(4);
-  const initialWorkday = useMemo(
-    () => [
-      {
-        id: 0,
-        s_day: "Monday",
-        weekday: "Monday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        id: 0,
-        s_day: "Tuesday",
-        weekday: "Tuesday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        id: 0,
-        s_day: "Wednesday",
-        weekday: "Wednesday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        id: 0,
-        s_day: "Thursday",
-        weekday: "Thursday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        id: 0,
-        s_day: "Friday",
-        weekday: "Friday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        id: 0,
-        s_day: "Saturday",
-        weekday: "Saturday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-      {
-        id: 0,
-        s_day: "Sunday",
-        weekday: "Sunday",
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: false,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      },
-    ],
-    [],
-  );
-  console.log(initialWorkday, "fdf");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { control, handleSubmit, reset, watch, setValue, getValues } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
+  });
 
   useEffect(() => {
-    setWorkScheduleData(form_obj);
-  }, [form_obj]);
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset]);
 
-  const [passedarrowSteps, setPassedarrowSteps] = useState([1]);
-
-  console.log("DAAAAATA", workScheduleData);
-
-  function toggleArrowTab(tab) {
-    if (activeArrowTab !== tab) {
-      var modifiedSteps = [...passedarrowSteps, tab];
-
-      if (tab >= 4 && tab <= 7) {
-        setactiveArrowTab(tab);
-        setPassedarrowSteps(modifiedSteps);
-      }
-    }
-  }
-
-  const getNextDay = (currentDay) => {
-    const daysOfWeek = week_list.map((day) => day.label);
-    const currentIndex = daysOfWeek.indexOf(currentDay);
-    return daysOfWeek[(currentIndex + 1) % 7];
-  };
-
-  const handleChange = useCallback((event) => {
-    const { name } = event.target;
-    setWorkScheduleData((prevWorkScheduleData) => ({
-      ...prevWorkScheduleData,
-      [name]: event.target.checked,
-    }));
+  useEffect(() => {
+    document.title = "WorkSchedule | Lint HR";
   }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  // Side effects of user edits (type switch, shift time changes).
+  useEffect(() => {
+    const subscription = watch((values, { name, type }) => {
+      if (type !== "change" || !name) return;
 
-    if (name === "name") {
-      const textOnly = value.replace(/[^a-zA-Z0-9\s.,'_\-()&:;/]/g, "");
-
-      setWorkScheduleData({
-        ...workScheduleData,
-        [name]: textOnly,
-      });
-
-      FormikForm.setFieldValue(name, textOnly);
-
-      FormikForm.setFieldTouched("name", true, false);
-
-      if (textOnly.length > 100) {
-        FormikForm.setFieldError(
-          "name",
-          "Work Schedule Name must not exceed 100 characters.",
-        );
-      } else if (textOnly.trim() === "") {
-        FormikForm.setFieldError("name", "Please Enter Work Schedule Name");
-      } else {
-        FormikForm.setFieldError("name", undefined);
+      if (name === "type") {
+        setValue("workday", initialWorkday(), { shouldDirty: true });
+        setValue("fullday_work_duration", 0, { shouldDirty: true });
+        setValue("halfday_work_duration", 0, { shouldDirty: true });
+        setValue("grace_time_duration", 0, { shouldDirty: true });
+        setValue("maximum_break_duration", 0, { shouldDirty: true });
+        setValue("has_ot", false, { shouldDirty: true });
+        return;
       }
 
-      return;
-    }
-
-    if (name === "description") {
-      const textOnly = value.replace(/[^a-zA-Z0-9\s.,?!"'_\-()&:;/\\]/g, "");
-
-      setWorkScheduleData({
-        ...workScheduleData,
-        [name]: textOnly,
-      });
-
-      FormikForm.setFieldValue(name, textOnly);
-
-      if (textOnly.length > 200) {
-        FormikForm.setFieldError(
-          "description",
-          "Description is too long. Please keep it within 200 characters.",
+      const match = name.match(/^workday\.(\d+)\.(start|end)$/);
+      if (match) {
+        const index = Number(match[1]);
+        const row = values.workday?.[index];
+        if (!row) return;
+        const [hr = "00", min = "00"] = (row[match[2]] || "00:00").split(":");
+        const prefix = match[2] === "start" ? "s" : "e";
+        setValue(
+          `workday.${index}`,
+          calculateTotalWorkDuration(
+            { ...row, [`${prefix}_hr`]: hr, [`${prefix}_min`]: min },
+            values.maximum_break_duration,
+          ),
+          { shouldDirty: true },
         );
-      } else {
-        FormikForm.setFieldError("description", undefined);
       }
-    }
-  };
-
-  const handleDurationChange = (selectedHour, selectedMinute, name) => {
-    console.log("selectedHour ==== ", selectedHour + ":" + selectedMinute);
-
-    const newDuration =
-      parseInt(selectedHour) * 3600 + parseInt(selectedMinute) * 60;
-
-    setWorkScheduleData({
-      ...workScheduleData,
-      [name]: newDuration,
     });
-  };
+    return () => subscription.unsubscribe();
+  }, [watch, setValue]);
 
-  const validateDurations = (values) => {
-    const fullday = values.fullday_work_duration || 0;
+  const scheduleType = useWatch({ control, name: "type" });
+  const scheduleName = useWatch({ control, name: "name" });
+  const scheduleId = useWatch({ control, name: "id" });
+  const status = useWatch({ control, name: "status" });
+  const fulldayDuration = useWatch({ control, name: "fullday_work_duration" });
+  const workday = useWatch({ control, name: "workday" }) || [];
 
-    if (values.type === 1) {
-      if (values.halfday_work_duration >= fullday) {
-        toast.error("Half Day duration cannot exceed Full Day duration!");
-        return false;
-      }
-      if (values.grace_time_duration >= fullday) {
-        toast.error("Grace Period cannot exceed Full Day duration!");
-        return false;
-      }
-      if (values.maximum_break_duration >= fullday) {
-        toast.error("Maximum Break Duration cannot exceed Full Day duration!");
-        return false;
-      }
-    }
-
-    if (values.type === 2) {
-      if (values.halfday_work_duration >= fullday) {
-        toast.error("Half Day duration cannot exceed Full Day duration!");
-        return false;
-      }
-    }
-
-    return true;
+  const handleDayToggle = (index, checked) => {
+    const row = getValues(`workday.${index}`);
+    setValue(
+      `workday.${index}`,
+      checked ? { ...row, is_day_on: true } : withTimes({ ...row, ...DAY_OFF }),
+      { shouldDirty: true },
+    );
   };
 
   const handleBulkSelect = (checked) => {
-    const updated = workScheduleData.workday.map((d) => {
-      return checked
-        ? { ...d, is_day_on: true }
-        : {
-            ...d,
-            is_day_on: false,
-            e_day: "",
-            s_hr: "00",
-            s_min: "00",
-            e_hr: "00",
-            e_min: "00",
-            total_work_duration: 0,
-            break_duration: 0,
-            total_work_duration_without_break: 0,
-          };
-    });
-
-    setWorkScheduleData({ ...workScheduleData, workday: updated });
+    setValue(
+      "workday",
+      (getValues("workday") || []).map((d) =>
+        checked ? { ...d, is_day_on: true } : withTimes({ ...d, ...DAY_OFF }),
+      ),
+      { shouldDirty: true },
+    );
   };
 
-  const workScheduleOptions = [
-    { label: "Partial Hours", value: 1 },
-    { label: "24 Hours", value: 2 },
-  ];
-
-  const handleDayCB = (e, wd_obj) => {
-    const { checked } = e.target;
-
-    var new_wd_obj = wd_obj;
-
-    if (checked === true) {
-      new_wd_obj = {
-        ...wd_obj,
-        is_day_on: checked,
-      };
-    } else {
-      new_wd_obj = {
-        ...wd_obj,
-        e_day: "",
-        s_hr: "00",
-        s_min: "00",
-        e_hr: "00",
-        e_min: "00",
-        is_day_on: checked,
-        total_work_duration: 0,
-        break_duration: 0,
-        total_work_duration_without_break: 0,
-      };
-    }
-
-    let updated_workday = [...workScheduleData?.workday].map((d) => {
-      if (d.weekday === wd_obj?.weekday) {
-        return new_wd_obj;
-      } else {
-        return d;
-      }
-    });
-
-    setWorkScheduleData({
-      ...workScheduleData,
-      workday: updated_workday,
-    });
-  };
-
-  const handleWorkDayTimechange = (val, name, wd_obj) => {
-    let new_wd_obj = {
-      ...wd_obj,
-      [name]: val,
+  const onSubmit = async (formValues) => {
+    const values = {
+      ...formValues,
+      workday: (formValues.workday || []).map(stripTimes),
     };
 
-    calculateTotalWorkDuration(new_wd_obj);
-  };
+    if (!validateDurations(values)) return;
 
-  const calculateTotalWorkDuration = (wd_obj) => {
-    let startHour = parseInt(wd_obj.s_hr, 10);
-    let startMinute = parseInt(wd_obj.s_min, 10);
-    let endHour = parseInt(wd_obj.e_hr, 10);
-    let endMinute = parseInt(wd_obj.e_min, 10);
+    const filteredWorkdays = values.workday.filter(
+      (d) => d.is_day_on === true && d.total_work_duration === 0,
+    );
+    const filteredDayon = values.workday.filter((d) => d.is_day_on === true);
 
-    let e_day_name = wd_obj?.e_day;
-
-    // Adjust end time for night shift
     if (
-      endHour < startHour ||
-      (endHour === startHour && endMinute < startMinute)
+      values.type == 1 &&
+      (values.fullday_work_duration === 0 ||
+        filteredWorkdays.length > 0 ||
+        filteredDayon.length === 0)
     ) {
-      endHour += 24; // Add 24 hours to handle night shift
-      e_day_name = getNextDay(wd_obj?.weekday);
+      toast.error("WorkSchedule Hour Can't Be Zero");
+    } else if (values.type == 2 && values.fullday_work_duration == 0) {
+      toast.error("WorkSchedule Hour Can't Be Zero");
+    } else if (values.type == 2 && filteredDayon.length === 0) {
+      toast.error("Please select at least one working day");
     } else {
-      e_day_name = wd_obj?.weekday;
-    }
-
-    let startTimeInSeconds = startHour * 3600 + startMinute * 60;
-    let endTimeInSeconds = endHour * 3600 + endMinute * 60;
-    let total_work_duration = endTimeInSeconds - startTimeInSeconds;
-    let break_duration = workScheduleData?.maximum_break_duration;
-
-    let total_work_duration_without_break =
-      parseInt(total_work_duration) - parseInt(break_duration);
-
-    let updated_workday = [...workScheduleData?.workday].map((d) => {
-      if (d.weekday === wd_obj?.weekday) {
-        return {
-          ...wd_obj,
-          e_day: e_day_name,
-          total_work_duration: total_work_duration,
-          break_duration: break_duration,
-          total_work_duration_without_break: total_work_duration_without_break,
-        };
-      } else {
-        return d;
-      }
-    });
-
-    setWorkScheduleData({
-      ...workScheduleData,
-      workday: updated_workday,
-    });
-  };
-
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: workScheduleData,
-    validationSchema: Yup.object({
-      name: Yup.string()
-        .trim()
-        .matches(
-          /^[A-Za-z0-9\s.,'_\-()&:;/]+$/,
-          "Only alphabets, numbers, spaces and . , ' - _ ( ) & : ; / are allowed",
-        )
-        .min(1, "Work Schedule Name must be at least 1 characters")
-        .max(100, "Work Schedule Name must not exceed 100 characters")
-        .required("Please Enter Work Schedule Name")
-        .test(
-          "not-only-spaces",
-          "Please Enter Work Schedule Name",
-          (value) => !value || value.trim().length > 0,
-        ),
-      description: Yup.string()
-        .trim()
-        .max(200, "Description must not exceed 200 characters")
-        .matches(
-          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
-          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; / are allowed",
-        )
-        .test(
-          "not-only-spaces",
-          "Description cannot contain only spaces",
-          (value) => !value || value.trim().length > 0,
-        ),
-    }),
-    onSubmit: async (values) => {
-      const filteredWorkdays = values.workday.filter((workday) => {
-        return workday.is_day_on === true && workday.total_work_duration === 0;
-      });
-      const filteredDayon = values.workday.filter((workday) => {
-        return workday.is_day_on === true;
-      });
-      if (
-        values.type == 1 &&
-        (values.fullday_work_duration === 0 ||
-          filteredWorkdays.length > 0 ||
-          filteredDayon.length === 0)
-      ) {
-        console.log("IFFFF");
-        toast.error("WorkSchedule Hour Can't Be Zero");
-      } else if (values.type == 2 && values.fullday_work_duration == 0) {
-        toast.error("WorkSchedule Hour Can't Be Zero");
-      } else if (values.type == 2 && filteredDayon.length === 0) {
-        toast.error("Please select at least one working day");
-      } else {
-        toggleArrowTab(activeArrowTab + 1);
-        dispatch(setLoaderVisible(true));
-
-        const Api = await PostApi(
-          "/work-schedule/create/",
-          workScheduleData,
-          false,
-        );
-        if (Api.status && Api.status === 200) {
-          // workScheduleData.id === 0
-          //   ? dispatch(addWorkSchedule(Api?.data.data))
-          //   : dispatch(editWorkSchedule(Api?.data?.data));
-
-          if (workScheduleData.id === 0) {
-            dispatch(addWorkSchedule(Api?.data.data));
-            SetLocalStorage("work_schedule", Api?.data.data, 2);
-          } else {
-            dispatch(editWorkSchedule(Api?.data?.data));
-            SetLocalStorage("work_schedule", Api?.data.data, 3);
-          }
-
-          dispatch(toggleRSBView(false));
-          toast.success(Api?.data?.message);
+      setIsSubmitting(true);
+      const payload = { ...form_obj, ...values };
+      const Api = await PostApi("/work-schedule/create/", payload, false);
+      setIsSubmitting(false);
+      if (Api.status && Api.status === 200) {
+        if (payload.id === 0) {
+          dispatch(addWorkSchedule(Api?.data.data));
+          SetLocalStorage("work_schedule", Api?.data.data, 2);
         } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
+          dispatch(editWorkSchedule(Api?.data?.data));
+          SetLocalStorage("work_schedule", Api?.data.data, 3);
         }
 
-        dispatch(setLoaderVisible(false));
+        dispatch(toggleRSBView(false));
+        toast.success(Api?.data?.message);
+      } else {
+        toast.error(Api?.data?.message || Api?.data?.detail);
       }
-    },
-  });
+    }
+  };
 
-  document.title = "WorkSchedule | Lint HR";
+  const isPartial = scheduleType === PARTIAL_HOURS;
+  const allDaysOn = workday.length > 0 && workday.every((d) => d.is_day_on);
+  const someDaysOn = workday.some((d) => d.is_day_on);
+
+  const renderShiftHours = (day) => {
+    if (day.is_day_on === false) {
+      return (
+        <Typography variant="body2" color="info.main" fontWeight={600}>
+          W/O
+        </Typography>
+      );
+    }
+    if (scheduleType === TWENTY_FOUR_HOURS) {
+      return (
+        <Typography variant="body2" color="success.main" fontWeight={600}>
+          24:00 Hrs
+        </Typography>
+      );
+    }
+    const mismatch =
+      fulldayDuration > day.total_work_duration ||
+      day.total_work_duration > fulldayDuration;
+    return (
+      <Typography
+        variant="body2"
+        fontWeight={600}
+        color={mismatch ? "error.main" : "success.main"}
+      >
+        {formatHrs(day.total_work_duration)}
+      </Typography>
+    );
+  };
+
+  const renderShiftWarning = (day) => {
+    if (!day.is_day_on || scheduleType === TWENTY_FOUR_HOURS) return null;
+    let message = null;
+    if (fulldayDuration > day.total_work_duration) {
+      message = "Shift is less than Full Day duration";
+    } else if (day.total_work_duration > fulldayDuration) {
+      message = "Shift exceeds Full Day duration";
+    }
+    if (!message) return null;
+    return (
+      <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
+        <WarningAmberRoundedIcon sx={{ fontSize: 16 }} color="warning" />
+        <Typography variant="caption" color="warning.main">
+          {message}
+        </Typography>
+      </Stack>
+    );
+  };
 
   return (
-    <React.Fragment>
-      <Row>
-        <Col xl={40}>
-          <Form onSubmit={FormikForm.handleSubmit} className="form-steps">
-            <div className="step-arrow-nav mb-4">
-              <Nav
-                className="nav-pills custom-nav nav-justified"
-                role="tablist"
-              >
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    id="steparrow-gen-info-tab"
-                    className={classnames({
-                      active: activeArrowTab === 4,
-                      done: activeArrowTab <= 6 && activeArrowTab > 3,
-                    })}
-                    onClick={() => {
-                      toggleArrowTab(4);
-                    }}
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      isSubmitting={isSubmitting}
+      submitLabel={scheduleId > 0 ? "Update" : "Save"}
+    >
+      <FormSection title="Basic details">
+        <FormTextField
+          name="name"
+          control={control}
+          label="Name"
+          placeholder="Enter Work Schedule Name"
+          required
+          autoFocus
+          maxLength={NAME_MAX}
+          sanitize={(v) => v.replace(NAME_CHARS, "")}
+          startIcon={<EventNoteOutlinedIcon fontSize="small" color="action" />}
+        />
+        <FormTextField
+          name="description"
+          control={control}
+          label="Description"
+          placeholder="Add a short note (optional)"
+          multiline
+          minRows={3}
+          maxRows={6}
+          maxLength={DESCRIPTION_MAX}
+          sanitize={(v) => v.replace(DESCRIPTION_CHARS, "")}
+        />
+        <FormToggleGroup
+          name="type"
+          control={control}
+          label="Work Schedule Type"
+          options={workScheduleOptions}
+          color="success"
+        />
+      </FormSection>
+
+      {isPartial ? (
+        <FormSection title="Work duration">
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DurationField
+                name="fullday_work_duration"
+                control={control}
+                label="Work Duration"
+                hint="Full Day"
+                hours={hourOptions}
+                minutes={minuteOptions}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DurationField
+                name="halfday_work_duration"
+                control={control}
+                label="Work Duration"
+                hint="Half Day"
+                hours={hourOptions}
+                minutes={minuteOptions}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DurationField
+                name="grace_time_duration"
+                control={control}
+                label="Grace Period"
+                hours={graceHourOptions}
+                minutes={graceBreakMinuteOptions}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DurationField
+                name="maximum_break_duration"
+                control={control}
+                label="Maximum Total Break Duration"
+                hours={maxBreakHourOptions}
+                minutes={graceBreakMinuteOptions}
+              />
+            </Grid>
+          </Grid>
+          <FormSwitch
+            name="has_ot"
+            control={control}
+            label="Enable OT"
+            description="Track overtime for this work schedule"
+          />
+          {scheduleId > 0 && (
+            <FormSwitch
+              name="status"
+              control={control}
+              label="Status"
+              description={status ? "Active" : "Inactive"}
+            />
+          )}
+        </FormSection>
+      ) : (
+        <FormSection title="Work duration">
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DurationField
+                name="fullday_work_duration"
+                control={control}
+                label="Maximum Working Hours"
+                hint="Full Day"
+                hours={hourOptions}
+                minutes={minuteOptions}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <DurationField
+                name="halfday_work_duration"
+                control={control}
+                label="Half Day Duration"
+                hint="Half Day"
+                hours={hourOptions}
+                minutes={minuteOptions}
+              />
+            </Grid>
+          </Grid>
+        </FormSection>
+      )}
+
+      <FormSection
+        title="Working days"
+        description={
+          <>
+            When do your <i>{scheduleName}</i> employees work?
+          </>
+        }
+        action={
+          <FormControlLabel
+            label="Select all"
+            slotProps={{ typography: { fontSize: 13 } }}
+            control={
+              <Checkbox
+                size="small"
+                checked={allDaysOn}
+                indeterminate={!allDaysOn && someDaysOn}
+                onChange={(e) => handleBulkSelect(e.target.checked)}
+              />
+            }
+          />
+        }
+        spacing={1.5}
+      >
+        {workday.map((day, index) => (
+          <Paper
+            key={day.weekday ?? index}
+            variant="outlined"
+            sx={{
+              p: 1.5,
+              borderRadius: 2,
+              ...(day.is_day_on && { borderColor: "success.main" }),
+            }}
+          >
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <FormControlLabel
+                label={
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ textTransform: "capitalize" }}
                   >
-                    1)Basic Details
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    id="steparrow-gen-info-tab"
-                    className={classnames({
-                      active: activeArrowTab === 5,
-                      done: activeArrowTab <= 6 && activeArrowTab > 4,
-                    })}
-                    onClick={() => {
-                      toggleArrowTab(5);
-                    }}
-                  >
-                    2)Select Working Hours
-                  </NavLink>
-                </NavItem>
-              </Nav>
-            </div>
+                    {day.s_day}
+                  </Typography>
+                }
+                control={
+                  <Checkbox
+                    size="small"
+                    color="success"
+                    checked={!!day.is_day_on}
+                    onChange={(e) => handleDayToggle(index, e.target.checked)}
+                  />
+                }
+              />
+              {renderShiftHours(day)}
+            </Stack>
 
-            <TabContent activeTab={activeArrowTab}>
-              <TabPane id="steparrow-gen-info" tabId={4}>
-                <div>
-                  <Row>
-                    <Col md={12} lg={12} xxl={12}>
-                      <p className="fw-bold text-center">
-                        What should be the name of the Work Schedule?
-                      </p>
-
-                      <div className="mb-3">
-                        <Label className="form-label" htmlFor="ws_name">
-                          Name <spa>*</spa>
-                        </Label>
-                        <Input
-                          type="text"
-                          name="name"
-                          className="form-control"
-                          id="ws_name"
-                          placeholder="Enter Work Schedule Name"
-                          value={workScheduleData.name || ""}
-                          onChange={handleInputChange}
-                          invalid={!!FormikForm.errors.name}
-                          onBlur={FormikForm.handleBlur}
-                        />
-                        <FormFeedback type="invalid">
-                          {FormikForm.errors.name}
-                        </FormFeedback>
-                      </div>
-                    </Col>
-                    <Col md={12} lg={12} xxl={12}>
-                      <div className="mb-3">
-                        <Label className="form-label" htmlFor="ws_desc">
-                          Description
-                        </Label>
-                        <Input
-                          type="textarea"
-                          name="description"
-                          className="form-control"
-                          id="ws_desc"
-                          value={workScheduleData.description || ""}
-                          onChange={handleInputChange}
-                          invalid={!!FormikForm.errors.description}
-                        />
-
-                        {FormikForm.errors.description ? (
-                          <FormFeedback type="invalid">
-                            {FormikForm.errors.description}
-                          </FormFeedback>
-                        ) : null}
-                      </div>
-                    </Col>
-                    <Col md={3} lg={3} xxl={3}>
-                      <div className="mb-3">
-                        <Label className="form-label" htmlFor="ws_desc">
-                          Work Schedule Type
-                        </Label>
-                        {console.log("Edit Value:", workScheduleData.type)}
-                        {console.log("Workschedule Value:", workScheduleData)}
-                        {console.log("Options:", workScheduleOptions)}
-                        {console.log(
-                          "Matched Option:",
-                          workScheduleOptions.find(
-                            (item) => item.value === workScheduleData.type,
-                          ),
-                        )}
-                        <Select
-                          name="type"
-                          options={workScheduleOptions}
-                          isMulti={false}
-                          value={workScheduleOptions.find(
-                            (item) => item.value === workScheduleData.type,
-                          )}
-                          onChange={(option) => {
-                            setWorkScheduleData({
-                              ...workScheduleData,
-                              type: option.value,
-                              workday: initialWorkday,
-                              fullday_work_duration: 0,
-                              halfday_work_duration: 0,
-                              grace_time_duration: 0,
-                              maximum_break_duration: 0,
-                              // twenty_four_hrs_duration: 0,
-                              has_ot: false,
-                            });
-                          }}
-                          className="basic-single"
-                          classNamePrefix="lc-select"
-                          styles={{
-                            control: (provided, state) => ({
-                              ...provided,
-                              borderColor:
-                                FormikForm.touched.type &&
-                                FormikForm.errors.type
-                                  ? "red"
-                                  : provided.borderColor,
-                            }),
-                          }}
-                        />
-
-                        {FormikForm.touched.type && FormikForm.errors.type && (
-                          <div className="text-danger mt-1">
-                            {FormikForm.errors.type}
-                          </div>
-                        )}
-                      </div>
-                    </Col>
-                  </Row>
-
-                  {workScheduleData
-                    ? (workScheduleData?.type === 1 && (
-                        <div>
-                          <Row className="mb-2">
-                            {/* FULL DAY DURATION */}
-                            <Col xxl={6} md={6}>
-                              <div>
-                                <Label
-                                  htmlFor="ws_full_hr"
-                                  className="form-label"
-                                >
-                                  Work Duration
-                                </Label>
-                                <span className="form-text text-muted ms-3">
-                                  Full Day
-                                </span>
-
-                                <div style={{ display: "flex" }}>
-                                  <b className="mt-2 me-1">H</b>
-
-                                  <Select
-                                    id="ws_full_hr"
-                                    name="wsFullDayHr"
-                                    placeholder="00"
-                                    options={hourOptions}
-                                    value={hourOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            workScheduleData.fullday_work_duration /
-                                              3600,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) => {
-                                      handleDurationChange(
-                                        selectedOption.value,
-                                        Math.floor(
-                                          (workScheduleData.fullday_work_duration %
-                                            3600) /
-                                            60,
-                                        ),
-                                        "fullday_work_duration",
-                                      );
-                                    }}
-                                  />
-
-                                  <b className="mt-2 me-1 ms-2">M</b>
-                                  <Select
-                                    id="ws_full_mi"
-                                    name="wsFullDayMin"
-                                    placeholder="00"
-                                    options={minuteOptions}
-                                    value={minuteOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            (workScheduleData.fullday_work_duration %
-                                              3600) /
-                                              60,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) => {
-                                      handleDurationChange(
-                                        Math.floor(
-                                          workScheduleData.fullday_work_duration /
-                                            3600,
-                                        ),
-                                        selectedOption.value,
-                                        "fullday_work_duration",
-                                      );
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </Col>
-
-                            {/* HALF DAY DURATION */}
-                            <Col xxl={6} md={6}>
-                              <div>
-                                <Label className="form-label mb-3"></Label>
-                                <span className="form-text text-muted ms-3">
-                                  Half Day
-                                </span>
-
-                                <div style={{ display: "flex" }}>
-                                  <b className="mt-2 me-1">H</b>
-
-                                  <Select
-                                    id="ws_half_hr"
-                                    name="wsHalfDayHr"
-                                    placeholder="00"
-                                    options={hourOptions}
-                                    value={hourOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            workScheduleData.halfday_work_duration /
-                                              3600,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) =>
-                                      handleDurationChange(
-                                        selectedOption.value,
-                                        Math.floor(
-                                          (workScheduleData.halfday_work_duration %
-                                            3600) /
-                                            60,
-                                        ),
-                                        "halfday_work_duration",
-                                      )
-                                    }
-                                  />
-
-                                  <b className="mt-2 me-1 ms-2">M</b>
-
-                                  <Select
-                                    id="ws_half_min"
-                                    name="wsHalfDayMin"
-                                    placeholder="00"
-                                    options={minuteOptions}
-                                    value={minuteOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            (workScheduleData.halfday_work_duration %
-                                              3600) /
-                                              60,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) =>
-                                      handleDurationChange(
-                                        Math.floor(
-                                          workScheduleData.halfday_work_duration /
-                                            3600,
-                                        ),
-                                        selectedOption.value,
-                                        "halfday_work_duration",
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </Col>
-                          </Row>
-
-                          {/* GRACE PERIOD + MAX BREAK */}
-                          <Row>
-                            {/* GRACE PERIOD */}
-                            <Col xxl={6} md={6}>
-                              <div>
-                                <Label
-                                  htmlFor="gracePeriodInHours"
-                                  className="form-label"
-                                >
-                                  Grace Period
-                                </Label>
-
-                                <div style={{ display: "flex" }}>
-                                  <b className="mt-2 me-1">H</b>
-
-                                  <Select
-                                    id="gracePeriodInHours"
-                                    name="gracePeriodInHours"
-                                    placeholder="00"
-                                    options={graceHourOptions}
-                                    value={graceHourOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            workScheduleData.grace_time_duration /
-                                              3600,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) =>
-                                      handleDurationChange(
-                                        selectedOption.value,
-                                        Math.floor(
-                                          (workScheduleData.grace_time_duration %
-                                            3600) /
-                                            60,
-                                        ),
-                                        "grace_time_duration",
-                                      )
-                                    }
-                                  />
-
-                                  <b className="mt-2 me-1 ms-2">M</b>
-
-                                  <Select
-                                    id="gracePeriodInMinutes"
-                                    name="gracePeriodInMinutes"
-                                    placeholder="00"
-                                    options={graceBreakMinuteOptions}
-                                    value={graceBreakMinuteOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            (workScheduleData.grace_time_duration %
-                                              3600) /
-                                              60,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) =>
-                                      handleDurationChange(
-                                        Math.floor(
-                                          workScheduleData.grace_time_duration /
-                                            3600,
-                                        ),
-                                        selectedOption.value,
-                                        "grace_time_duration",
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </Col>
-
-                            {/* MAXIMUM TOTAL BREAK */}
-                            <Col xxl={6} md={6}>
-                              <div>
-                                <Label
-                                  htmlFor="maximum_break_hr"
-                                  className="form-label"
-                                >
-                                  Maximum Total Break Duration
-                                </Label>
-
-                                <div style={{ display: "flex" }}>
-                                  <b className="mt-2 me-1">H</b>
-
-                                  <Select
-                                    id="maximum_break_hr"
-                                    name="maximum_break_hr"
-                                    placeholder="00"
-                                    options={maxBreakHourOptions}
-                                    value={maxBreakHourOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            workScheduleData.maximum_break_duration /
-                                              3600,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) =>
-                                      handleDurationChange(
-                                        selectedOption.value,
-                                        Math.floor(
-                                          (workScheduleData.maximum_break_duration %
-                                            3600) /
-                                            60,
-                                        ),
-                                        "maximum_break_duration",
-                                      )
-                                    }
-                                  />
-
-                                  <b className="mt-2 me-1 ms-2">M</b>
-
-                                  <Select
-                                    id="maximum_break_min"
-                                    name="maximum_break_min"
-                                    placeholder="00"
-                                    options={graceBreakMinuteOptions}
-                                    value={graceBreakMinuteOptions.find(
-                                      (option) =>
-                                        option.value ===
-                                        String(
-                                          Math.floor(
-                                            (workScheduleData.maximum_break_duration %
-                                              3600) /
-                                              60,
-                                          ),
-                                        ).padStart(2, "0"),
-                                    )}
-                                    onChange={(selectedOption) =>
-                                      handleDurationChange(
-                                        Math.floor(
-                                          workScheduleData.maximum_break_duration /
-                                            3600,
-                                        ),
-                                        selectedOption.value,
-                                        "maximum_break_duration",
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </Col>
-                          </Row>
-
-                          {/* OT ENABLE SWITCH */}
-                          <Col lg={12} className="mt-3">
-                            <div>
-                              <Label htmlFor="has_ot" className="form-label">
-                                Enable OT
-                              </Label>
-
-                              <div
-                                className="form-check form-switch form-switch-md form-switch-success"
-                                dir="ltr"
-                              >
-                                <Input
-                                  id="has_ot"
-                                  name="has_ot"
-                                  type="checkbox"
-                                  className="form-check-input"
-                                  checked={workScheduleData.has_ot}
-                                  onChange={handleChange}
-                                />
-                              </div>
-                            </div>
-                          </Col>
-
-                          {workScheduleData.id > 0 && (
-                            <Col lg={12} className="mt-3">
-                              <div className="mb-3">
-                                <Label className="form-label">Status</Label>
-
-                                <div
-                                  className="form-check form-switch form-switch-md form-switch-success"
-                                  dir="ltr"
-                                >
-                                  <Input
-                                    type="checkbox"
-                                    checked={workScheduleData.status || false}
-                                    onChange={(e) =>
-                                      setWorkScheduleData((prev) => ({
-                                        ...prev,
-                                        status: e.target.checked,
-                                      }))
-                                    }
-                                  />
-                                </div>
-
-                                <div className="form-text">
-                                  {workScheduleData.status
-                                    ? "Active"
-                                    : "Inactive"}
-                                </div>
-                              </div>
-                            </Col>
-                          )}
-                        </div>
-                      )) || (
-                        <Row className="mb-2">
-                          {/* FULL DAY */}
-                          <Col xxl={6} md={6}>
-                            <div>
-                              <Label
-                                htmlFor="ws_full_hr_24"
-                                className="form-label"
-                              >
-                                Maximum Working Hours
-                              </Label>
-                              <span className="form-text text-muted ms-3">
-                                Full Day
-                              </span>
-                              <div style={{ display: "flex" }}>
-                                <b className="mt-2 me-1">H</b>
-                                <Select
-                                  id="ws_full_hr_24"
-                                  name="wsFullDayHr24"
-                                  placeholder="00"
-                                  options={hourOptions}
-                                  value={hourOptions.find(
-                                    (option) =>
-                                      option.value ===
-                                      String(
-                                        Math.floor(
-                                          workScheduleData.fullday_work_duration /
-                                            3600,
-                                        ),
-                                      ).padStart(2, "0"),
-                                  )}
-                                  onChange={(selectedOption) => {
-                                    handleDurationChange(
-                                      selectedOption.value,
-                                      Math.floor(
-                                        (workScheduleData.fullday_work_duration %
-                                          3600) /
-                                          60,
-                                      ),
-                                      "fullday_work_duration",
-                                    );
-                                  }}
-                                />
-                                <b className="mt-2 me-1 ms-2">M</b>
-                                <Select
-                                  id="ws_full_mi_24"
-                                  name="wsFullDayMin24"
-                                  placeholder="00"
-                                  options={minuteOptions}
-                                  value={minuteOptions.find(
-                                    (option) =>
-                                      option.value ===
-                                      String(
-                                        Math.floor(
-                                          (workScheduleData.fullday_work_duration %
-                                            3600) /
-                                            60,
-                                        ),
-                                      ).padStart(2, "0"),
-                                  )}
-                                  onChange={(selectedOption) => {
-                                    handleDurationChange(
-                                      Math.floor(
-                                        workScheduleData.fullday_work_duration /
-                                          3600,
-                                      ),
-                                      selectedOption.value,
-                                      "fullday_work_duration",
-                                    );
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </Col>
-
-                          {/* HALF DAY */}
-                          <Col xxl={6} md={6}>
-                            <div>
-                              <Label className="form-label">
-                                Half Day Duration
-                              </Label>
-                              <span className="form-text text-muted ms-3">
-                                Half Day
-                              </span>
-                              <div style={{ display: "flex" }}>
-                                <b className="mt-2 me-1">H</b>
-                                <Select
-                                  id="ws_half_hr_24"
-                                  name="wsHalfDayHr24"
-                                  placeholder="00"
-                                  options={hourOptions}
-                                  value={hourOptions.find(
-                                    (option) =>
-                                      option.value ===
-                                      String(
-                                        Math.floor(
-                                          workScheduleData.halfday_work_duration /
-                                            3600,
-                                        ),
-                                      ).padStart(2, "0"),
-                                  )}
-                                  onChange={(selectedOption) =>
-                                    handleDurationChange(
-                                      selectedOption.value,
-                                      Math.floor(
-                                        (workScheduleData.halfday_work_duration %
-                                          3600) /
-                                          60,
-                                      ),
-                                      "halfday_work_duration",
-                                    )
-                                  }
-                                />
-                                <b className="mt-2 me-1 ms-2">M</b>
-                                <Select
-                                  id="ws_half_mi_24"
-                                  name="wsHalfDayMin24"
-                                  placeholder="00"
-                                  options={minuteOptions}
-                                  value={minuteOptions.find(
-                                    (option) =>
-                                      option.value ===
-                                      String(
-                                        Math.floor(
-                                          (workScheduleData.halfday_work_duration %
-                                            3600) /
-                                            60,
-                                        ),
-                                      ).padStart(2, "0"),
-                                  )}
-                                  onChange={(selectedOption) =>
-                                    handleDurationChange(
-                                      Math.floor(
-                                        workScheduleData.halfday_work_duration /
-                                          3600,
-                                      ),
-                                      selectedOption.value,
-                                      "halfday_work_duration",
-                                    )
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </Col>
-                        </Row>
-                      )
-                    : null}
-                </div>
-                <div className="d-flex align-items-start gap-3 mt-4">
-                  <button
-                    type="button"
-                    className="btn btn-success btn-label right ms-auto nexttab nexttab"
-                    onClick={() => {
-                      FormikForm.validateForm().then((errors) => {
-                        if (Object.keys(errors).length === 0) {
-                          if (!validateDurations(workScheduleData)) return;
-                          toggleArrowTab(activeArrowTab + 1);
-                        } else {
-                          FormikForm.setTouched({
-                            name: true,
-                            description: true,
-                          });
-
-                          const firstError = Object.values(errors)[0];
-                          toast.error(firstError);
-                        }
-                      });
-                    }}
-                  >
-                    <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                    NEXT STEP
-                  </button>
-                </div>
-              </TabPane>
-
-              <TabPane id="steparrow-description-info" tabId={5}>
-                <p className="fw-bold text-center">
-                  When do your <i>{workScheduleData.name}</i> employee work?
-                </p>
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>
-                        <input
-                          type="checkbox"
-                          checked={workScheduleData.workday?.every(
-                            (d) => d.is_day_on,
-                          )}
-                          onChange={(e) => handleBulkSelect(e.target.checked)}
-                        />
-                      </th>
-                      <th>Day</th>
-                      <th>Start Time</th>
-                      <th>Minute</th>
-                      <th>TO</th>
-                      <th>End Time</th>
-                      <th>Minute</th>
-                      <th>Shift Hours</th>
-                    </tr>
-                    {workScheduleData.workday?.map((workday, index) => {
-                      return (
-                        <tr key={index}>
-                          <th>
-                            {" "}
-                            <input
-                              type="checkbox"
-                              name={`is_day_on_${workday.s_day}`}
-                              id={`is_day_on_${workday.s_day}`}
-                              className={`mb-2 is_day_on_${workday.s_day}`}
-                              checked={workday.is_day_on}
-                              onChange={(e) => handleDayCB(e, workday)}
-                            />
-                          </th>
-                          <th style={{ textTransform: "capitalize" }}>
-                            <label
-                              className="fw-bold"
-                              htmlFor={`is_day_on_${workday.s_day}`}
-                            >
-                              {workday.s_day}
-                            </label>
-                          </th>
-                          <th>
-                            <Select
-                              name={`s_hr_${workday.s_day}`}
-                              id={`s_hr_${workday.s_day}`}
-                              className={`s_hr_${workday.s_day}`}
-                              isDisabled={
-                                workday.is_day_on === false ||
-                                workScheduleData?.type === 2
-                              }
-                              placeholder={"00"}
-                              options={hourOptions}
-                              value={hourOptions.find(
-                                (option) => option.value === workday.s_hr,
-                              )}
-                              onChange={(e) => {
-                                handleWorkDayTimechange(
-                                  e.value,
-                                  "s_hr",
-                                  workday,
-                                );
-                              }}
-                            />
-                          </th>
-                          <th>
-                            {" "}
-                            <Select
-                              name={`s_min_${workday.s_day}`}
-                              id={`s_min_${workday.s_day}`}
-                              placeholder={"00"}
-                              options={minuteOptions}
-                              isDisabled={
-                                workday.is_day_on === false ||
-                                workScheduleData?.type === 2
-                              }
-                              value={minuteOptions.find(
-                                (option) => option.value === workday.s_min,
-                              )}
-                              onChange={(e) => {
-                                handleWorkDayTimechange(
-                                  e.value,
-                                  "s_min",
-                                  workday,
-                                );
-                              }}
-                            />
-                          </th>
-                          <th>
-                            <i class="ri-arrow-left-right-line"></i>
-                          </th>
-                          <th>
-                            <Select
-                              name={`e_hr_${workday.s_day}`}
-                              id={`e_hr_${workday.s_day}`}
-                              placeholder={"00"}
-                              options={hourOptions}
-                              isDisabled={
-                                workday.is_day_on === false ||
-                                workScheduleData?.type === 2
-                              }
-                              value={hourOptions.find(
-                                (option) => option.value === workday.e_hr,
-                              )}
-                              onChange={(e) => {
-                                handleWorkDayTimechange(
-                                  e.value,
-                                  "e_hr",
-                                  workday,
-                                );
-                              }}
-                            />
-                          </th>
-                          <th>
-                            {" "}
-                            <Select
-                              name={`e_min_${workday.s_day}`}
-                              id={`e_min_${workday.s_day}`}
-                              placeholder={"00"}
-                              options={minuteOptions}
-                              isDisabled={
-                                workday.is_day_on === false ||
-                                workScheduleData?.type === 2
-                              }
-                              value={minuteOptions.find(
-                                (option) => option.value === workday.e_min,
-                              )}
-                              onChange={(e) => {
-                                handleWorkDayTimechange(
-                                  e.value,
-                                  "e_min",
-                                  workday,
-                                );
-                              }}
-                            />
-                          </th>
-                          <th>
-                            <span className="mb-2 text-info">
-                              {workday.is_day_on === false ? (
-                                "W/O"
-                              ) : workScheduleData?.type === 2 ? (
-                                <span className="mb-2 text-success">
-                                  24:00 Hrs
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="mb-2 text-success">
-                                    {workScheduleData.fullday_work_duration >
-                                      workday.total_work_duration ||
-                                    workday.total_work_duration >
-                                      workScheduleData.fullday_work_duration ? (
-                                      <span className="mb-2 text-danger">
-                                        {`${String(
-                                          Math.floor(
-                                            workday.total_work_duration / 3600,
-                                          ),
-                                        ).padStart(2, "0")}:${String(
-                                          Math.floor(
-                                            (workday.total_work_duration %
-                                              3600) /
-                                              60,
-                                          ),
-                                        ).padStart(2, "0")} Hrs`}
-                                      </span>
-                                    ) : (
-                                      `${String(
-                                        Math.floor(
-                                          workday.total_work_duration / 3600,
-                                        ),
-                                      ).padStart(2, "0")}:${String(
-                                        Math.floor(
-                                          (workday.total_work_duration % 3600) /
-                                            60,
-                                        ),
-                                      ).padStart(2, "0")} Hrs`
-                                    )}
-                                  </span>
-
-                                  {workScheduleData.fullday_work_duration >
-                                    workday.total_work_duration && (
-                                    <div
-                                      className="text-warning"
-                                      style={{
-                                        fontSize: "11px",
-                                        marginTop: "2px",
-                                      }}
-                                    >
-                                      ⚠️ Shift is less than Full Day duration
-                                    </div>
-                                  )}
-                                  {workday.total_work_duration >
-                                    workScheduleData.fullday_work_duration && (
-                                    <div
-                                      className="text-warning"
-                                      style={{
-                                        fontSize: "11px",
-                                        marginTop: "2px",
-                                      }}
-                                    >
-                                      ⚠️ Shift exceeds Full Day duration
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </span>
-                          </th>
-                        </tr>
-                      );
-                    })}
-                  </thead>
-                </table>
-
-                <div className="d-flex align-items-start gap-3 mt-4">
-                  <button
-                    type="button"
-                    className="btn btn-light btn-label previestab"
-                    onClick={() => {
-                      toggleArrowTab(activeArrowTab - 1);
-                    }}
-                  >
-                    <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
-                    Back to Basic Details
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-success btn-label right ms-auto nexttab nexttab"
-                  >
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-                    Save
-                  </button>
-                </div>
-              </TabPane>
-            </TabContent>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+            {day.is_day_on && scheduleType !== TWENTY_FOUR_HOURS && (
+              <Grid container spacing={1.5} sx={{ mt: 1 }}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormTimePicker
+                    name={`workday.${index}.start`}
+                    control={control}
+                    label="Start time"
+                    valueFormat="HH:mm"
+                    minutesStep={10}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FormTimePicker
+                    name={`workday.${index}.end`}
+                    control={control}
+                    label="End time"
+                    valueFormat="HH:mm"
+                    minutesStep={10}
+                  />
+                </Grid>
+              </Grid>
+            )}
+            {renderShiftWarning(day)}
+          </Paper>
+        ))}
+      </FormSection>
+    </SidebarFormLayout>
   );
 };
 

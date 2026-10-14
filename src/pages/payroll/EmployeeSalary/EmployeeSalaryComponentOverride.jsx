@@ -15,7 +15,8 @@ import {
   ModalBody,
   ModalFooter,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ const OverrideModal = ({ isOpen, toggle, component, employeeName, onSaved }) => 
         {component && (
           <>
             {/* Component Info */}
-            <div className="rounded border p-3 mb-4 bg-light">
+            <div className="rounded border p-3 mb-4 surface-muted">
               <div className="d-flex align-items-center justify-content-between mb-2">
                 <span className="fw-semibold fs-14">{component.component_name}</span>
                 <Badge
@@ -378,6 +379,7 @@ const EmployeeSalaryComponentOverride = () => {
                 }
                 isLoading={loading}
                 classNamePrefix="select2-selection"
+                components={{ Option: EmployeeDisplayInSelect }}
                 isClearable
               />
               <div className="form-text">
@@ -431,7 +433,7 @@ const EmployeeSalaryComponentOverride = () => {
 
       {/* Employee summary strip */}
       {currentEmployee && (
-        <div className="d-flex align-items-center gap-3 p-3 rounded border mb-4 bg-light">
+        <div className="d-flex align-items-center gap-3 p-3 rounded border mb-4 surface-muted">
           <div
             className="avatar-sm rounded-circle bg-success-subtle d-flex align-items-center justify-content-center flex-shrink-0"
             style={{ width: 40, height: 40 }}
@@ -505,7 +507,7 @@ const EmployeeSalaryComponentOverride = () => {
           <CardBody className="p-0">
             <div className="table-responsive">
               <Table className="table-hover align-middle mb-0">
-                <thead className="table-light">
+                <thead className="table-surface">
                   <tr>
                     <th className="ps-4 fw-semibold fs-12">Component</th>
                     <th className="fw-semibold fs-12">Type</th>
@@ -650,7 +652,7 @@ const EmployeeSalaryComponentOverride = () => {
 
                 {/* Summary footer */}
                 {filteredComponents.length > 0 && (
-                  <tfoot className="table-light">
+                  <tfoot className="table-surface">
                     <tr>
                       <td colSpan={5} className="ps-4 fw-semibold fs-13">
                         Total Monthly Pay

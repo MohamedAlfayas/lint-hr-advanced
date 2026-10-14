@@ -12,7 +12,8 @@ import {
   Input,
   FormFeedback,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
 import { timzone_options } from "../../common/constant/Constants";
 import { useFormik } from "formik";
 import * as Yup from "yup";
@@ -23,7 +24,7 @@ import { PutApi } from "../../common/api/PutApi";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { setBranch } from "../../redux/reducers/ChildReducer/BranchReducer";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
-import CountryList from "../../common/data/CountryList";
+import CountryList, { countriesWithStates } from "../../common/data/CountryList";
 import LocationSearch from "../../pages/organization/LocationSearch";
 import { setEmployee } from "../../redux/reducers/ChildReducer/EmployeeReducer";
 
@@ -76,7 +77,7 @@ const LocationModal = ({
 
   // ── Seed country list once ───────────────────────────────────────────────
   useEffect(() => {
-    const country_list = CountryList.filter((c) => c.show === true).map(
+    const country_list = countriesWithStates.map(
       (d) => ({
         ...d,
         label: d.countryName,
@@ -497,8 +498,11 @@ const LocationModal = ({
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Modal isOpen={isOpen} toggle={onClose} size="md">
-      <ModalHeader toggle={onClose}>
+    <Modal isOpen={isOpen} toggle={onClose} size="md" data-testid="employee-location-dialog">
+      <ModalHeader
+        toggle={onClose}
+        close={<ModalCloseButton onClick={onClose} testId="employee-location-close-button" />}
+      >
         {locationToEdit ? "Edit Location" : "Add New Location"}
       </ModalHeader>
 
@@ -517,9 +521,12 @@ const LocationModal = ({
                   value={employeeLocationObj.name || ""}
                   onChange={handleLocationNameChange}
                   invalid={!!f.errors.name}
+                  data-testid="employee-location-name-input"
                 />
                 {!f.errors.name && <i className="ri-building-2-line" />}
-                {f.errors.name && <FormFeedback>{f.errors.name}</FormFeedback>}
+                {f.errors.name && (
+                  <FormFeedback data-testid="employee-location-name-error">{f.errors.name}</FormFeedback>
+                )}
               </div>
             </Col>
 
@@ -541,9 +548,10 @@ const LocationModal = ({
                 value={employeeLocationObj.address || ""}
                 onChange={handleAddressChange}
                 invalid={!!f.errors.address}
+                data-testid="employee-location-address-textarea"
               />
               {f.errors.address && (
-                <FormFeedback>{f.errors.address}</FormFeedback>
+                <FormFeedback data-testid="employee-location-address-error">{f.errors.address}</FormFeedback>
               )}
             </Col>
 
@@ -551,6 +559,7 @@ const LocationModal = ({
             <Col lg={12}>
               <Label className="form-label">Country</Label>
               <Select
+                testId="employee-location-country"
                 options={CountryListOptions}
                 value={
                   CountryListOptions.find(
@@ -560,7 +569,7 @@ const LocationModal = ({
                 onChange={handleLocationCountryChange}
               />
               {f.touched.country && f.errors.country && (
-                <div className="lc_form_error_text">{f.errors.country}</div>
+                <div className="lc_form_error_text" data-testid="employee-location-country-error">{f.errors.country}</div>
               )}
             </Col>
 
@@ -568,6 +577,7 @@ const LocationModal = ({
             <Col lg={12}>
               <Label className="form-label">State</Label>
               <Select
+                testId="employee-location-state"
                 options={locationStateOptions}
                 value={
                   locationStateOptions.find(
@@ -577,7 +587,7 @@ const LocationModal = ({
                 onChange={handleLocationStateChange}
               />
               {f.touched.state && f.errors.state && (
-                <div className="lc_form_error_text">{f.errors.state}</div>
+                <div className="lc_form_error_text" data-testid="employee-location-state-error">{f.errors.state}</div>
               )}
             </Col>
 
@@ -592,9 +602,12 @@ const LocationModal = ({
                   value={employeeLocationObj.city || ""}
                   onChange={handleCityChange}
                   invalid={!!f.errors.city}
+                  data-testid="employee-location-city-input"
                 />
                 {!f.errors.city && <i className="ri-map-pin-line" />}
-                {f.errors.city && <FormFeedback>{f.errors.city}</FormFeedback>}
+                {f.errors.city && (
+                  <FormFeedback data-testid="employee-location-city-error">{f.errors.city}</FormFeedback>
+                )}
               </div>
             </Col>
 
@@ -615,10 +628,11 @@ const LocationModal = ({
                     setLocField("pincode", value);
                   }}
                   invalid={!!f.errors.pincode}
+                  data-testid="employee-location-pincode-input"
                 />
                 {!f.errors.pincode && <i className="ri-mail-line" />}
                 {f.errors.pincode && (
-                  <FormFeedback>{f.errors.pincode}</FormFeedback>
+                  <FormFeedback data-testid="employee-location-pincode-error">{f.errors.pincode}</FormFeedback>
                 )}
               </div>
             </Col>
@@ -633,6 +647,7 @@ const LocationModal = ({
                 className="form-control"
                 accept=".png,.jpg,.jpeg,.webp"
                 onChange={handleLocationImageUpdate}
+                data-testid="employee-location-image-input"
               />
               {employeeLocationObj.image_url && (
                 <img
@@ -653,6 +668,7 @@ const LocationModal = ({
               <Label className="form-label">Time Zone</Label>
               <Select
                 name="timezone"
+                testId="employee-location-timezone"
                 value={
                   employeeLocationObj.timezone
                     ? timzone_options.find(
@@ -681,13 +697,13 @@ const LocationModal = ({
                 placeholder="Select a time zone"
               />
               {f.touched.timezone && f.errors.timezone && (
-                <div className="lc_form_error_text">{f.errors.timezone}</div>
+                <div className="lc_form_error_text" data-testid="employee-location-timezone-error">{f.errors.timezone}</div>
               )}
             </Col>
 
             {/* Save Button */}
             <Col lg={12} className="text-end">
-              <Button color="success" type="submit" className="btn-label">
+              <Button color="success" type="submit" className="btn-label" data-testid="employee-location-save-button">
                 <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
                 {locationToEdit ? "Update Location" : "Save Location"}
               </Button>

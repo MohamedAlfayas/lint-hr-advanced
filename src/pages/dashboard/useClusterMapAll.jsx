@@ -1,6 +1,6 @@
 // src/component/maps/UsersClusterMapAll.jsx
 //
-// Install once:  yarn add framer-motion react-select
+// Install once:  npm install framer-motion react-select
 //
 import React, {
   useEffect,
@@ -18,6 +18,7 @@ import {
   OverlayView,
 } from "@react-google-maps/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { MapSkeleton, PageSkeleton, Skel } from "../../component/common/skeleton/Skeleton";
 import {
   Input,
   Modal,
@@ -26,7 +27,7 @@ import {
   Badge,
   Button,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
 import { Api } from "../../common/api/Api";
@@ -35,7 +36,11 @@ import {
   disconnectWebSocket,
 } from "./LocationWebSocket/WebSocket";
 import "../../common/css/lc_style.css";
+import "./LocationHistory.scss";
+import { useMapThemeStyles } from "../../shared/theme/mapStyles";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { testId, itemTestKey } from "../../shared/testing/testId";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
 
 const loaderOptions = {
   id: "google-map-script",
@@ -54,6 +59,14 @@ const SPEED_OPTIONS = [0.5, 1, 1.5, 2];
 
 // Zoom level used while following the moving marker during playback
 const PLAYBACK_FOLLOW_ZOOM = 17;
+
+// Shorter routes need a closer camera for the movement to be visible.
+const playbackZoomForKm = (km) => {
+  if (km < 0.3) return 20;
+  if (km < 1) return 19;
+  if (km < 5) return 18;
+  return PLAYBACK_FOLLOW_ZOOM;
+};
 
 // Zoom level used when a timeline card/marker is clicked to focus on that
 // specific point. Kept separate from PLAYBACK_FOLLOW_ZOOM — a short route's
@@ -287,10 +300,10 @@ const injectFormModalScrollStyles = () => {
   tag.id = FORM_MODAL_SCROLL_STYLE_ID;
   tag.innerHTML = `
     .cst-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
-    .cst-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-    .cst-scroll::-webkit-scrollbar-thumb { background: #c5cff0; border-radius: 10px; }
-    .cst-scroll::-webkit-scrollbar-thumb:hover { background: #405189; }
-    .cst-scroll { scrollbar-width: thin; scrollbar-color: #c5cff0 #f1f1f1; }
+    .cst-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 10px; }
+    .cst-scroll::-webkit-scrollbar-thumb { background: var(--vz-border-color); border-radius: 10px; }
+    .cst-scroll::-webkit-scrollbar-thumb:hover { background: var(--vz-primary); }
+    .cst-scroll { scrollbar-width: thin; scrollbar-color: var(--vz-border-color) transparent; }
   `;
   document.head.appendChild(tag);
 };
@@ -298,77 +311,96 @@ const injectFormModalScrollStyles = () => {
 // ─── Shared chip / box styles used inside the form-submission modal
 //     (same look as the app's activity-timeline modal). ───────────────
 const coordPill = {
-  background: "#f0f4ff",
-  borderRadius: "6px",
+  background: "rgba(var(--vz-primary-rgb), 0.08)",
+  borderRadius: "8px",
   padding: "5px 12px",
   fontSize: "12px",
-  color: "#405189",
+  color: "var(--vz-primary)",
   fontWeight: 500,
-  border: "0.5px solid #c5cff0",
+  border: "1px solid rgba(var(--vz-primary-rgb), 0.25)",
   display: "inline-flex",
   alignItems: "center",
   gap: "5px",
 };
 
 const timeBox = {
-  background: "#f8f9fc",
-  borderRadius: "6px",
-  padding: "8px 12px",
-  border: "0.5px solid #eaecf5",
+  background: "var(--vz-tertiary-bg)",
+  borderRadius: "10px",
+  padding: "10px 12px",
+  border: "1px solid var(--vz-border-color)",
 };
 const timeBoxLabel = {
   fontSize: "11px",
-  color: "#999",
+  color: "var(--vz-secondary-color)",
   marginBottom: "3px",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
 };
 const timeBoxValue = {
   fontSize: "13px",
-  color: "#333",
+  color: "var(--vz-heading-color)",
   fontWeight: 500,
 };
 
-// ─── Compact select style used inside the timeline filter bar ──
-const compactSelectStyle = {
-  height: "32px",
-  borderRadius: "8px",
-  border: "1px solid #cbd5e1",
-  fontSize: "12px",
-  padding: "0 8px",
-  background: "#f8fafc",
-  cursor: "pointer",
-  width: "100%",
-  color: "#1e293b",
-};
-
-// ─── Compact date-picker style to match compactSelectStyle look ──
-const compactDatePickerStyle = {
-  height: "32px",
-  borderRadius: "8px",
-  border: "1px solid #cbd5e1",
-  fontSize: "12px",
-  background: "#f8fafc",
-  width: "100%",
-};
-
-// ─── react-select styles to match the reactstrap look (compact, responsive column) ──
+// ─── react-select styles for the employee filter — theme variables only so
+//     the control and its menu follow light/dark mode ──
 const rsSelectStyles = {
   control: (base, state) => ({
     ...base,
-    minHeight: "32px",
-    height: "32px",
-    borderRadius: "8px",
-    borderColor: state.isFocused ? "#2563eb" : "#cbd5e1",
-    boxShadow: state.isFocused ? "0 0 0 3px rgba(37,99,235,0.15)" : "none",
-    background: "#f8fafc",
+    minHeight: "38px",
+    height: "38px",
+    borderRadius: "10px",
+    borderColor: state.isFocused
+      ? "var(--vz-primary)"
+      : "var(--vz-border-color)",
+    boxShadow: state.isFocused
+      ? "0 0 0 3px rgba(var(--vz-primary-rgb), 0.15)"
+      : "none",
+    background: "var(--vz-body-bg)",
     width: "100%",
-    fontSize: "12px",
+    fontSize: "13px",
+    fontWeight: 500,
+    cursor: "pointer",
+    "&:hover": {
+      borderColor: state.isFocused
+        ? "var(--vz-primary)"
+        : "rgba(var(--vz-primary-rgb), 0.45)",
+    },
   }),
-  valueContainer: (base) => ({ ...base, padding: "0 8px" }),
-  input: (base) => ({ ...base, margin: 0, padding: 0 }),
-  indicatorsContainer: (base) => ({ ...base, height: "32px" }),
-  menu: (base) => ({ ...base, zIndex: 20 }),
+  valueContainer: (base) => ({ ...base, padding: "0 8px 0 34px" }),
+  singleValue: (base) => ({ ...base, color: "var(--vz-body-color)" }),
+  placeholder: (base) => ({ ...base, color: "var(--vz-secondary-color)" }),
+  input: (base) => ({
+    ...base,
+    margin: 0,
+    padding: 0,
+    color: "var(--vz-body-color)",
+  }),
+  indicatorSeparator: () => ({ display: "none" }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    padding: "0 10px",
+    color: state.isFocused ? "var(--vz-primary)" : "var(--vz-secondary-color)",
+    transform: state.selectProps.menuIsOpen ? "rotate(180deg)" : "none",
+    transition: "transform 0.2s",
+  }),
+  indicatorsContainer: (base) => ({ ...base, height: "36px" }),
+  menu: (base) => ({
+    ...base,
+    zIndex: 30,
+    marginTop: "6px",
+    borderRadius: "12px",
+    overflow: "hidden",
+    background: "var(--vz-secondary-bg)",
+    border: "1px solid var(--vz-border-color)",
+    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.18)",
+  }),
+  menuList: (base) => ({ ...base, padding: "4px", maxHeight: "280px" }),
+  noOptionsMessage: (base) => ({
+    ...base,
+    fontSize: "12px",
+    color: "var(--vz-secondary-color)",
+  }),
 };
 
 // ─── Employee option renderer (avatar + name + department) ─────
@@ -378,50 +410,22 @@ const EmployeeDisplayInSelect = (props) => {
     <div
       ref={innerRef}
       {...innerProps}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "6px 10px",
-        cursor: "pointer",
-        background: isSelected ? "#dbeafe" : isFocused ? "#f1f5f9" : "#fff",
-      }}
+      className={`ucx-opt${isSelected ? " is-selected" : ""}${isFocused ? " is-focused" : ""}`}
     >
       {data.profile_url ? (
-        <img
-          src={data.profile_url}
-          alt={data.label}
-          style={{
-            width: "22px",
-            height: "22px",
-            borderRadius: "50%",
-            objectFit: "cover",
-            flexShrink: 0,
-          }}
-        />
+        <img src={data.profile_url} alt={data.label} className="ucx-opt-avatar" />
       ) : (
-        <div
-          style={{
-            width: "22px",
-            height: "22px",
-            borderRadius: "50%",
-            background: COLORS.travel,
-            color: "#fff",
-            fontSize: "10px",
-            fontWeight: 700,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
+        <span className="ucx-opt-avatar">
           {data.label?.charAt(0)?.toUpperCase()}
-        </div>
+        </span>
       )}
-      <span style={{ fontSize: "12px", color: "#1e293b" }}>
-        {data.label}
-        {data.department ? ` — ${data.department}` : ""}
+      <span className="ucx-opt-text">
+        <span className="ucx-opt-name d-block">{data.label}</span>
+        {data.department && (
+          <span className="ucx-opt-dept d-block">{data.department}</span>
+        )}
       </span>
+      {isSelected && <i className="ri-check-line ucx-opt-check"></i>}
     </div>
   );
 };
@@ -449,37 +453,7 @@ const injectStyles = () => {
       50%  { opacity: 1; }
       100% { opacity: 0.55; }
     }
-    .ucma-skeleton {
-      background: #e2e8f0;
-      border-radius: 6px;
-      animation: ucma-skeleton-pulse 1.3s ease-in-out infinite;
-    }
-    .ucma-scroll::-webkit-scrollbar { width: 5px; }
-    .ucma-scroll::-webkit-scrollbar-track { background: transparent; }
-    .ucma-scroll::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 10px;
-    }
     .ucma-liveblink { animation: ucma-blink 1.2s infinite; }
-    .ucma-tl-filterbar select:focus,
-    .ucma-tl-filterbar input:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
-    }
-    .ucma-tl-filterbar .ant-picker {
-      height: 32px;
-      border-radius: 8px;
-      border-color: #cbd5e1;
-      background: #f8fafc;
-    }
-    .ucma-tl-filterbar .ant-picker-focused {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
-    }
-    .ucma-tl-filterbar .ant-picker input {
-      font-size: 12px;
-    }
     .ucma-vslider {
       -webkit-appearance: none;
       appearance: none;
@@ -495,8 +469,8 @@ const injectStyles = () => {
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #2563eb;
-      border: 2px solid #ffffff;
+      background: var(--vz-primary);
+      border: 2px solid var(--vz-secondary-bg);
       box-shadow: 0 1px 5px rgba(0,0,0,0.45);
       cursor: pointer;
       margin-top: -6.5px;
@@ -510,134 +484,10 @@ const injectStyles = () => {
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #2563eb;
-      border: 2px solid #ffffff;
+      background: var(--vz-primary);
+      border: 2px solid var(--vz-secondary-bg);
       box-shadow: 0 1px 5px rgba(0,0,0,0.45);
       cursor: pointer;
-    }
-    /* Playback panel: empty space between controls lets clicks fall through
-       to whatever is underneath — only the actual controls themselves are
-       clickable. */
-    .ucma-playback-panel {
-      pointer-events: none;
-    }
-    .ucma-playback-panel > * {
-      pointer-events: auto;
-    }
-    .ucma-mode-tabs {
-      pointer-events: auto;
-    }
-    .ucma-mode-tab {
-      border: none;
-      background: rgba(255,255,255,0.95);
-      color: #334155;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-    .ucma-mode-tab.active {
-      background: #2563eb;
-      color: #fff;
-    }
-    .ucma-view-tabs {
-      display: flex;
-      flex-direction: row;
-      width: 100%;
-      flex-shrink: 0;
-      border-bottom: 1px solid #e5e7eb;
-      background: #f8fafc;
-      padding: 0;
-    }
-    .ucma-view-tab {
-      flex: 1 1 0%;
-      min-width: 0;
-      border: none;
-      border-bottom: 2px solid transparent;
-      background: transparent;
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 10px 6px;
-      cursor: pointer;
-      text-align: center;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      white-space: nowrap;
-      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .ucma-view-tab i {
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-    .ucma-view-tab-label {
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .ucma-view-tab:hover:not(.active) {
-      color: #2563eb;
-      background: #eef2ff;
-    }
-    .ucma-view-tab.active {
-      color: #2563eb;
-      background: #fff;
-      border-bottom-color: #2563eb;
-    }
-    .ucma-view-tab:focus-visible {
-      outline: 2px solid #2563eb;
-      outline-offset: -2px;
-    }
-    @media (max-width: 480px), (max-height: 480px) {
-      .ucma-playback-panel {
-        left: 10px !important;
-        top: 64px !important;
-        transform: none !important;
-        gap: 10px !important;
-      }
-      .ucma-playback-rail {
-        height: 110px !important;
-      }
-      .ucma-playback-play {
-        width: 34px !important;
-        height: 34px !important;
-        font-size: 14px !important;
-      }
-      .ucma-playback-reset {
-        width: 24px !important;
-        height: 24px !important;
-        font-size: 11px !important;
-      }
-      .ucma-playback-speedbtn {
-        width: 30px !important;
-        font-size: 10px !important;
-        padding: 3px 0 !important;
-      }
-      .ucma-mode-tab {
-        font-size: 11px !important;
-        padding: 5px 9px !important;
-      }
-      .ucma-view-tab {
-        font-size: 11px !important;
-        padding: 8px 4px !important;
-        gap: 3px !important;
-      }
-      .ucma-view-tab i {
-        font-size: 13px !important;
-      }
-    }
-    @media (max-width: 380px) {
-      .ucma-tl-card {
-        padding: 5px 7px !important;
-        border-radius: 8px !important;
-      }
-      .ucma-view-tab span.ucma-view-tab-label {
-        display: none;
-      }
     }
   `;
 };
@@ -744,6 +594,7 @@ const renderFormFieldValue = (field) => {
     const fileName = field?.value?.file_name || "View file";
     return (
       <a
+        data-testid="cluster-map-url-link"
         href={url}
         target="_blank"
         rel="noopener noreferrer"
@@ -977,6 +828,12 @@ const UsersClusterMapAll = ({
   onSelectEmployee,
 }) => {
   const { isLoaded } = useJsApiLoader(loaderOptions);
+  const [tilesReady, setTilesReady] = useState(false);
+  // Stop the tile skeleton even if tiles never finish (bad key / offline).
+  useEffect(() => {
+    const id = setTimeout(() => setTilesReady(true), 8000);
+    return () => clearTimeout(id);
+  }, []);
   const mapRef = useRef(null);
 
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -1071,8 +928,44 @@ const UsersClusterMapAll = ({
   const [currentLabel, setCurrentLabel] = useState("");
   const [playbackSpeed, setPlaybackSpeed] = useState(1); // 0.5x / 1x / 1.5x / 2x, default 1x
 
-  // Always-on "marching ants" flow along the route, independent of playback
-  const [antOffset, setAntOffset] = useState(0);
+  const [movingHeading, setMovingHeading] = useState(0);
+  const [checkpoint, setCheckpoint] = useState(null);
+  const [tripDoneVisible, setTripDoneVisible] = useState(false);
+  const [liveFlash, setLiveFlash] = useState(null);
+  const zoomAnimRef = useRef(null);
+
+  // One zoom level per step so the camera glides in/out instead of jumping.
+  const smoothZoomTo = useCallback((target) => {
+    const map = mapRef.current;
+    if (!map) return;
+    clearInterval(zoomAnimRef.current);
+    zoomAnimRef.current = setInterval(() => {
+      const z = Math.round(map.getZoom() || 0);
+      if (z === target) {
+        clearInterval(zoomAnimRef.current);
+        return;
+      }
+      map.setZoom(z + (z < target ? 1 : -1));
+    }, 160);
+  }, []);
+
+  useEffect(() => () => clearInterval(zoomAnimRef.current), []);
+
+  // Always-on "marching ants" flow along the route, independent of playback.
+  // Animated directly on the Google polylines — a React state tick here would
+  // re-render the whole map + timeline ~16 times a second.
+  const antOffsetRef = useRef(0);
+  const antLinesRef = useRef(new Set());
+  const registerAntLine = useCallback((line) => {
+    antLinesRef.current.add(line);
+  }, []);
+  const unregisterAntLine = useCallback((line) => {
+    antLinesRef.current.delete(line);
+  }, []);
+
+  // 0..1 draw-in of the route each time a new route loads; 1 = fully drawn.
+  const [introT, setIntroT] = useState(1);
+  const introRafRef = useRef(null);
 
   const rafRef = useRef(null);
   const startTimeRef = useRef(null);
@@ -1119,7 +1012,7 @@ const UsersClusterMapAll = ({
   );
 
   // ─── Stable map options object. This must NOT be recreated on every
-  //     render — the marching-ants effect ticks `antOffset` every 60ms,
+  //     render — playback re-renders this component every animation frame,
   //     which re-renders this component constantly. If `options` were an
   //     inline object literal, react-google-maps/api would call
   //     map.setOptions(...) on every one of those re-renders, which was
@@ -1127,15 +1020,36 @@ const UsersClusterMapAll = ({
   //     handling and made it look like satellite toggle didn't apply
   //     immediately. Memoizing keeps the object referentially stable so
   //     setOptions is only called when something here actually changes. ──
+  const mapStyles = useMapThemeStyles();
   const mapOptions = useMemo(
     () => ({
       streetViewControl: false,
       fullscreenControl: false,
-      mapTypeControl: true,
-      rotateControl: true,
+      // Map / Satellite is our own toggle (switchMapType) so it reacts instantly.
+      mapTypeControl: false,
+      // 45° aerial imagery at zoom 18+ is far heavier than flat satellite tiles.
+      tilt: 0,
+      rotateControl: false,
+      styles: mapStyles,
     }),
-    [],
+    [mapStyles],
   );
+
+  const [mapType, setMapType] = useState("roadmap");
+  const [mapTilesLoading, setMapTilesLoading] = useState(false);
+
+  const switchMapType = (type) => {
+    const map = mapRef.current;
+    if (!map || type === mapType) return;
+    setMapType(type);
+    setMapTilesLoading(true);
+    window.google.maps.event.addListenerOnce(map, "tilesloaded", () =>
+      setMapTilesLoading(false),
+    );
+    // Cached tiles may never fire "tilesloaded".
+    setTimeout(() => setMapTilesLoading(false), 4000);
+    map.setMapTypeId(type);
+  };
 
   // ─── Stable signature for the employees list. `employees` is a prop and
   //     may arrive as a brand-new array reference on every parent re-render
@@ -1643,14 +1557,22 @@ const UsersClusterMapAll = ({
     const map = mapRef.current;
     map.panTo(liveMarkerPos);
     if ((map.getZoom() || 0) < PLAYBACK_FOLLOW_ZOOM) {
-      map.setZoom(PLAYBACK_FOLLOW_ZOOM);
+      smoothZoomTo(PLAYBACK_FOLLOW_ZOOM);
     }
+    setLiveFlash({
+      ...liveMarkerPos,
+      key: `${liveMarkerPos.lat},${liveMarkerPos.lng},${liveLocation?.timestamp || ""}`,
+    });
 
     const t = setTimeout(() => {
       const el = timelineScrollRef.current;
       if (el) el.scrollTop = el.scrollHeight;
     }, 150);
-    return () => clearTimeout(t);
+    const flashTimer = setTimeout(() => setLiveFlash(null), 2600);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(flashTimer);
+    };
   }, [liveLocation, isLive]);
 
 
@@ -1993,11 +1915,13 @@ const UsersClusterMapAll = ({
       const lat = a.lat + (b.lat - a.lat) * segT;
       const lng = a.lng + (b.lng - a.lng) * segT;
       const near = segT < 0.5 ? a : b;
+      const moved = a.lat !== b.lat || a.lng !== b.lng;
 
       return {
         pos: { lat, lng },
         label: near.timestamp || "",
         nearIndex: near.pathIndex ?? null,
+        heading: moved ? bearingDeg(a, b) : null,
       };
     },
     [playbackPath],
@@ -2043,6 +1967,7 @@ const UsersClusterMapAll = ({
         setMovingPos(r.pos);
         setCurrentLabel(r.label);
         setActiveIndex(r.nearIndex);
+        if (r.heading != null) setMovingHeading(r.heading);
       }
     },
     [computeFromProgress],
@@ -2071,6 +1996,7 @@ const UsersClusterMapAll = ({
         setProgress(1);
         applyProgress(1);
         setIsPlaying(false);
+        setTripDoneVisible(true);
         stopRaf();
         return;
       }
@@ -2088,19 +2014,91 @@ const UsersClusterMapAll = ({
   useEffect(() => {
     if (playbackPath.length < 2 && mapPath.length < 2) return;
     const id = setInterval(() => {
-      setAntOffset((o) => (o + 4) % 140);
+      antOffsetRef.current = (antOffsetRef.current + 4) % 140;
+      const offset = `${antOffsetRef.current}px`;
+      antLinesRef.current.forEach((line) => {
+        const icons = line.get("icons");
+        if (icons && icons.length) {
+          line.set("icons", icons.map((ic) => ({ ...ic, offset })));
+        }
+      });
     }, 60);
     return () => clearInterval(id);
   }, [playbackPath.length, mapPath.length]);
+
+  // ─── Draw the route in from start to end whenever a new route loads.
+  //     Keyed on the first point so live pings appended later don't replay it. ──
+  const introKey =
+    playbackPath.length > 1
+      ? `${dataMode}|${playbackPath[0].lat},${playbackPath[0].lng}`
+      : "";
+  useEffect(() => {
+    if (!introKey) {
+      setIntroT(1);
+      return undefined;
+    }
+    const durationMs = 1600;
+    let start = null;
+    const tick = (now) => {
+      if (start === null) start = now;
+      const t = Math.min((now - start) / durationMs, 1);
+      setIntroT(1 - Math.pow(1 - t, 3));
+      if (t < 1) introRafRef.current = requestAnimationFrame(tick);
+    };
+    setIntroT(0);
+    introRafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(introRafRef.current);
+  }, [introKey]);
 
   // ─── Zoom in once, right when playback starts (not on every frame —
   //     calling setZoom repeatedly mid-pan is what caused the "stuck"
   //     stutter). Playback stopping/finishing doesn't zoom back out on
   //     its own; "Full view" / reset handle that. ────────────────────
   useEffect(() => {
-    if (isPlaying && mapRef.current) {
-      mapRef.current.setZoom(PLAYBACK_FOLLOW_ZOOM);
-    }
+    if (!isPlaying || !mapRef.current) return;
+    setTripDoneVisible(false);
+    const start = computeFromProgress(progress >= 1 ? 0 : progress);
+    if (start) mapRef.current.panTo(start.pos);
+    const routeKm =
+      dataMode === DATA_MODES.LINTAI && matchedRouteMeta.distanceMeters != null
+        ? Number(matchedRouteMeta.distanceMeters) / 1000
+        : summary.km;
+    smoothZoomTo(playbackZoomForKm(routeKm));
+  }, [isPlaying]);
+
+  // ─── Trip finished: celebrate briefly, then glide back out to the whole route ──
+  useEffect(() => {
+    if (!tripDoneVisible) return undefined;
+    const fitTimer = setTimeout(() => {
+      clearInterval(zoomAnimRef.current);
+      const pts =
+        dataMode === DATA_MODES.LINTAI && matchedRouteCoords.length > 0
+          ? matchedRouteCoords
+          : mapPath;
+      if (mapRef.current && pts.length) fitToPath(mapRef.current, pts);
+    }, 900);
+    const hideTimer = setTimeout(() => setTripDoneVisible(false), 3500);
+    return () => {
+      clearTimeout(fitTimer);
+      clearTimeout(hideTimer);
+    };
+  }, [tripDoneVisible]);
+
+  // ─── Checkpoint reached during playback: ripple + info card on the map,
+  //     and bring the matching timeline card into view. ──
+  useEffect(() => {
+    if (!isPlaying || activeIndex == null) return undefined;
+    const p = path[activeIndex];
+    if (!p || !hasValidCoords(p)) return undefined;
+    setCheckpoint({ ...p, key: activeIndex });
+    const card = timelineScrollRef.current?.querySelector(".ucx-card.is-active");
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const t = setTimeout(() => setCheckpoint(null), 2200);
+    return () => clearTimeout(t);
+  }, [activeIndex, isPlaying]);
+
+  useEffect(() => {
+    if (!isPlaying) setCheckpoint(null);
   }, [isPlaying]);
 
   // ─── While playing, keep the map centered on the moving marker for a
@@ -2139,6 +2137,8 @@ const UsersClusterMapAll = ({
   };
 
   const handleReset = () => {
+    clearInterval(zoomAnimRef.current);
+    setTripDoneVisible(false);
     setIsPlaying(false);
     setProgress(0);
     applyProgress(0);
@@ -2151,6 +2151,8 @@ const UsersClusterMapAll = ({
 
   // ─── Refresh → reset everything to initial full view ──────────
   const handleRefresh = () => {
+    clearInterval(zoomAnimRef.current);
+    setTripDoneVisible(false);
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
@@ -2201,6 +2203,8 @@ const UsersClusterMapAll = ({
   //     the native Map/Satellite control now, independent of timeline
   //     clicks. ─────────────────────────────────────────────────────────
   const handleTimelineClick = (p, i) => {
+    clearInterval(zoomAnimRef.current);
+    setTripDoneVisible(false);
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
@@ -2234,6 +2238,8 @@ const UsersClusterMapAll = ({
   // "Full view" — fits the whole route back in frame. Lives as a map
   // overlay control now (moved out of the timeline panel header).
   const resetView = () => {
+    clearInterval(zoomAnimRef.current);
+    setTripDoneVisible(false);
     setIsPlaying(false);
     setProgress(0);
     setMovingPos(null);
@@ -2342,19 +2348,68 @@ const UsersClusterMapAll = ({
     setDateFilter(date ? date.format(ISO_DATE_FORMAT) : "");
   };
 
-  if (!isLoaded) return <p>Loading Map...</p>;
+  if (!isLoaded) return <PageSkeleton stats={false} testId="cluster-map-loading-skeleton" label="Loading map" />;
 
   const isEndpoint = (i) => i === 0 || i === path.length - 1;
 
-  const drawnLinePath =
-    isPlaying || progress > 0 ? getDrawnPath(progress) : mapPath;
+  const isScrubbing = isPlaying || progress > 0;
+  const isDrawingIn = !isScrubbing && introT < 1;
+  const drawnLinePath = isScrubbing
+    ? getDrawnPath(progress)
+    : isDrawingIn
+      ? getDrawnPath(introT)
+      : mapPath;
+  const drawnLintAIPath = isScrubbing
+    ? getDrawnPath(progress)
+    : isDrawingIn
+      ? getDrawnPath(introT)
+      : matchedRouteCoords;
+  const routeStartLabel = mapPath[0]?.timestamp || "";
+  const routeEndLabel = mapPath[mapPath.length - 1]?.timestamp || "";
+  const stopPoints = mapPath.filter((p, i) => {
+    if (i === 0 || i === mapPath.length - 1 || p.formSubmission) return false;
+    if (pointType(p.pathIndex) !== "waiting") return false;
+    const prev = mapPath[i - 1];
+    return !prev || pointType(prev.pathIndex) !== "waiting";
+  });
+  const dashIcon = (color, opacity) => ({
+    icon: { path: "M 0,-1 0,1", strokeOpacity: opacity, strokeColor: color, scale: 3 },
+    offset: "0",
+    repeat: "14px",
+  });
 
   const typeConfig = {
-    start: { color: COLORS.start, icon: "ri-flag-fill", letter: null },
-    end: { color: COLORS.end, icon: "ri-flag-2-fill", letter: null },
-    waiting: { color: COLORS.waiting, icon: null, letter: "W" },
-    travel: { color: COLORS.travel, icon: "ri-car-fill", letter: null },
+    start: { color: COLORS.start, icon: "ri-flag-fill", letter: null, label: "Start" },
+    end: { color: COLORS.end, icon: "ri-flag-2-fill", letter: null, label: "End" },
+    waiting: { color: COLORS.waiting, icon: null, letter: "W", label: "Stop" },
+    travel: { color: COLORS.travel, icon: "ri-car-fill", letter: null, label: "Moving" },
   };
+
+  const renderZigzagSkeleton = () => (
+    <div className="ucx-skel-list">
+      {[0, 1, 2, 3].map((i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            justifyContent: i % 2 === 0 ? "flex-end" : "flex-start",
+          }}
+        >
+          <div className="ucx-skel-card">
+            <div
+              className="ucma-skeleton"
+              style={{ width: "60%", height: "10px", marginBottom: "6px" }}
+            />
+            <div
+              className="ucma-skeleton"
+              style={{ width: "40%", height: "8px", marginBottom: "8px" }}
+            />
+            <div className="ucma-skeleton" style={{ width: "90%", height: "8px" }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   // How far along the vertical spine the progress fill should reach.
   const spineProgressPct =
@@ -2384,15 +2439,9 @@ const UsersClusterMapAll = ({
         : loadingMobile;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        width: "100%",
-      }}
-    >
+    <div className="ucx-root">
       <div
+        className="ucx-layout"
         style={{
           display: "flex",
           flex: 1,
@@ -2402,11 +2451,15 @@ const UsersClusterMapAll = ({
         }}
       >
         {/* ── MAP (left, full height, grows/shrinks with the window) ── */}
-        <div style={{ flex: "1 1 0%", minWidth: 0, position: "relative" }}>
+        <div
+          className="ucx-map-area"
+          style={{ flex: "1 1 0%", minWidth: 0, position: "relative" }}
+        >
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
            center={mapCenter}
             onLoad={onMapLoad}
+            onTilesLoaded={() => setTilesReady(true)}
             options={mapOptions}
           >
             {/* Faint full-route track, always visible underneath
@@ -2419,9 +2472,20 @@ const UsersClusterMapAll = ({
                 <Polyline
                   path={mapPath}
                   options={{
+                    strokeOpacity: 0,
+                    icons: [dashIcon(COLORS.route, isScrubbing || isDrawingIn ? 0.45 : 0.18)],
+                  }}
+                />
+              )}
+            {mapPath.length > 1 &&
+              dataMode !== DATA_MODES.ROAD &&
+              dataMode !== DATA_MODES.LINTAI && (
+                <Polyline
+                  path={drawnLinePath}
+                  options={{
                     strokeColor: COLORS.route,
-                    strokeOpacity: 0.22,
-                    strokeWeight: 4,
+                    strokeOpacity: 0.16,
+                    strokeWeight: 14,
                   }}
                 />
               )}
@@ -2433,22 +2497,24 @@ const UsersClusterMapAll = ({
               dataMode !== DATA_MODES.LINTAI && (
               <Polyline
                 path={drawnLinePath}
+                onLoad={registerAntLine}
+                onUnmount={unregisterAntLine}
                 options={{
                   strokeColor: COLORS.route,
-                  strokeOpacity: 0.9,
-                  strokeWeight: 4,
+                  strokeOpacity: 1,
+                  strokeWeight: 5,
                   icons: [
                     {
                       icon: {
                         path: window.google.maps.SymbolPath
                           .FORWARD_CLOSED_ARROW,
-                        scale: 4,
+                        scale: 3,
                         strokeColor: "#ffffff",
                         strokeWeight: 1,
                         fillColor: COLORS.route,
                         fillOpacity: 1,
                       },
-                      offset: `${antOffset}px`,
+                      offset: `${antOffsetRef.current}px`,
                       repeat: "140px",
                     },
                   ],
@@ -2486,25 +2552,30 @@ const UsersClusterMapAll = ({
             {matchedRouteCoords.length > 1 &&
               dataMode === DATA_MODES.LINTAI && (
                 <>
-                  {(isPlaying || progress > 0) && (
+                  {(isScrubbing || isDrawingIn) && (
                     <Polyline
                       path={matchedRouteCoords}
                       options={{
-                        strokeColor: COLORS.lintAILine,
-                        strokeOpacity: 0.22,
-                        strokeWeight: 5,
+                        strokeOpacity: 0,
+                        icons: [dashIcon(COLORS.lintAILine, 0.45)],
                       }}
                     />
                   )}
                   <Polyline
-                    path={
-                      isPlaying || progress > 0
-                        ? getDrawnPath(progress)
-                        : matchedRouteCoords
-                    }
+                    path={drawnLintAIPath}
                     options={{
                       strokeColor: COLORS.lintAILine,
-                      strokeOpacity: 0.95,
+                      strokeOpacity: 0.16,
+                      strokeWeight: 14,
+                    }}
+                  />
+                  <Polyline
+                    path={drawnLintAIPath}
+                    onLoad={registerAntLine}
+                    onUnmount={unregisterAntLine}
+                    options={{
+                      strokeColor: COLORS.lintAILine,
+                      strokeOpacity: 1,
                       strokeWeight: 5,
                       icons: [
                         {
@@ -2517,7 +2588,7 @@ const UsersClusterMapAll = ({
                             fillColor: COLORS.lintAILine,
                             fillOpacity: 1,
                           },
-                          offset: `${antOffset}px`,
+                          offset: `${antOffsetRef.current}px`,
                           repeat: "120px",
                         },
                       ],
@@ -2586,62 +2657,76 @@ const UsersClusterMapAll = ({
             {/* Start marker (green) with radar ping ring — first valid coords.
                 Hidden on lintAI; that tab's start is the matched route. */}
             {mapPath.length > 0 && dataMode !== DATA_MODES.LINTAI && (
-              <>
-                <OverlayView
-                  position={mapPath[0]}
-                  mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-                >
-                  <div
-                    style={{
-                      width: "26px",
-                      height: "26px",
-                      borderRadius: "50%",
-                      background: COLORS.start,
-                      opacity: 0.5,
-                      transform: "translate(-50%, -50%)",
-                      animation: "ucma-ring 1.8s ease-out infinite",
-                    }}
-                  />
-                </OverlayView>
-                <Marker
-                  position={mapPath[0]}
-                  zIndex={10}
-                  icon={{
-                    path: window.google.maps.SymbolPath.CIRCLE,
-                    scale: 9,
-                    fillColor: COLORS.start,
-                    fillOpacity: 1,
-                    strokeWeight: 3,
-                    strokeColor: "#ffffff",
-                  }}
+              <OverlayView
+                position={mapPath[0]}
+                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+              >
+                <button
+                  data-testid="cluster-map-start-pin-button"
+                  type="button"
+                  className={`ucx-pin is-start${isScrubbing ? " is-compact" : ""}`}
                   onClick={() =>
                     handleMarkerClick(mapPath[0], mapPath[0].pathIndex)
                   }
-                />
-              </>
+                >
+                  <span className="ucx-pin-ring" />
+                  <span className="ucx-pin-dot">
+                    <i className="ri-flag-fill"></i>
+                  </span>
+                  <span className="ucx-pin-label">
+                    Start{routeStartLabel ? ` · ${routeStartLabel}` : ""}
+                  </span>
+                </button>
+              </OverlayView>
             )}
 
             {/* End marker (red) — last valid coords */}
-            {mapPath.length > 1 && dataMode !== DATA_MODES.LINTAI && (
-              <Marker
+            {mapPath.length > 1 && dataMode !== DATA_MODES.LINTAI && !isDrawingIn && (
+              <OverlayView
                 position={mapPath[mapPath.length - 1]}
-                zIndex={10}
-                icon={{
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 9,
-                  fillColor: COLORS.end,
-                  fillOpacity: 1,
-                  strokeWeight: 3,
-                  strokeColor: "#ffffff",
-                }}
-                onClick={() =>
-                  handleMarkerClick(
-                    mapPath[mapPath.length - 1],
-                    mapPath[mapPath.length - 1].pathIndex,
-                  )
-                }
-              />
+                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+              >
+                <button
+                  data-testid="cluster-map-end-pin-button"
+                  type="button"
+                  className={`ucx-pin is-end${isScrubbing ? " is-compact" : ""}`}
+                  onClick={() =>
+                    handleMarkerClick(
+                      mapPath[mapPath.length - 1],
+                      mapPath[mapPath.length - 1].pathIndex,
+                    )
+                  }
+                >
+                  <span className="ucx-pin-dot">
+                    <i className="ri-flag-2-fill"></i>
+                  </span>
+                  <span className="ucx-pin-label">
+                    End{routeEndLabel ? ` · ${routeEndLabel}` : ""}
+                  </span>
+                </button>
+              </OverlayView>
             )}
+
+            {/* Stops — first ping of each stationary stretch */}
+            {dataMode !== DATA_MODES.LINTAI &&
+              !isDrawingIn &&
+              stopPoints.map((p) => (
+                <Marker
+                  key={`stop-marker-${p.pathIndex}`}
+                  position={{ lat: p.lat, lng: p.lng }}
+                  zIndex={9}
+                  title={p.timestamp ? `Stop · ${p.timestamp}` : "Stop"}
+                  icon={{
+                    path: window.google.maps.SymbolPath.CIRCLE,
+                    scale: 6,
+                    fillColor: COLORS.waiting,
+                    fillOpacity: 1,
+                    strokeWeight: 2.5,
+                    strokeColor: "#ffffff",
+                  }}
+                  onClick={() => handleMarkerClick(p, p.pathIndex)}
+                />
+              ))}
 
             {/* Form-submission markers — every point (except start/end, which
                 already carry their own marker above) that has a filled form
@@ -2666,18 +2751,32 @@ const UsersClusterMapAll = ({
 
             {/* Animated moving marker */}
             {movingPos && (
-              <Marker
+              <OverlayView
                 position={movingPos}
-                zIndex={9999}
-                icon={{
-                  path: window.google.maps.SymbolPath.CIRCLE,
-                  scale: 8,
-                  fillColor: COLORS.moving,
-                  fillOpacity: 1,
-                  strokeWeight: 3,
-                  strokeColor: "#ffffff",
-                }}
-              />
+                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+              >
+                <div className={`ucx-runner${isPlaying ? " is-playing" : ""}`}>
+                  <span className="ucx-runner-pulse" />
+                  <span
+                    className="ucx-runner-heading"
+                    style={{ transform: `rotate(${movingHeading}deg)` }}
+                  >
+                    <span className="ucx-runner-arrow" />
+                  </span>
+                  <span className="ucx-runner-avatar">
+                    {(activeEmployee?.first_name || "?").charAt(0).toUpperCase()}
+                    {activeEmployee?.profile_url && (
+                      <img
+                        src={activeEmployee.profile_url}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    )}
+                  </span>
+                </div>
+              </OverlayView>
             )}
 
             {/* Live marker — driven by the websocket, independent of playback */}
@@ -2744,28 +2843,64 @@ const UsersClusterMapAll = ({
                 position={movingPos}
                 mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
               >
-                <motion.div
-                  animate={{ y: [0, -4, 0] }}
-                  transition={{
-                    duration: 1.6,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                  style={{
-                    transform: "translate(-50%, -170%)",
-                    background: "#ffffff",
-                    color: "#000000",
-                    padding: "3px 10px",
-                    borderRadius: "14px",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-                    border: `1px solid ${COLORS.travel}`,
-                  }}
-                >
-                  {currentLabel}
-                </motion.div>
+                <div className="ucx-moving-chip-anchor">
+                  <motion.div
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{
+                      duration: 1.6,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="ucx-moving-chip"
+                  >
+                    <i className="ri-time-line"></i>
+                    {currentLabel}
+                  </motion.div>
+                </div>
+              </OverlayView>
+            )}
+
+            {/* Checkpoint reached during playback */}
+            {checkpoint && (
+              <OverlayView
+                key={`checkpoint-${checkpoint.key}`}
+                position={{ lat: checkpoint.lat, lng: checkpoint.lng }}
+                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+              >
+                <div className="ucx-checkpoint">
+                  <span className="ucx-checkpoint-ripple" />
+                  <span className="ucx-checkpoint-ripple is-delayed" />
+                  <span className="ucx-checkpoint-dot" />
+                  <div className="ucx-checkpoint-card">
+                    <div className="ucx-checkpoint-time">
+                      <i className="ri-map-pin-time-line"></i>
+                      {checkpoint.timestamp || "Location"}
+                    </div>
+                    {checkpoint.address && (
+                      <div className="ucx-checkpoint-address">{checkpoint.address}</div>
+                    )}
+                  </div>
+                </div>
+              </OverlayView>
+            )}
+
+            {/* Live location just updated */}
+            {liveFlash && (
+              <OverlayView
+                key={`live-flash-${liveFlash.key}`}
+                position={{ lat: liveFlash.lat, lng: liveFlash.lng }}
+                mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+              >
+                <div className="ucx-checkpoint is-live">
+                  <span className="ucx-checkpoint-ripple" />
+                  <span className="ucx-checkpoint-ripple is-delayed" />
+                  <div className="ucx-checkpoint-card">
+                    <div className="ucx-checkpoint-time">
+                      <span className="ucx-live-dot" />
+                      Location updated
+                    </div>
+                  </div>
+                </div>
               </OverlayView>
             )}
 
@@ -2781,25 +2916,23 @@ const UsersClusterMapAll = ({
                       alignItems: "center",
                       justifyContent: "space-between",
                       gap: "8px",
+                      padding: "10px 12px 0",
                     }}
                   >
                     <h6 className="lc-infowindow-title" style={{ margin: 0 }}>
-                      📍 {selectedMarker.count} Record
+                      <i
+                        className="ri-map-pin-2-fill"
+                        style={{ color: "var(--vz-danger)" }}
+                      ></i>
+                      {selectedMarker.count} Record
                       {selectedMarker.count > 1 ? "s" : ""}
                     </h6>
                     <button
+                      data-testid="cluster-map-close-button"
+                      type="button"
                       onClick={handleCloseClick}
                       title="Close"
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        cursor: "pointer",
-                        fontSize: "16px",
-                        lineHeight: 1,
-                        color: "#64748b",
-                        padding: "2px",
-                        flexShrink: 0,
-                      }}
+                      className="ucx-iw-close"
                     >
                       <i className="ri-close-line"></i>
                     </button>
@@ -2831,116 +2964,30 @@ const UsersClusterMapAll = ({
                               {user.address}
                             </div>
                             {user.customStatusInfo && (
-                              <div
-                                style={{
-                                  marginTop: "4px",
-                                  fontSize: "11px",
-                                  color: "#334155",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "4px",
-                                  background: "#f1f5f9",
-                                  borderRadius: "10px",
-                                  padding: "2px 8px",
-                                }}
-                              >
+                              <div className="ucx-iw-status">
                                 <span>{user.customStatusInfo.icon}</span>
                                 <span>{user.customStatusInfo.name}</span>
                               </div>
                             )}
                             {user.formSubmission && (
                               <button
+                                data-testid={testId("cluster-map-form-details", itemTestKey(user), "button")}
                                 type="button"
                                 onClick={(e) => openFormModal(user, e)}
-                                style={{
-                                  width: "100%",
-                                  minHeight: "36px",
-                                  marginTop: "8px",
-                                  padding: "5px 8px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "7px",
-                                  border: "1px solid #2563eb",
-                                  borderRadius: "7px",
-                                  background: "#eff6ff",
-                                  color: "#2563eb",
-                                  cursor: "pointer",
-                                  fontFamily: "inherit",
-                                  textAlign: "left",
-                                  boxSizing: "border-box",
-                                }}
+                                className="ucx-iw-form"
                               >
-                                {/* Icon */}
-                                <span
-                                  style={{
-                                    width: "24px",
-                                    height: "24px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
-                                    borderRadius: "5px",
-                                    background: "#2563eb",
-                                    color: "#fff",
-                                    fontSize: "14px",
-                                  }}
-                                >
+                                <span className="ucx-iw-form-icon">
                                   <i className="ri-file-list-3-line"></i>
                                 </span>
-
-                                {/* Title */}
-                                <span
-                                  style={{
-                                    fontSize: "11px",
-                                    fontWeight: 700,
-                                    color: "#1d4ed8",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
+                                <span className="ucx-iw-form-title">
                                   Form details
                                 </span>
-
-                                {/* Divider */}
                                 {user.customFormInfo?.name && (
-                                  <span
-                                    style={{
-                                      width: "1px",
-                                      height: "16px",
-                                      background: "#93c5fd",
-                                      margin: "0 2px",
-                                      flexShrink: 0,
-                                    }}
-                                  />
-                                )}
-
-                                {/* Form name */}
-                                {user.customFormInfo?.name && (
-                                  <span
-                                    style={{
-                                      flex: 1,
-                                      minWidth: 0,
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                      fontSize: "10px",
-                                      fontWeight: 500,
-                                      color: "#64748b",
-                                    }}
-                                  >
+                                  <span className="ucx-iw-form-name">
                                     {user.customFormInfo.name}
                                   </span>
                                 )}
-
-                                {/* Arrow */}
-                                <i
-                                  className="ri-arrow-right-s-line"
-                                  style={{
-                                    fontSize: "18px",
-                                    color: "#2563eb",
-                                    marginLeft: "auto",
-                                    flexShrink: 0,
-                                  }}
-                                ></i>
+                                <i className="ri-arrow-right-s-line"></i>
                               </button>
                             )}
                           </div>
@@ -2952,44 +2999,15 @@ const UsersClusterMapAll = ({
               </InfoWindow>
             )}
           </GoogleMap>
+          {!tilesReady && <MapSkeleton overlay testId="cluster-map-tiles-loading-skeleton" />}
 
           {/* ── Loading state: employee/date selected, request in flight ── */}
           {activeEmployee && dateFilter && loadingLocations && (
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                pointerEvents: "none",
-                zIndex: 4,
-                background: "rgba(255,255,255,0.6)",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "10px",
-                }}
-              >
-                <div
-                  className="ucma-skeleton"
-                  style={{
-                    width: "160px",
-                    height: "160px",
-                    borderRadius: "50%",
-                  }}
-                />
-                <div
-                  className="ucma-skeleton"
-                  style={{ width: "140px", height: "14px" }}
-                />
+            <div className="ucx-map-overlay is-loading">
+              <div className="ucx-map-card ucx-glass" role="status" aria-label="Loading route" data-testid="cluster-map-route-loading-skeleton" style={{ minWidth: 240 }}>
+                <Skel circle h={44} style={{ margin: "0 auto 12px" }} />
+                <Skel w="70%" h={14} style={{ margin: "0 auto 8px" }} />
+                <Skel w="50%" h={10} style={{ margin: "0 auto" }} />
               </div>
             </div>
           )}
@@ -2999,74 +3017,29 @@ const UsersClusterMapAll = ({
             dateFilter &&
             path.length === 0 &&
             !loadingLocations && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  pointerEvents: "none",
-                  zIndex: 4,
-                }}
-              >
-                <div
-                  style={{
-                    background: "rgba(255,255,255,0.95)",
-                    padding: "14px 20px",
-                    borderRadius: "10px",
-                    boxShadow: "0 2px 10px rgba(0,0,0,0.15)",
-                    textAlign: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: 600,
-                      color: "#374151",
-                    }}
-                  >
+              <div className="ucx-map-overlay">
+                <div className="ucx-map-card ucx-glass">
+                  <span className="ucx-map-card-icon">
+                    <i className="ri-map-pin-line"></i>
+                  </span>
+                  <div className="ucx-map-card-title">
                     No location data for this date
                   </div>
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "#94a3b8",
-                      marginTop: "2px",
-                    }}
-                  >
+                  <div className="ucx-map-card-sub">
                     Try another date from the calendar
                   </div>
                 </div>
               </div>
             )}
 
-          {/* ── Map overlay controls, top-center: GPS / Road / Both tabs ──
-              Switches which coordinate fields (`latitude`/`longitude` vs
-              OSRM-snapped `formatted_latitude`/`formatted_longitude`, or
-              both overlaid together) build the path shown below. Only
-              meaningful for the Location Timeline tab. Centered
-              horizontally so it doesn't collide with the Refresh/Full-view
-              controls on the right. ────────────────────────────────────── */}
+          {/* ── Map overlay controls, top-center: Normal / Road / Both / lintAI.
+              Switches which coordinate fields build the path shown below.
+              Only meaningful for the Location Timeline tab. ── */}
           {path.length > 0 && activeTab === TIMELINE_TABS.LOCATION && (
-            <div
-              className="ucma-mode-tabs"
-              style={{
-                position: "absolute",
-                top: "12px",
-                left: "50%",
-                transform: "translateX(-50%)",
-                display: "flex",
-                borderRadius: "8px",
-                overflow: "hidden",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                zIndex: 5,
-              }}
-            >
+            <div className="ucma-mode-tabs ucx-map-seg ucx-glass">
               <button
+                data-testid="cluster-map-normal-button"
+                type="button"
                 className={`ucma-mode-tab${dataMode === DATA_MODES.GPS ? " active" : ""}`}
                 onClick={() => setDataMode(DATA_MODES.GPS)}
                 title="Raw GPS coordinates"
@@ -3074,6 +3047,8 @@ const UsersClusterMapAll = ({
                 Normal
               </button>
               <button
+                data-testid="cluster-map-road-button"
+                type="button"
                 className={`ucma-mode-tab${dataMode === DATA_MODES.ROAD ? " active" : ""}`}
                 onClick={() => setDataMode(DATA_MODES.ROAD)}
                 title="OSRM road-snapped coordinates"
@@ -3081,6 +3056,8 @@ const UsersClusterMapAll = ({
                 Road
               </button>
               <button
+                data-testid="cluster-map-both-button"
+                type="button"
                 className={`ucma-mode-tab${dataMode === DATA_MODES.BOTH ? " active" : ""}`}
                 onClick={() => setDataMode(DATA_MODES.BOTH)}
                 title="Show both GPS and road-snapped routes"
@@ -3088,6 +3065,8 @@ const UsersClusterMapAll = ({
                 Both
               </button>
               <button
+                data-testid="cluster-map-lint-ai-button"
+                type="button"
                 className={`ucma-mode-tab${dataMode === DATA_MODES.LINTAI ? " active" : ""}`}
                 onClick={() => setDataMode(DATA_MODES.LINTAI)}
                 title="lintAI — continuous OSRM road-matched route (fetched only when this tab is selected)"
@@ -3106,73 +3085,63 @@ const UsersClusterMapAll = ({
             dataMode === DATA_MODES.LINTAI &&
             !loadingMatchedRoute &&
             matchedRouteCoords.length === 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "56px",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                  background: "rgba(255,255,255,0.95)",
-                  border: "1px solid #e2e5ee",
-                  borderRadius: "8px",
-                  padding: "6px 12px",
-                  fontSize: "12px",
-                  color: "#888",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                  zIndex: 5,
-                }}
-              >
+              <div className="ucx-map-note ucx-glass">
+                <i className="ri-information-line"></i>
                 No lintAI route available for this date
               </div>
             )}
 
-          {/* ── Map overlay controls, top-right: Refresh + Full view ──
-              Moved out of the timeline panel so they sit on the map itself. ── */}
-          {path.length > 0 && (
-            <div
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                display: "flex",
-                gap: "6px",
-                zIndex: 5,
-              }}
+          {/* ── Map / Satellite toggle, top-left ── */}
+          <div className="ucx-maptype ucx-glass">
+            <button
+              data-testid="cluster-map-map-view-button"
+              type="button"
+              className={`ucx-maptype-btn${mapType === "roadmap" ? " active" : ""}`}
+              onClick={() => switchMapType("roadmap")}
             >
+              <i
+                className={
+                  mapTilesLoading && mapType === "roadmap"
+                    ? "ri-loader-4-line is-spin"
+                    : "ri-map-2-line"
+                }
+              ></i>
+              Map
+            </button>
+            <button
+              data-testid="cluster-map-satellite-view-button"
+              type="button"
+              className={`ucx-maptype-btn${mapType === "hybrid" ? " active" : ""}`}
+              onClick={() => switchMapType("hybrid")}
+            >
+              <i
+                className={
+                  mapTilesLoading && mapType === "hybrid"
+                    ? "ri-loader-4-line is-spin"
+                    : "ri-earth-line"
+                }
+              ></i>
+              Satellite
+            </button>
+          </div>
+
+          {/* ── Map overlay controls, top-right: Refresh + Full view ── */}
+          {path.length > 0 && (
+            <div className="ucx-map-tools">
               <button
+                data-testid="cluster-map-refresh-button"
+                type="button"
                 onClick={handleRefresh}
-                style={{
-                  border: "none",
-                  background: "rgba(255,255,255,0.95)",
-                  color: "#334155",
-                  borderRadius: "8px",
-                  padding: "6px 10px",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
+                className="ucx-map-btn ucx-glass"
                 title="Refresh"
               >
                 <i className="ri-refresh-line"></i>
               </button>
               <button
+                data-testid="cluster-map-full-view-button"
+                type="button"
                 onClick={resetView}
-                style={{
-                  border: "none",
-                  background: "rgba(255,255,255,0.95)",
-                  color: "#334155",
-                  borderRadius: "8px",
-                  padding: "6px 10px",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
+                className="ucx-map-btn ucx-glass"
                 title="Full view"
               >
                 <i className="ri-focus-3-line"></i>
@@ -3189,48 +3158,64 @@ const UsersClusterMapAll = ({
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  style={{
-                    position: "absolute",
-                    top: "56px",
-                    right: "12px",
-                    background: "rgba(255,255,255,0.95)",
-                    padding: "6px 14px",
-                    borderRadius: "20px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    fontSize: "12px",
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    zIndex: 5,
-                  }}
+                  className="ucx-map-chip ucx-glass"
                 >
-                  {isPlaying && (
-                    <span
-                      className="ucma-liveblink"
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: COLORS.end,
-                        display: "inline-block",
-                      }}
-                    />
-                  )}
+                  <span className="ucx-map-chip-icon">
+                    {isPlaying ? (
+                      <span
+                        className="ucma-liveblink"
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "var(--vz-danger)",
+                          display: "inline-block",
+                        }}
+                      />
+                    ) : (
+                      <i className="ri-route-line"></i>
+                    )}
+                  </span>
                   <span>
-                    {distanceCovered} /{" "}
-                    {dataMode === DATA_MODES.LINTAI &&
-                    matchedRouteMeta.distanceMeters != null
-                      ? `${(Number(matchedRouteMeta.distanceMeters) / 1000).toFixed(1)} Km`
-                      : summary.distance}
+                    {distanceCovered}{" "}
+                    <span className="ucx-map-chip-total">
+                      /{" "}
+                      {dataMode === DATA_MODES.LINTAI &&
+                      matchedRouteMeta.distanceMeters != null
+                        ? `${(Number(matchedRouteMeta.distanceMeters) / 1000).toFixed(1)} Km`
+                        : summary.distance}
+                    </span>
                   </span>
                 </motion.div>
               )}
           </AnimatePresence>
 
+          {/* ── Trip complete banner, shown briefly when playback reaches the end ── */}
+          <AnimatePresence>
+            {tripDoneVisible && (
+              <motion.div
+                key="ucx-trip-done"
+                initial={{ opacity: 0, y: -12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -12, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="ucx-trip-done ucx-glass"
+              >
+                <span className="ucx-trip-done-icon">
+                  <i className="ri-checkbox-circle-fill"></i>
+                </span>
+                <div>
+                  <div className="ucx-trip-done-title">Trip complete</div>
+                  <div className="ucx-trip-done-sub">
+                    {summary.distance} · {summary.duration}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* ── Playback controls — vertical panel, left side of the map.
-              Only meaningful for the Location Timeline tab (playback
-              animates the GPS/road route). ─────────────────────────── */}
+              Only meaningful for the Location Timeline tab. ── */}
           {activeTab === TIMELINE_TABS.LOCATION && playbackPath.length > 1 && (
             <div
               className="ucma-playback-panel"
@@ -3242,7 +3227,7 @@ const UsersClusterMapAll = ({
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: "16px",
+                gap: "14px",
                 zIndex: 5,
               }}
             >
@@ -3254,46 +3239,26 @@ const UsersClusterMapAll = ({
                   width: "20px",
                   display: "flex",
                   justifyContent: "center",
-                  filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.35))",
                 }}
               >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    bottom: 0,
-                    width: "4px",
-                    borderRadius: "4px",
-                    background: "rgba(255,255,255,0.85)",
-                  }}
-                />
+                <div className="ucx-pb-track" />
                 <motion.div
+                  className="ucx-pb-fill"
                   animate={{ height: `${progress * 100}%` }}
                   transition={{ duration: isPlaying ? 0 : 0.15 }}
-                  style={{
-                    position: "absolute",
-                    bottom: 0,
-                    width: "4px",
-                    borderRadius: "4px",
-                    background: COLORS.travel,
-                  }}
                 />
                 {dataMode !== DATA_MODES.LINTAI &&
                   mapPath.map((_, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      position: "absolute",
-                      bottom: `${(i / (mapPath.length - 1)) * 100}%`,
-                      width: "10px",
-                      height: "2px",
-                      background: "#ffffff",
-                      transform: "translateY(1px)",
-                      pointerEvents: "none",
-                    }}
-                  />
-                ))}
+                    <span
+                      key={i}
+                      className="ucx-pb-tick"
+                      style={{
+                        bottom: `${(i / (mapPath.length - 1)) * 100}%`,
+                      }}
+                    />
+                  ))}
                 <input
+                  data-testid="cluster-map-progress-input"
                   type="range"
                   min={0}
                   max={1}
@@ -3316,160 +3281,76 @@ const UsersClusterMapAll = ({
               </div>
 
               <motion.button
+                data-testid="cluster-map-play-button"
+                type="button"
                 onClick={togglePlay}
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ scale: 1.06 }}
-                className="ucma-playback-play"
-                style={{
-                  flexShrink: 0,
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  border: "none",
-                  background: COLORS.travel,
-                  color: "#fff",
-                  fontSize: "16px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 3px 10px rgba(37,99,235,0.5)",
-                }}
+                className="ucma-playback-play ucx-pb-play"
                 title={isPlaying ? "Pause" : progress > 0 ? "Resume" : "Play"}
               >
-                {isPlaying ? "❚❚" : "▶"}
+                <i className={isPlaying ? "ri-pause-fill" : "ri-play-fill"}></i>
               </motion.button>
 
               <button
+                data-testid="cluster-map-reset-button"
+                type="button"
                 onClick={handleReset}
-                className="ucma-playback-reset"
-                style={{
-                  flexShrink: 0,
-                  width: "28px",
-                  height: "28px",
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "rgba(255,255,255,0.95)",
-                  color: "#374151",
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-                }}
+                className="ucma-playback-reset ucx-pb-reset ucx-glass"
                 title="Reset"
               >
-                ⟲
+                <i className="ri-restart-line"></i>
               </button>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
+              <div className="ucx-pb-speeds ucx-glass">
                 {SPEED_OPTIONS.map((s) => (
                   <button
+                    data-testid={testId("cluster-map-x", itemTestKey(s), "button")}
                     key={s}
+                    type="button"
                     onClick={() => setPlaybackSpeed(s)}
-                    className="ucma-playback-speedbtn"
-                    style={{
-                      border: "none",
-                      borderRadius: "10px",
-                      padding: "4px 0",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      width: "36px",
-                      background:
-                        playbackSpeed === s
-                          ? COLORS.travel
-                          : "rgba(255,255,255,0.95)",
-                      color: playbackSpeed === s ? "#fff" : "#374151",
-                      boxShadow:
-                        playbackSpeed === s
-                          ? "0 2px 8px rgba(37,99,235,0.5)"
-                          : "0 2px 6px rgba(0,0,0,0.25)",
-                    }}
+                    className={`ucma-playback-speedbtn${playbackSpeed === s ? " active" : ""}`}
                     title={`${s}x speed`}
                   >
                     {s}x
                   </button>
                 ))}
               </div>
+
+              <button
+                data-testid="cluster-map-speed-cycle-button"
+                type="button"
+                className="ucx-pb-speed-cycle ucx-glass"
+                title="Change speed"
+                onClick={() =>
+                  setPlaybackSpeed(
+                    SPEED_OPTIONS[(SPEED_OPTIONS.indexOf(playbackSpeed) + 1) % SPEED_OPTIONS.length],
+                  )
+                }
+              >
+                {playbackSpeed}x
+              </button>
             </div>
           )}
         </div>
 
         {/* ── TIMELINE (right) ── */}
-        <div
+        <aside
+          className="ucx-panel"
           style={{
             flex: `0 0 ${TIMELINE_WIDTH_CLAMP}`,
             width: TIMELINE_WIDTH_CLAMP,
-            minWidth: 0,
-            minHeight: 0,
-            overflow: "hidden",
-            borderLeft: "1px solid #e5e7eb",
-            display: "flex",
-            flexDirection: "column",
-            background: "#fff",
           }}
         >
           {/* ── Filters (shared across all 3 tabs) ── */}
-          <div
-            className="ucma-tl-filterbar"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              padding: "12px 14px",
-              borderBottom: "1px solid #e5e7eb",
-              background: "#fafbfc",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                justifyContent: "flex-end",
-              }}
-            >
-              <i
-                className="ri-building-line"
-                style={{ color: "#64748b", fontSize: "14px", flexShrink: 0 }}
-              ></i>
-              <Input
-                type="select"
-                bsSize="sm"
-                value={deptFilter}
-                onChange={(e) => setDeptFilter(e.target.value)}
-                style={compactSelectStyle}
-              >
-                <option value="All">All Departments</option>
-                {departmentOptions.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </Input>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                justifyContent: "flex-end",
-              }}
-            >
-              <i
-                className="ri-user-line"
-                style={{ color: "#64748b", fontSize: "14px", flexShrink: 0 }}
-              ></i>
-              <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="ucx-filters">
+            <div className="ucx-field is-full" title="Employee">
+              <div className="ucx-control">
+                <i className="ri-user-3-line ucx-control-icon"></i>
                 <Select
-                  id="ucma_employee_select"
+                  testId="cluster-map-ucma-employee-select"
+                  inputId="ucma_employee_select"
+                  aria-label="Employee"
                   name="ucma_employee_select"
                   isMulti={false}
                   isClearable={false}
@@ -3486,20 +3367,33 @@ const UsersClusterMapAll = ({
               </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                justifyContent: "flex-end",
-              }}
-            >
-              <i
-                className="ri-calendar-line"
-                style={{ color: "#64748b", fontSize: "14px", flexShrink: 0 }}
-              ></i>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="ucx-field" title="Department">
+              <div className="ucx-control">
+                <i className="ri-building-line ucx-control-icon"></i>
+                <Input
+                  data-testid="cluster-map-department-select"
+                  id="ucma_dept_select"
+                  aria-label="Department"
+                  type="select"
+                  className="ucx-select"
+                  value={deptFilter}
+                  onChange={(e) => setDeptFilter(e.target.value)}
+                >
+                  <option data-testid="cluster-map-ucma-dept-select-option-all" value="All">All Depts</option>
+                  {departmentOptions.map((d) => (
+                    <option data-testid={testId("cluster-map-ucma-dept-select-option", itemTestKey(d))} key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </Input>
+              </div>
+            </div>
+
+            <div className="ucx-field is-date" title="Date">
+              <div className="ucx-control">
+                <i className="ri-calendar-event-line ucx-control-icon"></i>
                 <DatePicker
+                  aria-label="Date"
                   value={datePickerValue}
                   format="DD MMM YYYY"
                   allowClear={false}
@@ -3507,31 +3401,37 @@ const UsersClusterMapAll = ({
                   disabled={!activeEmployee}
                   disabledDate={disabledDate}
                   onChange={handleDatePickerChange}
-                  style={compactDatePickerStyle}
+                  suffixIcon={<i className="ri-arrow-down-s-line"></i>}
                   popupClassName="ucma-date-popup"
                 />
               </div>
             </div>
           </div>
 
-          {/* ── View tabs: Location / Activity / Mobile Timeline — a single
-              row, placed right under the filters. These control ONLY what
-              the panel below renders — the employee/date filters and the
-              map itself stay shared across all three. Location is the
-              default tab on load. ─────────────────────────────────────── */}
-          <div className="ucma-view-tabs" role="tablist">
+          {/* ── View tabs: Location / Activity / Mobile Timeline. These control
+              ONLY what the panel below renders — the employee/date filters
+              and the map itself stay shared across all three. ── */}
+          <div className="ucx-tabs" role="tablist">
             {Object.values(TIMELINE_TABS).map((tabKey) => (
               <button
+                data-testid={testId("cluster-map", itemTestKey(tabKey), "button")}
                 key={tabKey}
                 type="button"
                 role="tab"
                 aria-selected={activeTab === tabKey}
-                className={`ucma-view-tab${activeTab === tabKey ? " active" : ""}`}
+                className={`ucx-tab${activeTab === tabKey ? " active" : ""}`}
                 onClick={() => handleTimelineTabChange(tabKey)}
                 title={TIMELINE_TAB_META[tabKey].label}
               >
+                {activeTab === tabKey && (
+                  <motion.span
+                    layoutId="ucx-tab-pill"
+                    className="ucx-tab-pill"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
                 <i className={TIMELINE_TAB_META[tabKey].icon}></i>
-                <span className="ucma-view-tab-label">
+                <span className="ucx-tab-label">
                   {TIMELINE_TAB_META[tabKey].shortLabel}
                 </span>
               </button>
@@ -3539,322 +3439,111 @@ const UsersClusterMapAll = ({
           </div>
 
           {/* Header — label + count switch with the active tab */}
-          <div
-            style={{
-              padding: "12px 16px",
-              borderBottom: "1px solid #f0f0f0",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span style={{ fontWeight: 600, fontSize: "14px" }}>
-              {TIMELINE_TAB_META[activeTab].label} ({panelCount})
+          <div className="ucx-head">
+            <div className="ucx-head-title">
+              <span className="ucx-head-icon">
+                <i className={TIMELINE_TAB_META[activeTab].icon}></i>
+              </span>
+              {TIMELINE_TAB_META[activeTab].label}
+              <span className="ucx-count">{panelCount}</span>
               {activeTab === TIMELINE_TABS.LOCATION &&
                 isLive &&
                 isViewingToday && (
-                  <span
-                    style={{
-                      marginLeft: "8px",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: "#16a34a",
-                      background: "#dcfce7",
-                      borderRadius: "10px",
-                      padding: "2px 8px",
-                      verticalAlign: "middle",
-                    }}
-                  >
-                    <span
-                      className="ucma-liveblink"
-                      style={{
-                        width: "6px",
-                        height: "6px",
-                        borderRadius: "50%",
-                        background: "#22c55e",
-                        display: "inline-block",
-                      }}
-                    />
+                  <span className="ucx-live">
+                    <span className="ucx-live-dot" />
                     LIVE
                   </span>
                 )}
-              {panelLoading && (
-                <span
-                  style={{
-                    marginLeft: "8px",
-                    fontSize: "11px",
-                    fontWeight: 500,
-                    color: "#64748b",
-                  }}
-                >
-                  Loading…
-                </span>
-              )}
-            </span>
+            </div>
+            {panelLoading && (
+              <span role="status" aria-label="Loading" data-testid="cluster-map-panel-loading-skeleton">
+                <Skel w={64} h={20} pill />
+              </span>
+            )}
           </div>
 
           {/* Trip summary — Location tab only */}
           {activeTab === TIMELINE_TABS.LOCATION && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-around",
-                padding: "14px 10px",
-                borderBottom: "1px solid #f0f0f0",
-                textAlign: "center",
-              }}
-            >
-              <div>
-                <i
-                  className="ri-time-line"
-                  style={{ color: "#ef4444", fontSize: "20px" }}
-                ></i>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "15px",
-                    marginTop: "2px",
-                  }}
-                >
-                  {summary.duration}
-                </div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#94a3b8",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  DURATION
-                </div>
+            <div className="ucx-stats">
+              <div className="ucx-stat tone-danger">
+                <span className="ucx-stat-icon">
+                  <i className="ri-time-line"></i>
+                </span>
+                <div className="ucx-stat-value">{summary.duration}</div>
+                <div className="ucx-stat-label">Duration</div>
               </div>
-
-              <div>
-                <i
-                  className="ri-dashboard-3-line"
-                  style={{ color: "#10b981", fontSize: "20px" }}
-                ></i>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "15px",
-                    marginTop: "2px",
-                  }}
-                >
-                  {summary.distance}
-                </div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#94a3b8",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  DISTANCE
-                </div>
+              <div className="ucx-stat tone-success">
+                <span className="ucx-stat-icon">
+                  <i className="ri-route-line"></i>
+                </span>
+                <div className="ucx-stat-value">{summary.distance}</div>
+                <div className="ucx-stat-label">Distance</div>
               </div>
-
-              <div>
-                <i
-                  className="ri-map-pin-2-line"
-                  style={{ color: "#3b82f6", fontSize: "20px" }}
-                ></i>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "15px",
-                    marginTop: "2px",
-                  }}
-                >
-                  {path.length || "-"}
-                </div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#94a3b8",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  LOCATIONS
-                </div>
+              <div className="ucx-stat">
+                <span className="ucx-stat-icon">
+                  <i className="ri-map-pin-2-line"></i>
+                </span>
+                <div className="ucx-stat-value">{path.length || "-"}</div>
+                <div className="ucx-stat-label">Locations</div>
               </div>
             </div>
           )}
 
           {/* Mobile tab summary — on/off segment counts */}
           {activeTab === TIMELINE_TABS.MOBILE && !loadingMobile && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-around",
-                padding: "14px 10px",
-                borderBottom: "1px solid #f0f0f0",
-                textAlign: "center",
-              }}
-            >
-              <div>
-                <i
-                  className="ri-map-pin-2-line"
-                  style={{ color: "#ee1e1e", fontSize: "20px" }}
-                ></i>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "15px",
-                    marginTop: "2px",
-                  }}
-                >
+            <div className="ucx-stats is-2">
+              <div className="ucx-stat tone-danger">
+                <span className="ucx-stat-icon">
+                  <i className="ri-map-pin-2-line"></i>
+                </span>
+                <div className="ucx-stat-value">
                   {locationToggleSegments.length}
                 </div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#94a3b8",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  LOCATION-OFF SPELLS
-                </div>
+                <div className="ucx-stat-label">Location-off spells</div>
               </div>
-              <div>
-                <i
-                  className="ri-wifi-off-line"
-                  style={{ color: "#ee1e1e", fontSize: "20px" }}
-                ></i>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "15px",
-                    marginTop: "2px",
-                  }}
-                >
+              <div className="ucx-stat tone-warning">
+                <span className="ucx-stat-icon">
+                  <i className="ri-wifi-off-line"></i>
+                </span>
+                <div className="ucx-stat-value">
                   {internetToggleSegments.length}
                 </div>
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#94a3b8",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  INTERNET-OFF SPELLS
-                </div>
+                <div className="ucx-stat-label">Internet-off spells</div>
               </div>
             </div>
           )}
 
           {/* ── Body — switches per active tab ── */}
-          <div
-            className="ucma-scroll"
-            ref={timelineScrollRef}
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              overflowX: "hidden",
-              padding: "14px 6px",
-            }}
-          >
+          <div className="ucx-body" ref={timelineScrollRef}>
             {/* ══════════════ LOCATION TIMELINE (zigzag) ══════════════ */}
             {activeTab === TIMELINE_TABS.LOCATION && (
               <>
-                {loadingLocations && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                      padding: "4px 10px",
-                    }}
-                  >
-                    {[0, 1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "flex",
-                          justifyContent:
-                            i % 2 === 0 ? "flex-end" : "flex-start",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "70%",
-                            maxWidth: "200px",
-                            borderRadius: "10px",
-                            padding: "8px 10px",
-                            border: "1px solid #eef0f3",
-                            background: "#f8fafc",
-                          }}
-                        >
-                          <div
-                            className="ucma-skeleton"
-                            style={{
-                              width: "60%",
-                              height: "10px",
-                              marginBottom: "6px",
-                            }}
-                          />
-                          <div
-                            className="ucma-skeleton"
-                            style={{
-                              width: "40%",
-                              height: "8px",
-                              marginBottom: "8px",
-                            }}
-                          />
-                          <div
-                            className="ucma-skeleton"
-                            style={{ width: "90%", height: "8px" }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                {loadingLocations && renderZigzagSkeleton()}
+
+                {path.length === 0 && !loadingLocations && (
+                  <div className="ucx-empty">
+                    <span className="ucx-empty-icon">
+                      <i className="ri-map-pin-line"></i>
+                    </span>
+                    <div className="ucx-empty-title">No location history</div>
+                    <div className="ucx-empty-sub">
+                      Nothing was recorded for this date
+                    </div>
                   </div>
                 )}
 
-                {path.length === 0 && !loadingLocations && (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      color: "#94a3b8",
-                      fontSize: "12px",
-                      padding: "24px 12px",
-                    }}
-                  >
-                    No location history for this date
-                  </div>
-                )}
                 <div
-                  style={{
-                    position: "relative",
-                    display: loadingLocations ? "none" : "block",
-                  }}
+                  className="ucx-zz"
+                  style={{ display: loadingLocations ? "none" : "block" }}
                 >
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      bottom: 0,
-                      left: "50%",
-                      width: "2px",
-                      background: "#e5e7eb",
-                      transform: "translateX(-1px)",
-                    }}
-                  />
-                  <motion.div
-                    animate={{ height: `${spineProgressPct}%` }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: "50%",
-                      width: "2px",
-                      background: COLORS.travel,
-                      transform: "translateX(-1px)",
-                    }}
-                  />
+                  {path.length > 0 && <div className="ucx-spine" />}
+                  {path.length > 0 && (
+                    <motion.div
+                      className="ucx-spine-fill"
+                      animate={{ height: `${spineProgressPct}%` }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    />
+                  )}
 
                   {path.map((p, i) => {
                     const type = pointType(i);
@@ -3863,6 +3552,7 @@ const UsersClusterMapAll = ({
                     const isActive = activeIndex === i;
                     const isExpanded = expandedIndex === i;
                     const onLeft = i % 2 === 0;
+                    const side = onLeft ? "is-left" : "is-right";
                     const hasForm =
                       !!p.formSubmission &&
                       Array.isArray(p.formSubmission.submitted_data) &&
@@ -3870,183 +3560,113 @@ const UsersClusterMapAll = ({
                     const deviceLabel = [p.deviceBrand, p.deviceModel]
                       .filter(Boolean)
                       .join(" ");
+                    const lowBattery =
+                      typeof p.battery === "number" && p.battery <= 20;
 
                     const card = (
                       <motion.div
                         onClick={() => handleTimelineClick(p, i)}
-                        animate={{ scale: isActive ? 1.04 : 1 }}
+                        animate={{ scale: isActive ? 1.03 : 1 }}
                         transition={{ duration: 0.18 }}
-                        className="ucma-tl-card"
-                        style={{
-                          cursor: "pointer",
-                          width: "100%",
-                          maxWidth: "220px",
-                          textAlign: onLeft ? "right" : "left",
-                          background: isActive ? "#eff6ff" : "#f8fafc",
-                          border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
-                          borderRadius: "10px",
-                          padding: "6px 10px",
-                          boxShadow: isActive
-                            ? `0 3px 10px ${cfg.color}33`
-                            : "none",
-                        }}
+                        className={`ucx-card ${side} is-typed${isActive ? " is-active" : ""}`}
+                        style={{ "--c": cfg.color }}
                       >
-                        <div style={{ fontSize: "12px", fontWeight: 700 }}>
-                          {p.timestamp}
+                        <div className="ucx-card-top">
+                          <span className="ucx-time">{p.timestamp}</span>
+                          <span
+                            className="ucx-type"
+                            style={{ "--c": cfg.color }}
+                          >
+                            {cfg.label}
+                          </span>
                         </div>
-                        <div style={{ fontSize: "10px", color: "#94a3b8" }}>
-                          {p.date}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "11px",
-                            color: "#475569",
-                            marginTop: "2px",
-                            display: "-webkit-box",
-                            WebkitLineClamp: isExpanded ? 6 : 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                          }}
-                        >
-                          {p.address || "—"}
-                        </div>
+                        <div className="ucx-date">{p.date}</div>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "6px",
-                            marginTop: "3px",
-                            justifyContent: onLeft ? "flex-end" : "flex-start",
-                          }}
-                        >
-                          <i
-                            className={
-                              p.locationOn
-                                ? "ri-map-pin-2-fill"
-                                : "ri-map-pin-2-line"
-                            }
-                            title={
-                              p.locationOn ? "Location on" : "Location off"
-                            }
+                        <div className="ucx-addr">
+                          <i className="ri-map-pin-line"></i>
+                          <span
                             style={{
-                              fontSize: "12px",
-                              color: p.locationOn ? "#16a34a" : "#ee1e1e",
-                            }}
-                          />
-                          <i
-                            className={
-                              p.internetOn ? "ri-wifi-fill" : "ri-wifi-off-line"
-                            }
-                            title={
-                              p.internetOn ? "Internet on" : "Internet off"
-                            }
-                            style={{
-                              fontSize: "12px",
-                              color: p.internetOn ? "#16a34a" : "#ee1e1e",
-                            }}
-                          />
-                        </div>
-
-                        {p.customStatusInfo && (
-                          <div
-                            style={{
-                              marginTop: "4px",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              fontSize: "10px",
-                              fontWeight: 600,
-                              color: "#334155",
-                              background: "#e2e8f0",
-                              borderRadius: "10px",
-                              padding: "2px 8px",
+                              display: "-webkit-box",
+                              WebkitLineClamp: isExpanded ? 6 : 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
                             }}
                           >
-                            <span>{p.customStatusInfo.icon}</span>
-                            <span>{p.customStatusInfo.name}</span>
-                          </div>
-                        )}
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "4px",
-                            marginTop: "4px",
-                            justifyContent: onLeft ? "flex-end" : "flex-start",
-                          }}
-                        >
-                          {p.outside && (
+                            {p.address || "—"}
+                          </span>
+                        </div>
+
+                        <div className="ucx-meta">
+                          <span
+                            className={`ucx-chip is-icon ${p.locationOn ? "is-ok" : "is-bad"}`}
+                            title={p.locationOn ? "Location on" : "Location off"}
+                          >
+                            <i
+                              className={
+                                p.locationOn
+                                  ? "ri-map-pin-2-fill"
+                                  : "ri-map-pin-2-line"
+                              }
+                            ></i>
+                          </span>
+                          <span
+                            className={`ucx-chip is-icon ${p.internetOn ? "is-ok" : "is-bad"}`}
+                            title={p.internetOn ? "Internet on" : "Internet off"}
+                          >
+                            <i
+                              className={
+                                p.internetOn ? "ri-wifi-fill" : "ri-wifi-off-line"
+                              }
+                            ></i>
+                          </span>
+                          {typeof p.battery === "number" && (
                             <span
-                              style={{
-                                fontSize: "9px",
-                                fontWeight: 600,
-                                color: "#b91c1c",
-                                background: "#fee2e2",
-                                borderRadius: "10px",
-                                padding: "1px 7px",
-                              }}
+                              className={`ucx-chip${lowBattery ? " is-bad" : ""}`}
+                              title="Battery"
                             >
+                              <i
+                                className={
+                                  lowBattery
+                                    ? "ri-battery-low-line"
+                                    : "ri-battery-2-line"
+                                }
+                              ></i>
+                              {p.battery}%
+                            </span>
+                          )}
+                          {p.outside && (
+                            <span className="ucx-chip is-bad">
+                              <i className="ri-error-warning-line"></i>
                               Outside range
+                            </span>
+                          )}
+                          {p.customStatusInfo && (
+                            <span className="ucx-chip">
+                              <span>{p.customStatusInfo.icon}</span>
+                              <span className="ucx-chip-text">
+                                {p.customStatusInfo.name}
+                              </span>
                             </span>
                           )}
                         </div>
 
-                        {/* Device brand + model (from `meta`), right below battery % */}
                         {deviceLabel && (
-                          <div
-                            title={deviceLabel}
-                            style={{
-                              marginTop: "3px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                              fontSize: "10px",
-                              color: "#64748b",
-                              justifyContent: onLeft
-                                ? "flex-end"
-                                : "flex-start",
-                              minWidth: 0,
-                            }}
-                          >
-                            <i
-                              className="ri-smartphone-line"
-                              style={{ fontSize: "11px", flexShrink: 0 }}
-                            ></i>
-                            <span
-                              style={{
-                                textTransform: "capitalize",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                                minWidth: 0,
-                              }}
-                            >
-                              {deviceLabel}
-                            </span>
+                          <div className="ucx-device" title={deviceLabel}>
+                            <i className="ri-smartphone-line"></i>
+                            <span>{deviceLabel}</span>
                           </div>
                         )}
 
                         {hasForm && (
                           <button
+                            data-testid={testId("cluster-map-form-details", itemTestKey(p), "button")}
+                            type="button"
+                            className="ucx-form-btn"
                             onClick={(e) => openFormModal(p, e)}
-                            style={{
-                              marginTop: "6px",
-                              border: "1px solid #2563eb",
-                              background: "#eff6ff",
-                              color: "#2563eb",
-                              borderRadius: "6px",
-                              padding: "3px 9px",
-                              fontSize: "10.5px",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
                             title="View form submission details"
                           >
-                            <i className="ri-file-list-3-line"></i>{" "}
-                            {p.customFormInfo?.name || "Form details"}
+                            <i className="ri-file-list-3-line"></i>
+                            <span>{p.customFormInfo?.name || "Form details"}</span>
                           </button>
                         )}
                       </motion.div>
@@ -4059,56 +3679,25 @@ const UsersClusterMapAll = ({
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "0px 0px -20px 0px" }}
                         transition={{ duration: 0.25 }}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "minmax(0,1fr) 32px minmax(0,1fr)",
-                          alignItems: "start",
-                          minHeight: "64px",
-                        }}
+                        className="ucx-zz-row"
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            paddingRight: "8px",
-                            minWidth: 0,
-                          }}
-                        >
+                        <div className="ucx-zz-side is-left">
                           {onLeft && card}
                         </div>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            position: "relative",
-                          }}
-                        >
+                        <div className="ucx-zz-mid">
                           <motion.div
                             onClick={() => handleMarkerClick(p, i)}
                             animate={{
                               scale: isActive ? 1.15 : 1,
                               boxShadow: isActive
-                                ? `0 0 0 4px ${cfg.color}33`
-                                : "0 0 0 0 transparent",
+                                ? `0 0 0 5px ${cfg.color}33`
+                                : `0 0 0 ${big ? 2 : 0}px ${cfg.color}`,
                             }}
                             transition={{ duration: 0.2 }}
-                            style={{
-                              width: big ? "26px" : "20px",
-                              height: big ? "26px" : "20px",
-                              borderRadius: "50%",
-                              background: "#fff",
-                              border: `2px solid ${cfg.color}`,
-                              color: cfg.color,
-                              fontSize: big ? "12px" : "10px",
-                              fontWeight: 700,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              marginTop: "2px",
-                            }}
+                            className={`ucx-node${big ? " is-big" : ""}${isActive ? " is-active" : ""}`}
+                            style={{ "--c": cfg.color }}
+                            title={cfg.label}
                           >
                             {cfg.icon ? (
                               <i className={cfg.icon}></i>
@@ -4118,14 +3707,7 @@ const UsersClusterMapAll = ({
                           </motion.div>
                         </div>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "flex-start",
-                            paddingLeft: "8px",
-                            minWidth: 0,
-                          }}
-                        >
+                        <div className="ucx-zz-side is-right">
                           {!onLeft && card}
                         </div>
                       </motion.div>
@@ -4138,96 +3720,32 @@ const UsersClusterMapAll = ({
             {/* ══════════════ ACTIVITY TIMELINE (zigzag, same as Location) ══════════════ */}
             {activeTab === TIMELINE_TABS.ACTIVITY && (
               <>
-                {loadingActivity && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                      padding: "4px 10px",
-                    }}
-                  >
-                    {[0, 1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: "flex",
-                          justifyContent:
-                            i % 2 === 0 ? "flex-end" : "flex-start",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "70%",
-                            maxWidth: "200px",
-                            borderRadius: "10px",
-                            padding: "8px 10px",
-                            border: "1px solid #eef0f3",
-                            background: "#f8fafc",
-                          }}
-                        >
-                          <div
-                            className="ucma-skeleton"
-                            style={{
-                              width: "60%",
-                              height: "10px",
-                              marginBottom: "6px",
-                            }}
-                          />
-                          <div
-                            className="ucma-skeleton"
-                            style={{
-                              width: "40%",
-                              height: "8px",
-                              marginBottom: "8px",
-                            }}
-                          />
-                          <div
-                            className="ucma-skeleton"
-                            style={{ width: "90%", height: "8px" }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {loadingActivity && renderZigzagSkeleton()}
 
                 {activityRows.length === 0 && !loadingActivity && (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      color: "#94a3b8",
-                      fontSize: "12px",
-                      padding: "24px 12px",
-                    }}
-                  >
-                    No activity timeline for this date
+                  <div className="ucx-empty">
+                    <span className="ucx-empty-icon">
+                      <i className="ri-list-check-2"></i>
+                    </span>
+                    <div className="ucx-empty-title">No activity</div>
+                    <div className="ucx-empty-sub">
+                      No activity timeline for this date
+                    </div>
                   </div>
                 )}
 
                 <div
-                  style={{
-                    position: "relative",
-                    display: loadingActivity ? "none" : "block",
-                  }}
+                  className="ucx-zz"
+                  style={{ display: loadingActivity ? "none" : "block" }}
                 >
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      bottom: 0,
-                      left: "50%",
-                      width: "2px",
-                      background: "#e5e7eb",
-                      transform: "translateX(-1px)",
-                    }}
-                  />
+                  {activityRows.length > 0 && <div className="ucx-spine" />}
 
                   {activityRows.map((item, idx) => {
                     const cfg = item._config;
                     const rowKey = `activity-${item.type}-${item.id ?? idx}`;
                     const isActive = expandedIndex === rowKey;
                     const onLeft = idx % 2 === 0;
+                    const side = onLeft ? "is-left" : "is-right";
                     const title = item._chipLabel || cfg.label;
                     const address = item._subtitle || "—";
                     const statusEmoji = item._statusIcon;
@@ -4235,93 +3753,49 @@ const UsersClusterMapAll = ({
                     const card = (
                       <motion.div
                         onClick={() => handleSideRowClick(item, rowKey)}
-                        animate={{ scale: isActive ? 1.04 : 1 }}
+                        animate={{ scale: isActive ? 1.03 : 1 }}
                         transition={{ duration: 0.18 }}
-                        className="ucma-tl-card"
-                        style={{
-                          cursor: item._hasCoords ? "pointer" : "default",
-                          width: "100%",
-                          maxWidth: "220px",
-                          textAlign: onLeft ? "right" : "left",
-                          background: isActive ? "#eff6ff" : "#f8fafc",
-                          border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
-                          borderRadius: "10px",
-                          padding: "6px 10px",
-                          boxShadow: isActive
-                            ? `0 3px 10px ${cfg.color}33`
-                            : "none",
-                        }}
+                        className={`ucx-card ${side}${isActive ? " is-active" : ""}${item._hasCoords ? "" : " is-static"}`}
                       >
-                        <div style={{ fontSize: "12px", fontWeight: 700 }}>
-                          {item._time || title}
-                        </div>
-                        <div style={{ fontSize: "10px", color: "#94a3b8" }}>
-                          {item._date}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "11px",
-                            color: "#475569",
-                            marginTop: "2px",
-                            display: "-webkit-box",
-                            WebkitLineClamp: isActive ? 6 : 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                          }}
-                        >
-                          {address}
-                        </div>
-
-                        <div
-                          style={{
-                            marginTop: "4px",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            fontSize: "10px",
-                            fontWeight: 600,
-                            color: "#334155",
-                            background: "#e2e8f0",
-                            borderRadius: "10px",
-                            padding: "2px 8px",
-                          }}
-                        >
-                          {statusEmoji ? (
-                            <span style={{ fontSize: "11px", lineHeight: 1 }}>
-                              {statusEmoji}
-                            </span>
-                          ) : (
-                            <i
-                              className={cfg.icon}
-                              style={{ color: cfg.color, fontSize: "11px" }}
-                            ></i>
-                          )}
-                          <span>{title}</span>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "4px",
-                            marginTop: "4px",
-                            justifyContent: onLeft ? "flex-end" : "flex-start",
-                          }}
-                        >
+                        <div className="ucx-card-top">
+                          <span className="ucx-time">{item._time || title}</span>
                           {item._isOngoing && (
-                            <span
-                              style={{
-                                fontSize: "9px",
-                                fontWeight: 600,
-                                color: "#b45309",
-                                background: "#fef3c7",
-                                borderRadius: "10px",
-                                padding: "1px 7px",
-                              }}
-                            >
+                            <span className="ucx-chip is-warn">
+                              <i className="ri-pulse-line"></i>
                               Ongoing
                             </span>
                           )}
+                        </div>
+                        <div className="ucx-date">{item._date}</div>
+
+                        <div className="ucx-meta">
+                          <span
+                            className="ucx-chip is-custom"
+                            style={{ "--c": cfg.color }}
+                          >
+                            {statusEmoji ? (
+                              <span style={{ fontSize: "11px", lineHeight: 1 }}>
+                                {statusEmoji}
+                              </span>
+                            ) : (
+                              <i className={cfg.icon}></i>
+                            )}
+                            <span className="ucx-chip-text">{title}</span>
+                          </span>
+                        </div>
+
+                        <div className="ucx-addr">
+                          <i className="ri-map-pin-line"></i>
+                          <span
+                            style={{
+                              display: "-webkit-box",
+                              WebkitLineClamp: isActive ? 6 : 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {address}
+                          </span>
                         </div>
                       </motion.div>
                     );
@@ -4333,56 +3807,28 @@ const UsersClusterMapAll = ({
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true, margin: "0px 0px -20px 0px" }}
                         transition={{ duration: 0.25 }}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "minmax(0,1fr) 32px minmax(0,1fr)",
-                          alignItems: "start",
-                          minHeight: "64px",
-                        }}
+                        className="ucx-zz-row"
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            paddingRight: "8px",
-                            minWidth: 0,
-                          }}
-                        >
+                        <div className="ucx-zz-side is-left">
                           {onLeft && card}
                         </div>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "center",
-                            position: "relative",
-                          }}
-                        >
+                        <div className="ucx-zz-mid">
                           <motion.div
                             onClick={() => handleSideRowClick(item, rowKey)}
                             animate={{
                               scale: isActive ? 1.15 : 1,
                               boxShadow: isActive
-                                ? `0 0 0 4px ${cfg.color}33`
-                                : "0 0 0 0 transparent",
+                                ? `0 0 0 5px ${cfg.color}33`
+                                : `0 0 0 2px ${cfg.color}`,
                             }}
                             transition={{ duration: 0.2 }}
+                            className="ucx-node is-big"
                             style={{
-                              width: "26px",
-                              height: "26px",
-                              borderRadius: "50%",
-                              background: "#fff",
-                              border: `2px solid ${cfg.color}`,
-                              color: cfg.color,
-                              fontSize: "12px",
-                              fontWeight: 700,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
+                              "--c": cfg.color,
                               cursor: item._hasCoords ? "pointer" : "default",
-                              marginTop: "2px",
                             }}
+                            title={title}
                           >
                             {statusEmoji ? (
                               <span style={{ fontSize: "12px", lineHeight: 1 }}>
@@ -4394,14 +3840,7 @@ const UsersClusterMapAll = ({
                           </motion.div>
                         </div>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "flex-start",
-                            paddingLeft: "8px",
-                            minWidth: 0,
-                          }}
-                        >
+                        <div className="ucx-zz-side is-right">
                           {!onLeft && card}
                         </div>
                       </motion.div>
@@ -4415,31 +3854,12 @@ const UsersClusterMapAll = ({
             {activeTab === TIMELINE_TABS.MOBILE && (
               <>
                 {loadingMobile && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                      padding: "4px 10px",
-                    }}
-                  >
+                  <div className="ucx-skel-list" style={{ gap: "12px" }}>
                     {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        style={{
-                          borderRadius: "10px",
-                          padding: "10px 12px",
-                          border: "1px solid #eef0f3",
-                          background: "#f8fafc",
-                        }}
-                      >
+                      <div key={i} className="ucx-skel-card is-wide">
                         <div
                           className="ucma-skeleton"
-                          style={{
-                            width: "50%",
-                            height: "10px",
-                            marginBottom: "6px",
-                          }}
+                          style={{ width: "50%", height: "10px", marginBottom: "6px" }}
                         />
                         <div
                           className="ucma-skeleton"
@@ -4451,31 +3871,21 @@ const UsersClusterMapAll = ({
                 )}
 
                 {!loadingMobile && mobileRows.length === 0 && (
-                  <div
-                    style={{
-                      textAlign: "center",
-                      color: "#94a3b8",
-                      fontSize: "12px",
-                      padding: "24px 12px",
-                    }}
-                  >
-                    No toggle events for this date
+                  <div className="ucx-empty">
+                    <span className="ucx-empty-icon">
+                      <i className="ri-smartphone-line"></i>
+                    </span>
+                    <div className="ucx-empty-title">No device events</div>
+                    <div className="ucx-empty-sub">
+                      No location or internet toggles for this date
+                    </div>
                   </div>
                 )}
 
                 {!loadingMobile && mobileRows.length > 0 && (
-                  <div
-                    className="ucma-tl-timeline"
-                    style={{ padding: "2px 10px 2px 4px" }}
-                  >
-                    <div className="ucma-tl-spine" />
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "14px",
-                      }}
-                    >
+                  <div className="ucx-mt">
+                    <div className="ucx-mt-spine" />
+                    <div className="ucx-mt-list">
                       {mobileRows.map((p) => {
                         const rowKey = `mobile-${p.id}`;
                         const isActive = expandedIndex === rowKey;
@@ -4483,7 +3893,7 @@ const UsersClusterMapAll = ({
                         const locOff = p.location_toggle === "off";
                         const netOff = p.internet_toggle === "off";
                         const dotColor =
-                          locOff || netOff ? "#dc2626" : COLORS.travel;
+                          locOff || netOff ? "#dc2626" : COLORS.start;
                         const dotIcon =
                           locOff && netOff
                             ? "ri-signal-wifi-off-line"
@@ -4502,11 +3912,11 @@ const UsersClusterMapAll = ({
                               margin: "0px 0px -20px 0px",
                             }}
                             transition={{ duration: 0.2 }}
-                            className="ucma-tl-row"
+                            className="ucx-mt-row"
                           >
                             <div
-                              className="ucma-tl-dot"
-                              style={{ color: dotColor, marginTop: "2px" }}
+                              className="ucx-mt-dot"
+                              style={{ "--c": dotColor }}
                             >
                               <i className={dotIcon}></i>
                             </div>
@@ -4515,94 +3925,24 @@ const UsersClusterMapAll = ({
                               onClick={() => handleSideRowClick(p, rowKey)}
                               animate={{ scale: isActive ? 1.02 : 1 }}
                               transition={{ duration: 0.18 }}
-                              className="ucma-tl-card"
-                              style={{
-                                flex: 1,
-                                minWidth: 0,
-                                cursor: hasCoords ? "pointer" : "default",
-                                borderRadius: "10px",
-                                padding: "8px 10px",
-                                background: isActive ? "#eff6ff" : "#f8fafc",
-                                border: `1px solid ${isActive ? COLORS.travel : "#eef0f3"}`,
-                                boxShadow: isActive
-                                  ? `0 3px 10px ${dotColor}33`
-                                  : "none",
-                              }}
+                              className={`ucx-card is-right is-wide${isActive ? " is-active" : ""}${hasCoords ? "" : " is-static"}`}
                             >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <div>
-                                  <div
-                                    style={{
-                                      fontSize: "12px",
-                                      fontWeight: 700,
-                                      color: "#1e293b",
-                                    }}
-                                  >
-                                    {p._time}
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontSize: "10px",
-                                      color: "#94a3b8",
-                                    }}
-                                  >
-                                    {p._date}
-                                  </div>
-                                </div>
+                              <div className="ucx-card-top">
+                                <span className="ucx-time">{p._time}</span>
+                                <span className="ucx-date">{p._date}</span>
                               </div>
 
                               {p.accurate_address && (
-                                <div
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#475569",
-                                    marginTop: "4px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                  }}
-                                >
-                                  <i
-                                    className="ri-map-pin-2-fill"
-                                    style={{ color: "#3b82f6" }}
-                                  ></i>
-                                  {p.accurate_address}
+                                <div className="ucx-addr">
+                                  <i className="ri-map-pin-line"></i>
+                                  <span>{p.accurate_address}</span>
                                 </div>
                               )}
 
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: "6px",
-                                  marginTop: "6px",
-                                }}
-                              >
+                              <div className="ucx-meta">
                                 {p.location_toggle && (
                                   <span
-                                    style={{
-                                      fontSize: "10px",
-                                      fontWeight: 700,
-                                      borderRadius: "10px",
-                                      padding: "2px 8px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      color:
-                                        p.location_toggle === "on"
-                                          ? "#16a34a"
-                                          : "#b91c1c",
-                                      background:
-                                        p.location_toggle === "on"
-                                          ? "#dcfce7"
-                                          : "#fee2e2",
-                                    }}
+                                    className={`ucx-chip ${p.location_toggle === "on" ? "is-ok" : "is-bad"}`}
                                   >
                                     <i
                                       className={
@@ -4616,23 +3956,7 @@ const UsersClusterMapAll = ({
                                 )}
                                 {p.internet_toggle && (
                                   <span
-                                    style={{
-                                      fontSize: "10px",
-                                      fontWeight: 700,
-                                      borderRadius: "10px",
-                                      padding: "2px 8px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                      color:
-                                        p.internet_toggle === "on"
-                                          ? "#16a34a"
-                                          : "#b91c1c",
-                                      background:
-                                        p.internet_toggle === "on"
-                                          ? "#dcfce7"
-                                          : "#fee2e2",
-                                    }}
+                                    className={`ucx-chip ${p.internet_toggle === "on" ? "is-ok" : "is-bad"}`}
                                   >
                                     <i
                                       className={
@@ -4655,12 +3979,12 @@ const UsersClusterMapAll = ({
               </>
             )}
           </div>
-        </div>
+        </aside>
       </div>
 
       {/* ── Form submission details modal ── */}
-      <Modal isOpen={formModalOpen} toggle={closeFormModal} centered size="lg">
-        <ModalHeader toggle={closeFormModal}>
+      <Modal data-testid="cluster-map-form-submission-details-dialog" isOpen={formModalOpen} toggle={closeFormModal} centered size="lg">
+        <ModalHeader close={<ModalCloseButton onClick={closeFormModal} testId="cluster-map-form-submission-details-close-button" />} toggle={closeFormModal}>
           <span style={{ fontSize: "15px", fontWeight: 500 }}>
             <i className="mdi mdi-file-document-outline me-2 text-primary"></i>
             {formModalMeta?.customFormInfo?.name || "Form Submission Details"}
@@ -4710,9 +4034,9 @@ const UsersClusterMapAll = ({
                   <div
                     style={{
                       ...coordPill,
-                      background: "#fff8e1",
-                      color: "#b07d00",
-                      borderColor: "#f0d070",
+                      background: "rgba(var(--vz-warning-rgb), 0.12)",
+                      color: "var(--vz-warning)",
+                      borderColor: "rgba(var(--vz-warning-rgb), 0.35)",
                     }}
                   >
                     <span>{formModalMeta.customStatusInfo.icon}</span>
@@ -4803,7 +4127,7 @@ const UsersClusterMapAll = ({
               <div
                 style={{
                   fontSize: "11px",
-                  color: "#999",
+                  color: "var(--vz-secondary-color)",
                   textTransform: "uppercase",
                   letterSpacing: "0.4px",
                   marginBottom: "8px",
@@ -4827,8 +4151,8 @@ const UsersClusterMapAll = ({
                   <div
                     key={field.id}
                     style={{
-                      background: "#fff",
-                      border: "0.5px solid #e2e5ee",
+                      background: "var(--vz-secondary-bg)",
+                      border: "1px solid var(--vz-border-color)",
                       borderRadius: "10px",
                       padding: "10px 12px",
                       boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
@@ -4840,13 +4164,13 @@ const UsersClusterMapAll = ({
                         fontWeight: 700,
                         textTransform: "uppercase",
                         letterSpacing: "0.4px",
-                        color: "#999",
+                        color: "var(--vz-secondary-color)",
                         marginBottom: "4px",
                       }}
                     >
                       {field.label}
                     </div>
-                    <div style={{ fontSize: "13px", color: "#333" }}>
+                    <div style={{ fontSize: "13px", color: "var(--vz-body-color)" }}>
                       {renderFormFieldValue(field)}
                     </div>
                   </div>
@@ -4867,11 +4191,11 @@ const UsersClusterMapAll = ({
                 className="mdi mdi-file-remove-outline"
                 style={{
                   fontSize: "48px",
-                  color: "#ccc",
+                  color: "var(--vz-secondary-color)",
                   marginBottom: "12px",
                 }}
               />
-              <p style={{ color: "#999", fontSize: "15px", margin: 0 }}>
+              <p style={{ color: "var(--vz-secondary-color)", fontSize: "15px", margin: 0 }}>
                 No form submission data.
               </p>
             </div>
@@ -4879,7 +4203,9 @@ const UsersClusterMapAll = ({
 
           <div className="d-flex justify-content-center mt-4">
             <Button
-              color="warning"
+              data-testid="cluster-map-form-submission-details-footer-close-button"
+              color="light"
+              className="modal-dismiss-btn"
               onClick={closeFormModal}
               style={{ minWidth: "100px" }}
             >

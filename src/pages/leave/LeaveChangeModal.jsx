@@ -9,7 +9,7 @@ import {
   Label,
   Row,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import { DatePicker, TimePicker } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -47,6 +47,7 @@ import {
   DateFormat,
   DateTimeFormat,
 } from "../../common/constant/Constants";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
 
 dayjs.extend(customParseFormat);
 
@@ -94,7 +95,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
   const leaveTypeOptions = leave_type_for_current_employee.map((item) => ({
     value: item.leave_type.id,
     label: item.leave_type.name,
-    balance_leave_count: item.available_count,
+    balance_leave_count: item.paid_balance_count ?? item.available_count,
     unit: item.leave_type.unit,
     full_obj: item,
   }));
@@ -123,7 +124,9 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
         (d) => d.leave_type?.id === leaveRecord.leave_type_id,
       );
       if (leaveTypeRecord) {
-        setLeaveBalanceCount(leaveTypeRecord.available_count);
+        setLeaveBalanceCount(
+          leaveTypeRecord.paid_balance_count ?? leaveTypeRecord.available_count,
+        );
         // Pass full record so weekend/holiday flags are read correctly
         handleStartEndDatesChange(leaveTypeRecord, true);
         setSelectedLeaveTypeObj(leaveTypeRecord);
@@ -542,8 +545,8 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
-    <Modal isOpen={isOpen} toggle={onClose} centered size="lg" zIndex={1050}>
-      <ModalHeader toggle={onClose}>Change Leave Application</ModalHeader>
+    <Modal data-testid="leave-change-dialog" isOpen={isOpen} toggle={onClose} centered size="lg" zIndex={1050}>
+      <ModalHeader close={<ModalCloseButton onClick={onClose} testId="leave-change-close-button" />} toggle={onClose}>Change Leave Application</ModalHeader>
 
       <ModalBody>
         <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
@@ -553,6 +556,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
               <div className="mb-3">
                 <Label>Type *</Label>
                 <Select
+                  testId="leave-change-leave-type-id"
                   name="leave_type_id"
                   isMulti={false}
                   options={leaveTypeOptions}
@@ -644,6 +648,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                     </Col>
                     <Col lg={6}>
                       <Select
+                        testId="leave-change-day-type"
                         name="day_type"
                         isMulti={false}
                         options={day_type || []}
@@ -813,6 +818,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
                 Reason *
               </label>
               <textarea
+                data-testid="leave-change-reason-textarea"
                 name="reason"
                 className="form-control"
                 id="modal_reason"
@@ -832,6 +838,7 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
           {/* ── Footer ── */}
           <div className="d-flex justify-content-between mt-4">
             <Button
+              data-testid="leave-change-cancel-leave-button"
               color="danger"
               outline
               type="button"
@@ -842,10 +849,10 @@ const LeaveChangeModal = ({ isOpen, onClose, leaveRecord }) => {
             </Button>
 
             <div className="d-flex gap-2">
-              <Button color="secondary" type="button" onClick={onClose}>
+              <Button data-testid="leave-change-footer-close-button" color="secondary" type="button" onClick={onClose}>
                 Close
               </Button>
-              <Button color="success" className="btn-label" type="submit">
+              <Button data-testid="leave-change-save-changes-button" color="success" className="btn-label" type="submit">
                 <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
                 Save Changes
               </Button>

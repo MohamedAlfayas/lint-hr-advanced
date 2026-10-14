@@ -1,0 +1,27 @@
+// Theme-aware replacements for Bootstrap's light-only helpers (.bg-light,
+// .bg-white, .table-light). Used by panels that render in portals (modals,
+// offcanvas) where page-scoped styles do not reach.
+.surface-muted {
+  background-color: var(--vz-tertiary-bg) !important;
+}
+
+.surface-card {
+  background-color: var(--vz-secondary-bg) !important;
+}
+
+.table-surface,
+.table-surface > th,
+.table-surface > td,
+thead.table-surface th {
+  --vz-table-bg: var(--vz-tertiary-bg);
+  --bs-table-bg: var(--vz-tertiary-bg);
+  background-color: var(--vz-tertiary-bg) !important;
+  color: var(--vz-secondary-color) !important;
+  border-color: var(--vz-border-color) !important;
+}
+
+.badge.badge-surface {
+  background-color: var(--vz-tertiary-bg) !important;
+  color: var(--vz-body-color) !important;
+  border: 1px solid var(--vz-border-color) !important;
+}

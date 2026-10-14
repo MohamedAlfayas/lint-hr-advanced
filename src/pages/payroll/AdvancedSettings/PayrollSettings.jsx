@@ -3,7 +3,7 @@ import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
   Col, Row, Label, Button, Input, Badge
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -13,6 +13,7 @@ import {
   setPayrollLoading,
 } from "../../../redux/reducers/ChildReducer/PayrollSettingsReducer";
 import { required, day, runChecks } from "./validators";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({
   value: i + 1,
@@ -44,7 +45,7 @@ const ViewToggle = ({ checked, label }) => (
         width: 36,
         height: 20,
         borderRadius: 12,
-        background: checked ? "#0ab39c" : "#ced4da",
+        background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)",
         position: "relative",
         flexShrink: 0,
       }}
@@ -159,7 +160,7 @@ const PayrollSettings = () => {
                 <p className="text-muted mb-4" style={{ fontSize: 13 }}>
                   Set up your pay cycle and salary preferences to get started.
                 </p>
-                <Button color="primary" onClick={() => { setIsEmpty(false); setIsEditing(true); }}>
+                <Button data-testid="payroll-settings-configure-pay-settings-button" color="primary" onClick={() => { setIsEmpty(false); setIsEditing(true); }}>
                   <i className="ri-settings-3-line align-bottom me-1"></i>
                   Configure Pay Settings
                 </Button>
@@ -183,7 +184,8 @@ const PayrollSettings = () => {
               </CardSubtitle>
             </div>
             {!isEditing && (
-              <Button size="sm" color="primary" outline onClick={() => setIsEditing(true)}
+              <Button
+                data-testid="payroll-settings-edit-settings-button" size="sm" color="primary" outline onClick={() => setIsEditing(true)}
                 className="d-flex align-items-center gap-1">
                 <i className="ri-edit-line fs-14"></i> Edit Settings
               </Button>
@@ -209,7 +211,8 @@ const PayrollSettings = () => {
               <SettingRow label="Payroll Status">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0">
-                    <Input className="form-check-input" type="checkbox"
+                    <Input
+                      data-testid="payroll-settings-is-active-checkbox" className="form-check-input" type="checkbox"
                       checked={!!form.is_active}
                       onChange={() => handleToggle("is_active")} />
                     <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>
@@ -223,7 +226,8 @@ const PayrollSettings = () => {
 
               <SettingRow label="Effective Date">
                 {isEditing ? (
-                  <Input type="date" value={form.effective_date || ""}
+                  <Input
+                    data-testid="payroll-settings-active-input" type="date" value={form.effective_date || ""}
                     onChange={(e) => handleChange("effective_date", e.target.value)}
                     style={{ width: 180 }} />
                 ) : (
@@ -238,7 +242,8 @@ const PayrollSettings = () => {
                   <div className="d-flex gap-3">
                     {["gross", "ctc"].map((opt) => (
                       <div className="form-check" key={opt}>
-                        <Input className="form-check-input" type="radio"
+                        <Input
+                          data-testid={testId("payroll-settings-salary-structure-based-on-option", itemTestKey(opt))} className="form-check-input" type="radio"
                           name="salary_structure_based_on"
                           checked={form.salary_structure_based_on === opt}
                           onChange={() => handleChange("salary_structure_based_on", opt)} />
@@ -255,8 +260,8 @@ const PayrollSettings = () => {
                         <span
                           style={{
                             width: 16, height: 16, borderRadius: "50%",
-                            border: `2px solid ${data.salary_structure_based_on === opt ? "#405189" : "#ced4da"}`,
-                            background: data.salary_structure_based_on === opt ? "#405189" : "#fff",
+                            border: `2px solid ${data.salary_structure_based_on === opt ? "var(--vz-primary)" : "rgba(var(--vz-secondary-rgb), .35)"}`,
+                            background: data.salary_structure_based_on === opt ? "var(--vz-primary)" : "var(--vz-secondary-bg)",
                             display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                           }}
                         >
@@ -305,7 +310,8 @@ const PayrollSettings = () => {
                 <SettingRow label="Pay Cycle">
                   <div className="d-flex align-items-center gap-2">
                     <span className="text-muted" style={{ fontSize: 13 }}>From</span>
-                    <Select options={DAY_OPTIONS}
+                    <Select
+                      testId="payroll-settings-pay-cycle-from" options={DAY_OPTIONS}
                       value={DAY_OPTIONS.find(o => o.value === form.pay_cycle_from)}
                       onChange={(e) => handleChange("pay_cycle_from", e.value)}
                       styles={{ container: (p) => ({ ...p, width: 90 }) }} />
@@ -324,13 +330,15 @@ const PayrollSettings = () => {
                   </div>
                 </SettingRow>
                 <SettingRow label="Payout Date">
-                  <Select options={DAY_OPTIONS}
+                  <Select
+                    testId="payroll-settings-payout-date" options={DAY_OPTIONS}
                     value={DAY_OPTIONS.find(o => o.value === form.payout_date)}
                     onChange={(e) => handleChange("payout_date", e.value)}
                     styles={{ container: (p) => ({ ...p, width: 120 }) }} />
                 </SettingRow>
                 <SettingRow label="DOJ Cutoff Date" last>
-                  <Select options={DAY_OPTIONS}
+                  <Select
+                    testId="payroll-settings-payroll-doj-cutoff-date" options={DAY_OPTIONS}
                     value={DAY_OPTIONS.find(o => o.value === form.payroll_doj_cutoff_date)}
                     onChange={(e) => handleChange("payroll_doj_cutoff_date", e.value)}
                     styles={{ container: (p) => ({ ...p, width: 120 }) }} />
@@ -354,7 +362,7 @@ const PayrollSettings = () => {
                       <Col xs={4} className="text-end">
                         {isEditing ? (
                           <div className="form-check form-switch mb-0 d-flex justify-content-end">
-                            <Input className="form-check-input" type="checkbox"
+                            <Input className="form-check-input" type="checkbox" data-testid={testId("payroll-settings", key, "checkbox")}
                               checked={!!form[key]}
                               onChange={() => handleToggle(key)} />
                           </div>
@@ -372,10 +380,10 @@ const PayrollSettings = () => {
 
             {isEditing && (
               <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-                <Button color="light" className="border" onClick={handleCancel} disabled={payroll_loading}>
+                <Button data-testid="payroll-settings-cancel-button" color="light" className="border" onClick={handleCancel} disabled={payroll_loading}>
                   Cancel
                 </Button>
-                <Button color="success" onClick={handleSave} disabled={payroll_loading}>
+                <Button data-testid="payroll-settings-save-changes-button" color="success" onClick={handleSave} disabled={payroll_loading}>
                   <i className="ri-check-double-line align-middle me-1"></i>
                   {payroll_loading ? "Saving…" : "Save Changes"}
                 </Button>

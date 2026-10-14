@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Row,
   Col,
@@ -15,14 +15,26 @@ import {
   Spinner,
   Table,
 } from "reactstrap";
-import Select from "react-select";
-import SimpleBar from "simplebar-react";
+import Select from "../../../shared/ui/TestableSelect";
+import { IconButton, Tooltip, Typography } from "@mui/material";
+import {
+  ApvChip,
+  ApvDate,
+  ApvEmployee,
+  ApvEmpty,
+  ApvStatus,
+} from "../../../component/common/approval/ApprovalCells";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
+import AppTable from "../../../shared/ui/table/AppTable";
 import { useDispatch, useSelector } from "react-redux";
 import { PostApi } from "../../../common/api/PostApi";
 import { PutApi } from "../../../common/api/PutApi";
 import { GetApi } from "../../../common/api/GetApi";
 import { setSalaryStructures } from "../../../redux/reducers/ChildReducer/SalaryStructureReducer";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 async function saveEmployeeSalary(payload) {
@@ -106,7 +118,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
         <tr>
           <td
             colSpan={4}
-            className="fw-semibold text-uppercase fs-11 text-muted bg-light py-2 px-3"
+            className="fw-semibold text-uppercase fs-11 text-muted surface-muted py-2 px-3"
             style={{ letterSpacing: "0.08em" }}
           >
             {label}
@@ -125,6 +137,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
               <td className="text-end py-2">
                 {isEditing ? (
                   <Input
+                    data-testid={testId("employee-salary-edit-value", itemTestKey(comp), "input")}
                     type="number"
                     bsSize="sm"
                     value={editValue}
@@ -164,6 +177,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
                 {isEditing ? (
                   <div className="d-flex gap-1 justify-content-center">
                     <Button
+                      data-testid={testId("employee-salary-component", itemTestKey(comp), "save-button")}
                       size="sm"
                       color="success"
                       className="btn-sm py-1 px-2 fs-11"
@@ -177,6 +191,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
                       )}
                     </Button>
                     <Button
+                      data-testid={testId("employee-salary-component", itemTestKey(comp), "cancel-button")}
                       size="sm"
                       color="light"
                       className="btn-sm py-1 px-2 fs-11"
@@ -188,6 +203,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
                   </div>
                 ) : (
                   <Button
+                    data-testid={testId("employee-salary-component", itemTestKey(comp), "override-button")}
                     size="sm"
                     color="light"
                     className="btn-sm py-1 px-2 fs-11"
@@ -214,7 +230,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
   return (
     <div className="table-responsive">
       <Table size="sm" bordered className="mb-0 align-middle">
-        <thead className="table-light">
+        <thead className="table-surface">
           <tr>
             <th className="ps-3 fw-semibold fs-12">Component</th>
             <th className="text-end fw-semibold fs-12">Monthly Amount</th>
@@ -228,7 +244,7 @@ const ComponentBreakdownTable = ({ components, onSaveOverride }) => {
           <SectionRows items={reimbursements} label="Reimbursements" />
         </tbody>
         <tfoot>
-          <tr className="table-light fw-bold">
+          <tr className="table-surface fw-bold">
             <td className="ps-3 fs-13">Net Monthly Pay</td>
             <td className="text-end text-success fs-13">
               ₹{" "}
@@ -400,8 +416,8 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
   };
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} size="lg" centered scrollable>
-      <ModalHeader toggle={toggle} className="border-bottom pb-3">
+    <Modal data-testid="employee-salary-edit-salary-details-dialog" isOpen={isOpen} toggle={toggle} size="lg" centered scrollable>
+      <ModalHeader close={<ModalCloseButton onClick={toggle} testId="employee-salary-edit-salary-details-close-button" />} toggle={toggle} className="border-bottom pb-3">
         <div>
           <h5 className="mb-0 fw-semibold">
             {isEdit ? "Edit Salary Details" : "Set Salary Details"}
@@ -429,6 +445,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
               Salary Structure <span className="text-danger">*</span>
             </Label>
             <Select
+              testId="employee-salary-edit-salary-details-select-structure"
               options={structureOptions}
               value={form.salary_structure}
               onChange={(val) =>
@@ -445,6 +462,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
               Calculate Salary Based On <span className="text-danger">*</span>
             </Label>
             <Select
+              testId="employee-salary-edit-salary-details-calculate-salary-based-on"
               options={basedOnOptions}
               value={basedOnOptions.find((o) => o.value === form.based_on)}
               onChange={(val) =>
@@ -461,6 +479,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 Annual CTC Amount (₹) <span className="text-danger">*</span>
               </Label>
               <Input
+                data-testid="employee-salary-edit-salary-details-e-g-600000-input"
                 type="number"
                 value={form.ctc_amount}
                 onChange={(e) =>
@@ -485,6 +504,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 Monthly Gross Amount (₹) <span className="text-danger">*</span>
               </Label>
               <Input
+                data-testid="employee-salary-edit-salary-details-e-g-50000-input"
                 type="number"
                 value={form.gross_amount}
                 onChange={(e) =>
@@ -500,6 +520,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
               Effective Date <span className="text-danger">*</span>
             </Label>
             <Input
+              data-testid="employee-salary-edit-salary-details-effective-date-input"
               type="date"
               value={form.effective_date}
               onChange={(e) =>
@@ -514,6 +535,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 Remarks (Revision Note)
               </Label>
               <Input
+                data-testid="employee-salary-edit-salary-details-reason-for-salary-revision-textarea"
                 type="textarea"
                 rows={2}
                 value={form.remarks}
@@ -528,8 +550,8 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
 
         {companyLeavePolicy && (
           <div className="border rounded overflow-hidden mb-4">
-            <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
-              <span className="fw-semibold fs-13 text-dark">Leave Policy (per-employee override)</span>
+            <div className="surface-muted px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+              <span className="fw-semibold fs-13 text-body">Leave Policy (per-employee override)</span>
               <span className="fs-11 text-muted">Blank = company default</span>
             </div>
             <div className="p-3">
@@ -537,14 +559,16 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 {companyLeavePolicy.credit_based ? (
                   <Col md={6}>
                     <Label className="form-label fw-medium">Monthly Credit (days)</Label>
-                    <Input type="number" step="0.01" min="0" value={leave.monthly_credit}
+                    <Input
+                      data-testid="employee-salary-edit-salary-details-monthly-credit-days-input" type="number" step="0.01" min="0" value={leave.monthly_credit}
                       placeholder={`Default: ${companyLeavePolicy.monthly_credit}`}
                       onChange={(e) => setLeave((p) => ({ ...p, monthly_credit: e.target.value }))} />
                   </Col>
                 ) : (
                   <Col md={6}>
                     <Label className="form-label fw-medium">Yearly Credit (days)</Label>
-                    <Input type="number" step="0.01" min="0" value={leave.yearly_credit}
+                    <Input
+                      data-testid="employee-salary-edit-salary-details-yearly-credit-days-input" type="number" step="0.01" min="0" value={leave.yearly_credit}
                       placeholder={`Default: ${companyLeavePolicy.yearly_credit}`}
                       onChange={(e) => setLeave((p) => ({ ...p, yearly_credit: e.target.value }))} />
                   </Col>
@@ -552,7 +576,8 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 {companyLeavePolicy.carry_forward && (
                   <Col md={6}>
                     <Label className="form-label fw-medium">Max Carry Forward (days)</Label>
-                    <Input type="number" step="0.01" min="0" value={leave.max_carry_forward}
+                    <Input
+                      data-testid="employee-salary-edit-salary-details-max-carry-forward-days-input" type="number" step="0.01" min="0" value={leave.max_carry_forward}
                       placeholder={`Default: ${companyLeavePolicy.max_carry_forward}`}
                       onChange={(e) => setLeave((p) => ({ ...p, max_carry_forward: e.target.value }))} />
                   </Col>
@@ -560,6 +585,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 <Col md={6}>
                   <Label className="form-label fw-medium">Remainder</Label>
                   <Select
+                    testId="employee-salary-edit-salary-details-remainder"
                     options={[
                       { value: "", label: `Company default (${companyLeavePolicy.pay_remaining ? "Encash" : "Lapse"})` },
                       { value: "yes", label: "Encash" },
@@ -582,8 +608,8 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
         {/* Income Tax Declaration (per-employee) */}
         {taxPolicy && (
           <div className="border rounded overflow-hidden mb-4">
-            <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
-              <span className="fw-semibold fs-13 text-dark">Income Tax Declaration</span>
+            <div className="surface-muted px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+              <span className="fw-semibold fs-13 text-body">Income Tax Declaration</span>
               <span className="fs-11 text-muted">Blank regime = company default ({taxPolicy.default_regime})</span>
             </div>
             <div className="p-3">
@@ -591,6 +617,7 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                 <Col md={4}>
                   <Label className="form-label fw-medium">Tax Regime</Label>
                   <Select
+                    testId="employee-salary-edit-salary-details-tax-regime"
                     options={[
                       { value: "", label: `Company default (${taxPolicy.default_regime})` },
                       { value: "new", label: "New Regime" },
@@ -625,13 +652,14 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
                     ].map(([k, lbl]) => (
                       <Col md={4} key={k}>
                         <Label className="form-label fw-medium">{lbl}</Label>
-                        <Input type="number" min="0" value={tax[k]}
+                        <Input data-testid={testId("employee-salary-tax", k, "input")} type="number" min="0" value={tax[k]}
                           onChange={(e) => setTax((p) => ({ ...p, [k]: e.target.value }))} />
                       </Col>
                     ))}
                     <Col md={4} className="d-flex align-items-center">
                       <div className="form-check form-switch mt-4">
-                        <Input className="form-check-input" type="checkbox" checked={tax.is_metro}
+                        <Input
+                          data-testid="employee-salary-edit-salary-details-is-metro-checkbox" className="form-check-input" type="checkbox" checked={tax.is_metro}
                           onChange={() => setTax((p) => ({ ...p, is_metro: !p.is_metro }))} />
                         <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>Metro city (HRA 50%)</Label>
                       </div>
@@ -649,8 +677,8 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
 
         {/* Component Breakdown */}
         <div className="border rounded overflow-hidden">
-          <div className="bg-light px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
-            <span className="fw-semibold fs-13 text-dark">
+          <div className="surface-muted px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
+            <span className="fw-semibold fs-13 text-body">
               Component Breakdown
             </span>
             <span className="fs-11 text-muted">
@@ -681,10 +709,11 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
       </ModalBody>
 
       <ModalFooter className="border-top pt-3">
-        <Button color="light" onClick={toggle} disabled={saving}>
+        <Button data-testid="employee-salary-edit-salary-details-cancel-button" color="light" onClick={toggle} disabled={saving}>
           Cancel
         </Button>
         <Button
+          data-testid="employee-salary-edit-salary-details-update-salary-button"
           color="success"
           onClick={handleSave}
           disabled={saving}
@@ -701,6 +730,15 @@ const SalaryModal = ({ isOpen, toggle, employee, structureOptions, companyLeaveP
     </Modal>
   );
 };
+
+const amountLabel = (emp) =>
+  emp.based_on === "ctc"
+    ? emp.ctc_amount
+      ? `₹ ${Number(emp.ctc_amount).toLocaleString("en-IN")} / yr`
+      : "—"
+    : emp.gross_amount
+      ? `₹ ${Number(emp.gross_amount).toLocaleString("en-IN")} / mo`
+      : "—";
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const EmployeeSalary = () => {
@@ -722,7 +760,6 @@ const EmployeeSalary = () => {
   const [departments, setDepartments] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState(null); // react-select option | null
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -797,18 +834,86 @@ const EmployeeSalary = () => {
     loadData();
   };
 
-  const filtered = employees.filter((e) => {
-    const matchesSearch =
-      !search ||
-      e.name?.toLowerCase().includes(search.toLowerCase()) ||
-      e.emp_id?.toLowerCase().includes(search.toLowerCase());
-
-    const matchesDepartment =
+  const filtered = employees.filter(
+    (e) =>
       !selectedDepartment ||
-      String(e.department_id) === String(selectedDepartment.value);
+      String(e.department_id) === String(selectedDepartment.value),
+  );
 
-    return matchesSearch && matchesDepartment;
-  });
+  const columns = useMemo(
+    () => [
+      {
+        id: "name",
+        accessorFn: (emp) => emp.name || "",
+        header: "Employee",
+        Cell: ({ row }) => (
+          <ApvEmployee
+            employee={{ first_name: row.original.name, profile_url: row.original.image_url }}
+            sub={row.original.emp_id ? `#${row.original.emp_id}` : null}
+          />
+        ),
+      },
+      { accessorKey: "emp_id", header: "Emp ID" },
+      {
+        id: "salary_structure_name",
+        accessorFn: (emp) => emp.salary_structure_name || "Not assigned",
+        header: "Salary Structure",
+        filterVariant: "select",
+        Cell: ({ row }) =>
+          row.original.salary_structure_name ? (
+            <ApvChip icon="ri-stack-line">{row.original.salary_structure_name}</ApvChip>
+          ) : (
+            <span className="apv-muted">Not assigned</span>
+          ),
+      },
+      {
+        id: "based_on",
+        accessorFn: (emp) => (emp.salary_structure_name ? emp.based_on?.toUpperCase() || "" : ""),
+        header: "Based On",
+        filterVariant: "select",
+        Cell: ({ row }) =>
+          row.original.salary_structure_name ? (
+            <ApvStatus
+              tone={row.original.based_on === "ctc" ? "success" : "info"}
+              label={row.original.based_on?.toUpperCase()}
+            />
+          ) : (
+            <ApvEmpty />
+          ),
+      },
+      {
+        id: "amount",
+        accessorFn: (emp) =>
+          Number((emp.based_on === "ctc" ? emp.ctc_amount : emp.gross_amount) || 0),
+        header: "Annual CTC / Monthly Gross",
+        filterVariant: "range",
+        exportValue: amountLabel,
+        Cell: ({ row }) => (
+          <Typography variant="body2" fontWeight={500}>
+            {amountLabel(row.original)}
+          </Typography>
+        ),
+      },
+      {
+        accessorKey: "effective_date",
+        header: "Effective Date",
+        Cell: ({ cell }) => <ApvDate value={cell.getValue()} />,
+      },
+      {
+        id: "status",
+        accessorFn: (emp) => (emp.salary_structure_name ? "Active" : "Pending"),
+        header: "Status",
+        filterVariant: "select",
+        Cell: ({ row }) =>
+          row.original.salary_structure_name ? (
+            <ApvStatus tone="success" icon="ri-checkbox-circle-line" label="Active" />
+          ) : (
+            <ApvStatus tone="warning" icon="ri-time-line" label="Pending" />
+          ),
+      },
+    ],
+    [],
+  );
 
   const stats = {
     total: employees.length,
@@ -822,7 +927,7 @@ const EmployeeSalary = () => {
         fullscreen
           ? {
               position: "fixed", inset: 0, zIndex: 1050,
-              background: "#fff", padding: "16px 20px",
+              background: "var(--vz-secondary-bg)", padding: "16px 20px",
               overflowY: "auto",
             }
           : undefined
@@ -831,12 +936,12 @@ const EmployeeSalary = () => {
       {fullscreen && (
         <div
           className="d-flex align-items-center justify-content-between mb-2 pb-2"
-          style={{ borderBottom: "1px solid #e5e7eb" }}
+          style={{ borderBottom: "1px solid var(--vz-border-color)" }}
         >
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--vz-body-color)" }}>
             <i className="ri-fullscreen-line me-2"></i>Full Screen Edit Mode
           </span>
-          <Button color="light" size="sm" className="border" style={{display: "flex", alignItems: "center"}} onClick={() => setFullscreen(false)}>
+          <Button data-testid="employee-salary-exit-full-screen-esc-button" color="light" size="sm" className="border" style={{display: "flex", alignItems: "center"}} onClick={() => setFullscreen(false)}>
             <i className="ri-fullscreen-exit-line me-1"></i>Exit Full Screen (Esc)
           </Button>
         </div>
@@ -853,6 +958,7 @@ const EmployeeSalary = () => {
         </div>
         {!fullscreen && (
           <Button
+            data-testid="employee-salary-full-screen-button"
             color="light"
             className="border"
             onClick={() => setFullscreen(true)}
@@ -910,199 +1016,52 @@ const EmployeeSalary = () => {
         ))}
       </Row>
 
-      {/* Table Card */}
-      <Card className="shadow-none border">
-        <CardBody className="p-0">
-          {/* Search + Department filter — placed right next to each other,
-              minimal gap, no extra Row/Col width allocated beyond what each
-              control needs. */}
-          <div className="p-3 border-bottom d-flex align-items-center gap-2 flex-wrap">
-            <div className="search-box" style={{ width: 260 }}>
-              <Input
-                type="search"
-                className="form-control search"
-                placeholder="Search employee name or ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <i className="ri-search-line search-icon"></i>
-            </div>
-            <div style={{ width: 220 }}>
-              <Select
-                options={departmentOptions}
-                value={selectedDepartment}
-                onChange={(val) => setSelectedDepartment(val)}
-                isClearable
-                placeholder="Filter by department..."
-                classNamePrefix="select2-selection"
-                menuPortalTarget={document.body}
-                menuPosition="fixed"
-                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-              />
-            </div>
+      <AppTable
+        columns={columns}
+        data={filtered}
+        isLoading={loading}
+        onRefresh={loadData}
+        exportFileName="employee-salary"
+        emptyMessage="No employees found."
+        getRowId={(emp) => String(emp.id)}
+        muiTableContainerProps={{
+          sx: { maxHeight: fullscreen ? "calc(100vh - 320px)" : "calc(100vh - 360px)" },
+        }}
+        toolbarActions={
+          <div style={{ width: 220 }}>
+            <Select
+              testId="employee-salary-filter-by-department"
+              options={departmentOptions}
+              value={selectedDepartment}
+              onChange={(val) => setSelectedDepartment(val)}
+              isClearable
+              placeholder="Filter by department..."
+              classNamePrefix="select2-selection"
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+            />
           </div>
-
-          {/* Table */}
-          {loading ? (
-            <div className="text-center py-5">
-              <Spinner color="success" />
-              <p className="mt-2 text-muted fs-13">
-                Loading employee salaries...
-              </p>
-            </div>
-          ) : (
-            <SimpleBar
-              style={{ maxHeight: fullscreen ? "calc(100vh - 320px)" : "calc(100vh - 360px)" }}
-              autoHide={false}
-            >
-              <div className="table-responsive">
-                <Table className="table-hover table-nowrap align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th className="ps-4 fw-semibold fs-12">Employee</th>
-                      <th className="fw-semibold fs-12">Salary Structure</th>
-                      <th className="fw-semibold fs-12">Based On</th>
-                      <th className="fw-semibold fs-12">
-                        Annual CTC / Monthly Gross
-                      </th>
-                      <th className="fw-semibold fs-12">Effective Date</th>
-                      <th className="fw-semibold fs-12">Status</th>
-                      <th className="text-center fw-semibold fs-12">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="text-center py-5 text-muted">
-                          <FeatherIcon
-                            icon="inbox"
-                            size={36}
-                            className="mb-2 opacity-40"
-                          />
-                          <p className="mb-0">No employees found.</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      filtered.map((emp) => {
-                        const hasSalary = !!emp.salary_structure_name;
-                        const amount =
-                          emp.based_on === "ctc"
-                            ? emp.ctc_amount
-                              ? `₹ ${Number(emp.ctc_amount).toLocaleString("en-IN")} / yr`
-                              : "—"
-                            : emp.gross_amount
-                              ? `₹ ${Number(emp.gross_amount).toLocaleString("en-IN")} / mo`
-                              : "—";
-
-                        return (
-                          <tr key={emp.id}>
-                            <td className="ps-4">
-                              <div className="d-flex align-items-center gap-2">
-                                <div
-                                  className="avatar-xs rounded-circle bg-success-subtle d-flex align-items-center justify-content-center flex-shrink-0"
-                                  style={{ width: 32, height: 32 }}
-                                >
-                                  {emp.image_url ? (
-                                    <img
-                                      src={emp.image_url}
-                                      alt={emp.name}
-                                      className="rounded-circle"
-                                      width={32}
-                                      height={32}
-                                      style={{ objectFit: "cover" }}
-                                    />
-                                  ) : (
-                                    <span className="text-success fw-bold fs-12">
-                                      {(emp.name || "?")[0].toUpperCase()}
-                                    </span>
-                                  )}
-                                </div>
-                                <div>
-                                  <p className="mb-0 fw-medium fs-13">
-                                    {emp.name}
-                                  </p>
-                                  <p className="mb-0 text-muted fs-11">
-                                    {emp.emp_id}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="fs-13">
-                              {emp.salary_structure_name || (
-                                <span className="text-muted">Not assigned</span>
-                              )}
-                            </td>
-                            <td>
-                              {hasSalary ? (
-                                <Badge
-                                  color={
-                                    emp.based_on === "ctc" ? "primary" : "info"
-                                  }
-                                  className="fs-11"
-                                >
-                                  {emp.based_on?.toUpperCase()}
-                                </Badge>
-                              ) : (
-                                <span className="text-muted fs-13">—</span>
-                              )}
-                            </td>
-                            <td className="fw-medium fs-13">{amount}</td>
-                            <td className="fs-13 text-muted">
-                              {emp.effective_date || "—"}
-                            </td>
-                            <td>
-                              {hasSalary ? (
-                                <Badge
-                                  color="success-subtle"
-                                  className="text-success fs-11 border border-success border-opacity-25"
-                                >
-                                  <FeatherIcon
-                                    icon="check"
-                                    size={10}
-                                    className="me-1"
-                                  />
-                                  Active
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  color="warning-subtle"
-                                  className="text-warning fs-11 border border-warning border-opacity-25"
-                                >
-                                  <FeatherIcon
-                                    icon="clock"
-                                    size={10}
-                                    className="me-1"
-                                  />
-                                  Pending
-                                </Badge>
-                              )}
-                            </td>
-                            <td className="text-center">
-                              <Button
-                                size="sm"
-                                color={hasSalary ? "light" : "success"}
-                                className="btn-sm"
-                                onClick={() => openModal(emp)}
-                              >
-                                <FeatherIcon
-                                  icon={hasSalary ? "edit-2" : "plus"}
-                                  size={13}
-                                  className="me-1"
-                                />
-                                {hasSalary ? "Edit" : "Set Salary"}
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </Table>
-              </div>
-            </SimpleBar>
-          )}
-        </CardBody>
-      </Card>
+        }
+        enableRowActions
+        positionActionsColumn="last"
+        displayColumnDefOptions={{ "mrt-row-actions": { header: "Actions", size: 90 } }}
+        renderRowActions={({ row }) => {
+          const hasSalary = !!row.original.salary_structure_name;
+          return (
+            <Tooltip title={hasSalary ? "Edit" : "Set Salary"}>
+              <IconButton
+                data-testid="employee-salary-edit-button"
+                size="small"
+                color={hasSalary ? "primary" : "success"}
+                onClick={() => openModal(row.original)}
+              >
+                {hasSalary ? <EditOutlinedIcon fontSize="small" /> : <AddRoundedIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          );
+        }}
+      />
 
       {/* Salary Modal */}
       <SalaryModal

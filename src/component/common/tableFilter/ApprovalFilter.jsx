@@ -17,7 +17,7 @@
 //   TabPane,
 //   TabContent,
 // } from "reactstrap";
-// import Select from "react-select";
+// import Select from "../../../shared/ui/TestableSelect";
 // import { useDispatch, useSelector } from "react-redux";
 // import { DatePicker } from "antd";
 // import {
@@ -876,17 +876,14 @@ import React, {
 } from "react";
 import {
   Badge,
-  Card,
-  CardHeader,
   Col,
-  Row,
   Nav,
   NavItem,
   NavLink,
   TabPane,
   TabContent,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import {
@@ -905,7 +902,6 @@ import {
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { setLeaveApproval } from "../../../redux/reducers/ChildReducer/LeaveApprovalReducer";
-import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { Api } from "../../../common/api/Api";
 import { setAttendanceApprovalData } from "../../../redux/reducers/ChildReducer/AttendanceApprovalReducer";
 import { toast } from "react-toastify";
@@ -927,7 +923,7 @@ import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSel
 
 dayjs.extend(customParseFormat);
 
-const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_PAGE_SIZE = 10;
 
 // Backend caps page_size at 100, so the badge count has to walk the pages
 // instead of asking for one huge page.
@@ -961,7 +957,7 @@ const ApprovalFilter = ({ formname }) => {
   const [PendingLeave, setPendingLeave] = useState(0);
   const [AttendancePending, setAttendancePending] = useState(0);
 
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data")) || {};
   const employee_options = useMemo(
     () => GetLocalStorageData("employee") || [],
     [],
@@ -983,6 +979,9 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [tableLoading, setTableLoading] = useState(true);
+  // Only the latest table request may update the table (filters can change mid-flight).
+  const requestIdRef = useRef(0);
 
   const inputRef = useRef();
   const location = useLocation();
@@ -1203,11 +1202,13 @@ const ApprovalFilter = ({ formname }) => {
   const handleLeaveFilter = async (
     targetPage = page,
     targetPageSize = pageSize,
+    requestId = requestIdRef.current,
   ) => {
     const url = buildUrl("leave", targetPage, targetPageSize);
 
     try {
       const response = await Api({ type: "GET", url });
+      if (requestId !== requestIdRef.current) return;
 
       let { list: data, total } = extractListAndTotal(response);
 
@@ -1221,18 +1222,20 @@ const ApprovalFilter = ({ formname }) => {
     } catch (error) {
       console.error(error);
     } finally {
-      dispatch(setLoaderVisible(false));
+      if (requestId === requestIdRef.current) setTableLoading(false);
     }
   };
 
   const handleAttendanceFilter = async (
     targetPage = page,
     targetPageSize = pageSize,
+    requestId = requestIdRef.current,
   ) => {
     const url = buildUrl("attendance", targetPage, targetPageSize);
 
     try {
       const response = await Api({ type: "GET", url });
+      if (requestId !== requestIdRef.current) return;
 
       let { list: data, total } = extractListAndTotal(response);
 
@@ -1245,7 +1248,7 @@ const ApprovalFilter = ({ formname }) => {
     } catch (error) {
       console.error(error);
     } finally {
-      dispatch(setLoaderVisible(false));
+      if (requestId === requestIdRef.current) setTableLoading(false);
     }
   };
 
@@ -1318,24 +1321,26 @@ const ApprovalFilter = ({ formname }) => {
     targetPage = page,
     targetPageSize = pageSize,
   ) => {
-    dispatch(setLoaderVisible(true));
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+    setTableLoading(true);
 
     if (tab === "2" || (!showAttendanceApproval && tab === "1")) {
       if (showLeaveApproval) {
-        handleLeaveFilter(targetPage, targetPageSize);
+        handleLeaveFilter(targetPage, targetPageSize, requestId);
       } else {
-        dispatch(setLoaderVisible(false));
+        setTableLoading(false);
         toast.error("Something Went Wrong!");
       }
     } else if (tab === "1") {
       if (showAttendanceApproval) {
-        handleAttendanceFilter(targetPage, targetPageSize);
+        handleAttendanceFilter(targetPage, targetPageSize, requestId);
       } else {
-        dispatch(setLoaderVisible(false));
+        setTableLoading(false);
         toast.error("Something Went Wrong!");
       }
     } else {
-      dispatch(setLoaderVisible(false));
+      setTableLoading(false);
       toast.error("Something Went Wrong!");
     }
   };
@@ -1414,212 +1419,303 @@ const ApprovalFilter = ({ formname }) => {
     [page, pageSize, totalCount, handlePaginationChange],
   );
 
+  const shiftMonth = (delta) => {
+    const base = dayjs(filteredMonth);
+    const next = (base.isValid() ? base : dayjs()).add(delta, "month");
+    handleDateRangeChange(null, next.format(MonthFormat));
+  };
+
+  const apfSelectProps = {
+    className: "apf-select",
+    classNamePrefix: "apf-rs",
+    menuPortalTarget: document.body,
+    styles: { menuPortal: (base) => ({ ...base, zIndex: 1600 }) },
+  };
+
   return (
     <React.Fragment>
       <div className="page-content" style={{ marginBottom: "-135px" }}>
-        <div style={{ zIndex: 1000, position: "relative" }}>
-          <Card>
-            <CardHeader className="border-0 rounded">
-              <Row className="g-2">
-                {showScopeDropdown ? (
-                  <Col md={3}>
-                    <Select
-                      id="scope_filter"
-                      name="scope_filter"
-                      isClearable={false}
-                      isMulti={false}
-                      isSearchable={false}
-                      options={scopeOptions}
-                      className="basic-multi-select"
-                      placeholder="Select Employee Type"
-                      onChange={handleScopeChange}
-                      value={
-                        scopeOptions.find((o) => o.value === effectiveScope) ||
-                        scopeOptions[0]
-                      }
-                    />
-                  </Col>
-                ) : null}
-                <Col md={3}>
+        <div className="apf-wrap">
+          <div className="apf-card">
+            <div className="apf-fields">
+              {showScopeDropdown ? (
+                <div className="apf-field">
+                  <label className="apf-label" htmlFor="scope_filter">
+                    <i className="ri-group-line" /> Employee Type
+                  </label>
                   <Select
-                    id="employee_multiselect"
-                    name="employee_multiselect"
-                    isClearable={true}
-                    isMulti={true}
-                    options={employee_options}
-                    getOptionLabel={(e) => e.name ?? e.label}
-                    getOptionValue={(e) => e.id ?? e.value}
-                    className="basic-multi-select"
-                    placeholder="Select Employees"
-                    onChange={handleEmployeeChange}
-                    components={{ Option: EmployeeDisplayInSelect }}
-                    value={selectedEmployees}
-                    filterOption={handleEmployeeSearch}
-                  />
-                </Col>
-                <Col md={3}>
-                  <Select
-                    id="department_filter"
-                    name="department_filter"
-                    isClearable
-                    innerRef={inputRef}
+                    testId="approval-filter-scope-filter"
+                    {...apfSelectProps}
+                    inputId="scope_filter"
+                    name="scope_filter"
+                    isClearable={false}
                     isMulti={false}
-                    options={dep_options || []}
-                    className="basic-multi-select"
-                    placeholder="Select Department"
-                    getOptionLabel={(e) => e.name}
-                    getOptionValue={(e) => e.id}
+                    isSearchable={false}
+                    options={scopeOptions}
+                    placeholder="Select Employee Type"
+                    onChange={handleScopeChange}
                     value={
-                      dep_options?.find(
-                        (d) =>
-                          Number(d.id) ===
-                          Number(
-                            employee_table_filter_keys?.primary_department_id_list,
-                          ),
-                      ) || null
+                      scopeOptions.find((o) => o.value === effectiveScope) ||
+                      scopeOptions[0]
                     }
-                    onChange={(e) =>
-                      handleFilterChange(e, "primary_department_id_list")
-                    }
-                    filterOption={handleEmployeeSearch}
                   />
-                </Col>
+                </div>
+              ) : null}
 
-                {isLeaveApprovalActive && showLeaveApproval && (
-                  <Col md={3}>
-                    <Select
-                      id="leave_type_filter"
-                      name="leave_type_filter"
-                      isClearable
-                      isMulti={false}
-                      options={leave_type_options}
-                      className="basic-multi-select"
-                      placeholder="Select Leave Type"
-                      value={selectedLeaveType}
-                      onChange={handleLeaveTypeFilterChange}
-                      filterOption={(option, inputValue) =>
-                        option.label
-                          .toLowerCase()
-                          .includes(inputValue.toLowerCase())
-                      }
-                    />
-                  </Col>
-                )}
+              <div className="apf-field apf-field-wide">
+                <label className="apf-label" htmlFor="employee_multiselect">
+                  <i className="ri-user-search-line" /> Employees
+                </label>
+                <Select
+                  testId="approval-filter-employee-multiselect"
+                  {...apfSelectProps}
+                  inputId="employee_multiselect"
+                  name="employee_multiselect"
+                  isClearable={true}
+                  isMulti={true}
+                  options={employee_options}
+                  getOptionLabel={(e) => e.name ?? e.label}
+                  getOptionValue={(e) => e.id ?? e.value}
+                  placeholder="Search employees…"
+                  onChange={handleEmployeeChange}
+                  components={{ Option: EmployeeDisplayInSelect }}
+                  value={selectedEmployees}
+                  filterOption={handleEmployeeSearch}
+                />
+              </div>
 
-                <Col md={3}>
-                  <div className="form-icon right">
+              <div className="apf-field">
+                <label className="apf-label" htmlFor="department_filter">
+                  <i className="ri-building-line" /> Department
+                </label>
+                <Select
+                  testId="approval-filter-department-filter"
+                  {...apfSelectProps}
+                  inputId="department_filter"
+                  name="department_filter"
+                  isClearable
+                  innerRef={inputRef}
+                  isMulti={false}
+                  options={dep_options || []}
+                  placeholder="All Departments"
+                  getOptionLabel={(e) => e.name}
+                  getOptionValue={(e) => e.id}
+                  value={
+                    dep_options?.find(
+                      (d) =>
+                        Number(d.id) ===
+                        Number(
+                          employee_table_filter_keys?.primary_department_id_list,
+                        ),
+                    ) || null
+                  }
+                  onChange={(e) =>
+                    handleFilterChange(e, "primary_department_id_list")
+                  }
+                  filterOption={handleEmployeeSearch}
+                />
+              </div>
+
+              {isLeaveApprovalActive && showLeaveApproval && (
+                <div className="apf-field">
+                  <label className="apf-label" htmlFor="leave_type_filter">
+                    <i className="ri-file-list-3-line" /> Leave Type
+                  </label>
+                  <Select
+                    testId="approval-filter-leave-type-filter"
+                    {...apfSelectProps}
+                    inputId="leave_type_filter"
+                    name="leave_type_filter"
+                    isClearable
+                    isMulti={false}
+                    options={leave_type_options}
+                    placeholder="All Leave Types"
+                    value={selectedLeaveType}
+                    onChange={handleLeaveTypeFilterChange}
+                    filterOption={(option, inputValue) =>
+                      option.label
+                        .toLowerCase()
+                        .includes(inputValue.toLowerCase())
+                    }
+                  />
+                </div>
+              )}
+              <div className="apf-field apf-field-month">
+                <span className="apf-label">
+                  <i className="ri-calendar-2-line" /> Month
+                </span>
+                <div className="apf-month">
+                  <button
+                    data-testid="approval-filter-previous-month-button"
+                    type="button"
+                    className="apf-month-btn"
+                    aria-label="Previous month"
+                    onClick={() => shiftMonth(-1)}
+                  >
+                    <i className="ri-arrow-left-s-line" />
+                  </button>
+                  <div className="apf-month-picker">
+                    <i className="ri-calendar-2-line" />
                     <DatePicker
                       value={dayjs(filteredMonth)}
-                      format={MonthFormat}
+                      format="MMM YYYY"
                       picker="month"
                       allowClear={false}
-                      className="form-control"
+                      bordered={false}
+                      suffixIcon={null}
+                      inputReadOnly
                       placeholder="Select Month"
-                      onChange={handleDateRangeChange}
+                      onChange={(d) => d && handleDateRangeChange(null, d.format(MonthFormat))}
                     />
                   </div>
-                </Col>
-                <div
-                  className="col-md-auto ms-auto"
-                  style={{ marginLeft: "10px" }}
-                >
-                  <Row className="g-2">
-                    <div className="d-flex justify-content-end">
-                      <div className="col-lg-auto me-2">
-                        <Nav
-                          className="nav-tabs nav-tabs-custom nav-success"
-                          role="tablist"
-                        >
-                          {showAttendanceApproval ? (
-                            <NavItem>
-                              <NavLink
-                                className={classnames(
-                                  { active: activeTab === "1" },
-                                  `fw-semibold ${
-                                    activeTab === "1"
-                                      ? "text-success"
-                                      : "text-primary"
-                                  }`,
-                                )}
-                                onClick={() => {
-                                  toggleTab("1");
-                                }}
-                                href="#"
-                              >
-                                Attendance Approval{" "}
-                                <Badge
-                                  color={
-                                    activeTab === "1" ? "success" : "primary"
-                                  }
-                                  style={{ marginLeft: "5px" }}
-                                >
-                                  {AttendancePending}
-                                </Badge>
-                              </NavLink>
-                            </NavItem>
-                          ) : null}
-
-                          {showLeaveApproval ? (
-                            <NavItem>
-                              {!showAttendanceApproval ? (
-                                <NavLink
-                                  className={classnames(
-                                    { active: activeTab === "1" },
-                                    "fw-semibold text-success",
-                                  )}
-                                  href="#"
-                                >
-                                  Leave Approval{" "}
-                                  <Badge
-                                    color={"success"}
-                                    style={{ marginLeft: "5px" }}
-                                  >
-                                    {PendingLeave}
-                                  </Badge>
-                                </NavLink>
-                              ) : (
-                                <NavLink
-                                  className={classnames(
-                                    { active: activeTab === "2" },
-                                    `fw-semibold ${
-                                      activeTab === "2"
-                                        ? "text-success"
-                                        : "text-primary"
-                                    }`,
-                                  )}
-                                  onClick={() => {
-                                    toggleTab("2");
-                                  }}
-                                  href="#"
-                                >
-                                  Leave Approval{" "}
-                                  <Badge
-                                    color={
-                                      activeTab === "2" ? "success" : "primary"
-                                    }
-                                    style={{ marginLeft: "5px" }}
-                                  >
-                                    {PendingLeave}
-                                  </Badge>
-                                </NavLink>
-                              )}
-                            </NavItem>
-                          ) : null}
-                        </Nav>
-                      </div>
-                    </div>
-                  </Row>
+                  <button
+                    data-testid="approval-filter-next-month-button"
+                    type="button"
+                    className="apf-month-btn"
+                    aria-label="Next month"
+                    onClick={() => shiftMonth(1)}
+                  >
+                    <i className="ri-arrow-right-s-line" />
+                  </button>
                 </div>
-              </Row>
-            </CardHeader>
-          </Card>
+              </div>
+              <div className="apf-tabs-end">
+                <Nav
+                  className="nav-tabs nav-tabs-custom nav-success apf-nav"
+                  role="tablist"
+                >
+                  {showAttendanceApproval ? (
+                    <NavItem>
+                      <NavLink
+                        data-testid="approval-filter-attendance-approval-link"
+                        className={classnames(
+                          { active: activeTab === "1" },
+                          `fw-semibold ${
+                            activeTab === "1" ? "text-success" : "text-primary"
+                          }`,
+                        )}
+                        onClick={() => {
+                          toggleTab("1");
+                        }}
+                        href="#"
+                      >
+                        Attendance Approval{" "}
+                        <Badge
+                          color={activeTab === "1" ? "success" : "primary"}
+                          style={{ marginLeft: "5px" }}
+                        >
+                          {AttendancePending}
+                        </Badge>
+                      </NavLink>
+                    </NavItem>
+                  ) : null}
+  
+                  {showLeaveApproval ? (
+                    <NavItem>
+                      {!showAttendanceApproval ? (
+                        <NavLink
+                          data-testid="approval-filter-leave-approval-link"
+                          className={classnames(
+                            { active: activeTab === "1" },
+                            "fw-semibold text-success",
+                          )}
+                          href="#"
+                        >
+                          Leave Approval{" "}
+                          <Badge color={"success"} style={{ marginLeft: "5px" }}>
+                            {PendingLeave}
+                          </Badge>
+                        </NavLink>
+                      ) : (
+                        <NavLink
+                          data-testid="approval-filter-leave-approval-link"
+                          className={classnames(
+                            { active: activeTab === "2" },
+                            `fw-semibold ${
+                              activeTab === "2" ? "text-success" : "text-primary"
+                            }`,
+                          )}
+                          onClick={() => {
+                            toggleTab("2");
+                          }}
+                          href="#"
+                        >
+                          Leave Approval{" "}
+                          <Badge
+                            color={activeTab === "2" ? "success" : "primary"}
+                            style={{ marginLeft: "5px" }}
+                          >
+                            {PendingLeave}
+                          </Badge>
+                        </NavLink>
+                      )}
+                    </NavItem>
+                  ) : null}
+                </Nav>
+              </div>
+            </div>
+          </div>
+
+          <style>{`
+            .apf-wrap{position:relative;z-index:1000;margin-bottom:1.25rem}
+            .apf-card{border-radius:14px;background:var(--vz-secondary-bg);border:1px solid var(--vz-border-color);
+              box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 22px -16px rgba(0,0,0,.25)}
+            .apf-tabs-end{margin-left:auto;align-self:flex-end}
+            .apf-tabs-end .apf-nav{border-bottom:0;flex-wrap:nowrap}
+            .apf-tabs-end .apf-nav .nav-link{white-space:nowrap;padding-top:9px;padding-bottom:9px}
+
+            .apf-month{display:flex;align-items:center;height:38px;border-radius:10px;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+            .apf-month:hover{border-color:rgba(var(--vz-primary-rgb),.45)}
+            .apf-month:focus-within{border-color:var(--vz-primary);box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
+            .apf-month-btn{width:34px;height:100%;display:grid;place-items:center;border:0;background:transparent;color:var(--vz-secondary-color);font-size:18px;transition:all .15s}
+            .apf-month-btn:hover{color:var(--vz-primary);background:rgba(var(--vz-primary-rgb),.08)}
+            .apf-month-picker{display:flex;align-items:center;gap:2px;height:100%;padding-left:10px;border-left:1px solid var(--vz-border-color);border-right:1px solid var(--vz-border-color)}
+            .apf-month-picker > i{color:var(--vz-primary);font-size:15px}
+            .apf-month-picker .ant-picker{width:104px;padding:0 6px;cursor:pointer}
+            .apf-month-picker .ant-picker input{font-size:.85rem;font-weight:600;color:var(--vz-heading-color) !important;cursor:pointer}
+
+            .apf-fields{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 14px;padding:14px 16px}
+            .apf-field{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1 1 190px;max-width:260px}
+            .apf-field-wide{flex:1.4 1 260px;max-width:380px}
+            .apf-field-month{flex:0 0 auto}
+            .apf-label{display:inline-flex;align-items:center;gap:5px;margin:0;padding-left:2px;font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--vz-secondary-color)}
+            .apf-label i{font-size:13px;line-height:1}
+
+            .apf-select .apf-rs__control{min-height:40px;border-radius:10px;border-color:var(--vz-border-color);background:var(--vz-secondary-bg);box-shadow:0 1px 2px rgba(0,0,0,.04);cursor:pointer;transition:border-color .15s,box-shadow .15s}
+            .apf-select .apf-rs__control:hover{border-color:rgba(var(--vz-primary-rgb),.45)}
+            .apf-select .apf-rs__control--is-focused{border-color:var(--vz-primary) !important;box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
+            .apf-select .apf-rs__value-container{padding:2px 10px}
+            .apf-select .apf-rs__single-value,.apf-select .apf-rs__input-container{font-size:.85rem;font-weight:500;color:var(--vz-heading-color)}
+            .apf-select .apf-rs__placeholder{font-size:.85rem;color:var(--vz-secondary-color)}
+            .apf-select .apf-rs__indicator-separator{display:none}
+            .apf-select .apf-rs__indicator{color:var(--vz-secondary-color);padding:0 8px}
+            .apf-select .apf-rs__clear-indicator:hover{color:var(--vz-danger)}
+            .apf-select .apf-rs__dropdown-indicator{transition:transform .2s}
+            .apf-select .apf-rs__control--menu-is-open .apf-rs__dropdown-indicator{transform:rotate(180deg);color:var(--vz-primary)}
+            .apf-select .apf-rs__control .apf-rs__multi-value.apf-rs__multi-value{min-width:0;border-radius:999px;background:rgba(var(--vz-primary-rgb),.1);border:1px solid rgba(var(--vz-primary-rgb),.22);color:var(--vz-primary);margin:2px 3px 2px 0}
+            .apf-select .apf-rs__control .apf-rs__multi-value .apf-rs__multi-value__label.apf-rs__multi-value__label{font-size:.76rem;font-weight:600;color:var(--vz-primary);padding:2px 4px 2px 9px}
+            .apf-select .apf-rs__control .apf-rs__multi-value .apf-rs__multi-value__remove.apf-rs__multi-value__remove{border-radius:999px;color:color-mix(in srgb,var(--vz-primary) 70%,transparent);margin-right:2px}
+            .apf-select .apf-rs__control .apf-rs__multi-value .apf-rs__multi-value__remove.apf-rs__multi-value__remove:hover{background:rgba(var(--vz-danger-rgb),.15);color:var(--vz-danger)}
+            .apf-rs__menu{border-radius:12px !important;overflow:hidden;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg) !important;
+              box-shadow:0 16px 40px -12px rgba(0,0,0,.3) !important;margin-top:6px !important}
+            .apf-rs__menu-list{padding:6px !important}
+            .apf-rs__option{border-radius:8px;font-size:.84rem;cursor:pointer !important;color:var(--vz-heading-color) !important}
+            .apf-rs__option--is-focused{background:rgba(var(--vz-primary-rgb),.08) !important}
+            .apf-rs__option--is-selected{background:rgba(var(--vz-primary-rgb),.14) !important;color:var(--vz-primary) !important;font-weight:600}
+            .apf-rs__menu-notice{font-size:.82rem;color:var(--vz-secondary-color) !important}
+
+            @media (max-width:575.98px){
+              .apf-tabs-end{margin-left:0;width:100%}.apf-field{max-width:none}
+              .apf-month{width:100%;justify-content:space-between}
+            }
+          `}</style>
         </div>
       </div>
       <Col lg={12}>
         <TabContent activeTab={activeTab} className="text-muted">
           {showAttendanceApproval && (
             <TabPane tabId="1">
-              <AttendanceApproval serverPagination={serverPagination} />
+              <AttendanceApproval serverPagination={serverPagination} loading={tableLoading && !!effectiveScope} />
             </TabPane>
           )}
           {showLeaveApproval && (
@@ -1628,6 +1724,7 @@ const ApprovalFilter = ({ formname }) => {
                 PendingLeave={PendingLeave}
                 AttendancePending={AttendancePending}
                 serverPagination={serverPagination}
+                loading={tableLoading && !!effectiveScope}
               />
             </TabPane>
           )}

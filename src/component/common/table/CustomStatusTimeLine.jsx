@@ -1,22 +1,18 @@
 import React, { useState, useMemo } from "react";
-import { Table } from "rsuite";
-import {
-  Modal,
-  ModalHeader,
-  ModalBody,
-  Badge,
-  Button,
-  Input,
-} from "reactstrap";
+import { MapShell, MapSkeleton } from "../skeleton/Skeleton";
+import { Table } from "../../../shared/ui/table/RsuiteCompatTable";
+import { Modal } from "reactstrap";
 import { format, parseISO } from "date-fns";
-import { Search } from "react-feather";
 import {
   GoogleMap,
   Marker,
   InfoWindow,
   useJsApiLoader,
 } from "@react-google-maps/api";
+import { useMapThemeStyles } from "../../../shared/theme/mapStyles";
 import { Link } from "react-router-dom";
+import "./customStatusTimeline.scss";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const { Cell } = Table;
 
@@ -40,110 +36,70 @@ const formatDateTime = (isoString) => {
   }
 };
 
-const getStatusColor = (statusName = "") => {
-  const name = statusName.toLowerCase();
-  if (name.includes("break")) return "warning";
-  if (name.includes("test")) return "info";
-  if (name.includes("work") || name.includes("active")) return "success";
-  if (name.includes("idle") || name.includes("away")) return "secondary";
-  return "primary";
+const formatTime = (isoString) => {
+  if (!isoString) return "—";
+  try {
+    return format(parseISO(isoString), "hh:mm:ss a");
+  } catch {
+    return isoString;
+  }
 };
 
-/* ─── Scrollbar styles (injected once) ───── */
-const scrollbarCSS = `
-  .cst-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
-  .cst-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-  .cst-scroll::-webkit-scrollbar-thumb { background: #c5cff0; border-radius: 10px; }
-  .cst-scroll::-webkit-scrollbar-thumb:hover { background: #405189; }
-  .cst-scroll { scrollbar-width: thin; scrollbar-color: #c5cff0 #f1f1f1; }
-`;
-if (
-  typeof document !== "undefined" &&
-  !document.getElementById("cst-scrollbar-style")
-) {
-  const style = document.createElement("style");
-  style.id = "cst-scrollbar-style";
-  style.textContent = scrollbarCSS;
-  document.head.appendChild(style);
-}
+const formatDay = (isoString) => {
+  if (!isoString) return "";
+  try {
+    return format(parseISO(isoString), "dd MMM yyyy");
+  } catch {
+    return "";
+  }
+};
 
-/* ─── Shared style objects ────────────────── */
-const coordPill = {
-  background: "#f0f4ff",
-  borderRadius: "6px",
-  padding: "5px 12px",
-  fontSize: "12px",
-  color: "#405189",
-  fontWeight: 500,
-  border: "0.5px solid #c5cff0",
-  display: "inline-flex",
-  alignItems: "center",
-  gap: "2px",
+const prettifyName = (name = "") =>
+  name.includes("_")
+    ? name
+        .split("_")
+        .filter(Boolean)
+        .map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+        .join(" ")
+    : name;
+
+const TONES = ["primary", "success", "info", "danger", "secondary"];
+
+const toneForStatus = (name = "", index = 0) => {
+  const lower = name.toLowerCase();
+  if (lower.includes("break")) return "warning";
+  return TONES[index % TONES.length];
 };
-const timeBox = {
-  background: "#f8f9fc",
-  borderRadius: "6px",
-  padding: "8px 12px",
-  border: "0.5px solid #eaecf5",
-};
-const timeBoxLabel = {
-  fontSize: "11px",
-  color: "#999",
-  marginBottom: "3px",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-};
-const timeBoxValue = { fontSize: "13px", color: "#333", fontWeight: 500 };
+
+const toneVar = (tone) => ({ "--t": `var(--vz-${tone})` });
 
 /* ─── Location Tag ────────────────────────── */
-const LocationTag = ({ location, label, onMapClick }) => {
+const LocationTag = ({ location, label, onMapClick, testId: tagTestId }) => {
   const hasCoords =
     location && location.latitude != null && location.longitude != null;
-  if (!location || !hasCoords) {
+  if (!hasCoords) {
     return (
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "4px",
-          background: "#f5f5f5",
-          color: "#aaa",
-          border: "0.5px solid #e0e0e0",
-          borderRadius: "5px",
-          padding: "2px 8px",
-          fontSize: "11px",
-          fontStyle: "italic",
-        }}
-      >
-        <i className="mdi mdi-map-marker-off-outline" />
-        No Location
+      <span className="cstl-loc is-empty">
+        <i className="ri-map-pin-line" />
+        No location
       </span>
     );
   }
   return (
     <button
+      data-testid={tagTestId}
+      type="button"
+      className="cstl-loc"
       onClick={() => onMapClick(location, label)}
-      title={`View ${label} location on map`}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "4px",
-        background: "#eaf3ff",
-        color: "#1a6fcf",
-        border: "0.5px solid #a8cff5",
-        borderRadius: "5px",
-        padding: "2px 10px",
-        fontSize: "11px",
-        fontWeight: 500,
-        cursor: "pointer",
-        transition: "background 0.15s",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#d0e8ff")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "#eaf3ff")}
+      title={`View ${label.toLowerCase()} location on map`}
     >
-      <i className="mdi mdi-map-marker" />
-      {location.name ||
-        `${parseFloat(location.latitude).toFixed(5)}, ${parseFloat(location.longitude).toFixed(5)}`}
+      <i className="ri-map-pin-2-fill" />
+      <span className="text-truncate">
+        {location.name ||
+          location.accurate_address ||
+          `${parseFloat(location.latitude).toFixed(5)}, ${parseFloat(location.longitude).toFixed(5)}`}
+      </span>
+      <i className="ri-arrow-right-up-line cstl-loc-go" />
     </button>
   );
 };
@@ -156,340 +112,203 @@ const LocationMapModal = ({ isOpen, toggle, locationData, label }) => {
     libraries: ["places"],
   });
   const [infoOpen, setInfoOpen] = useState(true);
+  const [tilesReady, setTilesReady] = useState(false);
+  const mapStyles = useMapThemeStyles();
   const lat = locationData ? parseFloat(locationData.latitude) : 0;
   const lng = locationData ? parseFloat(locationData.longitude) : 0;
   const center = { lat, lng };
+  const placeName = locationData?.name || locationData?.accurate_address;
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} centered size="lg" zIndex={1060}>
-      <ModalHeader
-        toggle={toggle}
-        style={{ fontSize: "14px", fontWeight: 600 }}
-      >
-        <i className="mdi mdi-map-marker me-2 text-danger" />
-        {label} Location
-        {locationData?.name && (
-          <span
-            style={{
-              fontSize: "12px",
-              color: "#888",
-              fontWeight: 400,
-              marginLeft: "8px",
-            }}
-          >
-            — {locationData.name}
+    <Modal
+      data-testid="status-timeline-location-dialog"
+      isOpen={isOpen}
+      toggle={toggle}
+      centered
+      size="lg"
+      zIndex={1060}
+      contentClassName="cstl-content"
+    >
+      <div className="cstl-head">
+        <span className="cstl-head-icon">
+          <i className="ri-map-pin-2-line" />
+        </span>
+        <div className="flex-grow-1 min-w-0">
+          <h5 className="cstl-title">{label} location</h5>
+          {placeName && <div className="cstl-sub text-truncate">{placeName}</div>}
+        </div>
+        <button data-testid="status-timeline-location-close-button" type="button" className="cstl-close" onClick={toggle} aria-label="Close">
+          <i className="ri-close-line" />
+        </button>
+      </div>
+
+      <div className="cstl-body">
+        <div className="cstl-coords">
+          <span className="cstl-coord">
+            <i className="ri-compass-3-line" />
+            Lat <b>{lat.toFixed(6)}</b>
           </span>
-        )}
-      </ModalHeader>
-      <ModalBody>
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            marginBottom: "14px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={coordPill}>
-            <i className="mdi mdi-latitude me-1" />
-            Lat: <b>{lat.toFixed(6)}</b>
-          </div>
-          <div style={coordPill}>
-            <i className="mdi mdi-longitude me-1" />
-            Lng: <b>{lng.toFixed(6)}</b>
-          </div>
+          <span className="cstl-coord">
+            <i className="ri-compass-3-line" />
+            Lng <b>{lng.toFixed(6)}</b>
+          </span>
           {locationData?.accuracy != null && (
-            <div
-              style={{
-                ...coordPill,
-                background: "#fff8e1",
-                color: "#b07d00",
-                borderColor: "#f0d070",
-              }}
-            >
-              <i className="mdi mdi-crosshairs-gps me-1" />
-              Accuracy: <b>{locationData.accuracy}m</b>
-            </div>
+            <span className="cstl-coord is-warn">
+              <i className="ri-focus-3-line" />
+              Accuracy <b>{locationData.accuracy}m</b>
+            </span>
           )}
         </div>
-        {isLoaded ? (
-          <GoogleMap
-            mapContainerStyle={{
-              width: "100%",
-              height: "340px",
-              borderRadius: "8px",
-              overflow: "hidden",
-            }}
-            center={center}
-            zoom={17}
-            options={{ gestureHandling: "greedy" }}
-          >
-            <Marker
-              position={center}
-              title={locationData?.name || label}
-              onClick={() => setInfoOpen(true)}
-            />
-            {infoOpen && (
-              <InfoWindow
+
+        <div className="cstl-map">
+          {isLoaded ? (
+            <MapShell ready={tilesReady}>
+            <GoogleMap
+              mapContainerStyle={{ width: "100%", height: "100%" }}
+              center={center}
+              zoom={17}
+              onTilesLoaded={() => setTilesReady(true)}
+              options={{ gestureHandling: "greedy", styles: mapStyles }}
+            >
+              <Marker
                 position={center}
-                onCloseClick={() => setInfoOpen(false)}
-              >
-                <div style={{ fontSize: "12px", minWidth: "120px" }}>
-                  <b>{label}</b>
-                  {locationData?.name && (
-                    <div style={{ color: "#555" }}>{locationData.name}</div>
-                  )}
-                  <div style={{ color: "#888", marginTop: "2px" }}>
-                    {lat.toFixed(6)}, {lng.toFixed(6)}
+                title={placeName || label}
+                onClick={() => setInfoOpen(true)}
+              />
+              {infoOpen && (
+                <InfoWindow position={center} onCloseClick={() => setInfoOpen(false)}>
+                  <div style={{ fontSize: "12px", minWidth: "120px", color: "#333" }}>
+                    <b>{label}</b>
+                    {placeName && <div style={{ maxWidth: 200 }}>{placeName}</div>}
+                    <div style={{ color: "#888", marginTop: "2px" }}>
+                      {lat.toFixed(6)}, {lng.toFixed(6)}
+                    </div>
                   </div>
-                </div>
-              </InfoWindow>
-            )}
-          </GoogleMap>
-        ) : (
-          <div
-            style={{
-              height: "340px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#aaa",
-            }}
-          >
-            Loading map…
-          </div>
-        )}
-        <div className="d-flex justify-content-center mt-3">
-          <Button
-            color="warning"
-            onClick={toggle}
-            style={{ minWidth: "100px" }}
-          >
-            Close
-          </Button>
+                </InfoWindow>
+              )}
+            </GoogleMap>
+            </MapShell>
+          ) : (
+            <MapSkeleton style={{ minHeight: 220 }} />
+          )}
         </div>
-      </ModalBody>
+      </div>
     </Modal>
   );
 };
 
 /* ─── Start / End Notes Block ─────────────── */
-// ✅ Handles the new API shape: separate start_notes and end_notes strings.
-//    Also falls back to the old single `notes` field for backward compatibility.
+// Falls back to the old single `notes` field for older API responses.
 const NotesBlock = ({ startNotes, endNotes, legacyNotes }) => {
-  // Collect entries to render
   const entries = [];
 
-  // ✅ New API: start_notes
   if (startNotes && String(startNotes).trim()) {
-    entries.push({
-      type: "start",
-      text: String(startNotes).trim(),
-      icon: "mdi mdi-arrow-right-circle-outline",
-      label: "Start Note",
-      bg: "#f0fff8",
-      border: "#6ee7b7",
-      accent: "#059669",
-      labelColor: "#065f46",
-      textColor: "#064e3b",
-    });
+    entries.push({ type: "start", text: String(startNotes).trim(), label: "Start note", icon: "ri-play-circle-line" });
   }
-
-  // ✅ New API: end_notes
   if (endNotes && String(endNotes).trim()) {
-    entries.push({
-      type: "end",
-      text: String(endNotes).trim(),
-      icon: "mdi mdi-arrow-left-circle-outline",
-      label: "End Note",
-      bg: "#fff5f5",
-      border: "#fca5a5",
-      accent: "#dc2626",
-      labelColor: "#991b1b",
-      textColor: "#7f1d1d",
-    });
+    entries.push({ type: "end", text: String(endNotes).trim(), label: "End note", icon: "ri-stop-circle-line" });
   }
 
-  // ✅ Fallback: old single notes field (string, array, or object)
   if (entries.length === 0 && legacyNotes) {
     const noteList = Array.isArray(legacyNotes) ? legacyNotes : [legacyNotes];
-    const filtered = noteList.filter(Boolean);
-    if (filtered.length > 0) {
-      filtered.forEach((note, i) => {
-        const isObj = typeof note === "object" && note !== null;
-        const text = isObj
+    noteList.filter(Boolean).forEach((note, i) => {
+      const isObj = typeof note === "object" && note !== null;
+      entries.push({
+        type: "legacy",
+        key: i,
+        text: isObj
           ? note.text || note.note || note.content || JSON.stringify(note)
-          : String(note);
-        const author = isObj ? note.author || note.created_by || null : null;
-        const time = isObj ? note.created_at || note.timestamp || null : null;
-        entries.push({ type: "legacy", text, author, time, index: i });
+          : String(note),
+        author: isObj ? note.author || note.created_by || null : null,
+        time: isObj ? note.created_at || note.timestamp || null : null,
+        label: "Note",
+        icon: "ri-sticky-note-line",
       });
-    }
+    });
   }
 
   if (entries.length === 0) return null;
 
   return (
-    <div
-      style={{
-        borderTop: "0.5px solid #f0f0f0",
-        paddingTop: "8px",
-        marginTop: "8px",
-      }}
-    >
-      {/* Section header */}
-      <div
-        style={{
-          fontSize: "11px",
-          color: "#999",
-          textTransform: "uppercase",
-          letterSpacing: "0.4px",
-          marginBottom: "7px",
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-        }}
-      >
-        <i className="mdi mdi-note-text-outline" />
-        Notes
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: entries.length > 1 ? "1fr 1fr" : "1fr",
-          gap: "8px",
-        }}
-      >
-        {entries.map((entry, i) => {
-          // ── Legacy note (old API) ──
-          if (entry.type === "legacy") {
-            return (
-              <div
-                key={i}
-                style={{
-                  background: "#fffbf0",
-                  border: "0.5px solid #f5e6c0",
-                  borderLeft: "3px solid #f0b429",
-                  borderRadius: "5px",
-                  padding: "7px 10px",
-                  fontSize: "12px",
-                  color: "#4a3f00",
-                  lineHeight: "1.5",
-                }}
-              >
-                <div>{entry.text}</div>
-                {(entry.author || entry.time) && (
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      marginTop: "4px",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    {entry.author && (
-                      <span style={{ fontSize: "10px", color: "#888" }}>
-                        <i className="mdi mdi-account-outline me-1" />
-                        {entry.author}
-                      </span>
-                    )}
-                    {entry.time && (
-                      <span style={{ fontSize: "10px", color: "#888" }}>
-                        <i className="mdi mdi-clock-outline me-1" />
-                        {formatDateTime(entry.time)}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          // ── Start note (green) / End note (red) ──
-          return (
-            <div
-              key={entry.type}
-              style={{
-                background: entry.bg,
-                border: `0.5px solid ${entry.border}`,
-                borderLeft: `3px solid ${entry.accent}`,
-                borderRadius: "5px",
-                padding: "7px 10px",
-                fontSize: "12px",
-                color: entry.textColor,
-                lineHeight: "1.5",
-              }}
-            >
-              {/* Label row */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  marginBottom: "3px",
-                }}
-              >
-                <i
-                  className={entry.icon}
-                  style={{ color: entry.accent, fontSize: "13px" }}
-                />
-                <span
-                  style={{
-                    fontSize: "10px",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.4px",
-                    color: entry.labelColor,
-                  }}
-                >
-                  {entry.label}
+    <div className={`cstl-notes ${entries.length > 1 ? "is-pair" : ""}`}>
+      {entries.map((entry) => (
+        <div key={entry.key ?? entry.type} className={`cstl-note is-${entry.type}`}>
+          <span className="cstl-note-label">
+            <i className={entry.icon} />
+            {entry.label}
+          </span>
+          <div className="cstl-note-text">{entry.text}</div>
+          {(entry.author || entry.time) && (
+            <div className="cstl-note-meta">
+              {entry.author && (
+                <span>
+                  <i className="ri-user-line" />
+                  {entry.author}
                 </span>
-              </div>
-              {/* Note text */}
-              <div style={{ paddingLeft: "18px" }}>{entry.text}</div>
+              )}
+              {entry.time && (
+                <span>
+                  <i className="ri-time-line" />
+                  {formatDateTime(entry.time)}
+                </span>
+              )}
             </div>
-          );
-        })}
-      </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };
 
 /* ─── Timeline Modal ──────────────────────── */
 const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
-  const timeline = rowData?.custom_status_timeline || [];
+  const timeline = useMemo(
+    () => rowData?.custom_status_timeline || [],
+    [rowData],
+  );
   const dateLabel = rowData?.date
-    ? format(new Date(rowData.date), "dd MMM, yyyy")
+    ? format(new Date(rowData.date), "EEEE, dd MMM yyyy")
     : "";
 
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
 
-  const uniqueTabs = useMemo(() => {
-    const seen = new Map();
+  const statusMeta = useMemo(() => {
+    const map = new Map();
     timeline.forEach((item) => {
       const id = item.status?.id;
       const name = item.status?.name || "Unknown";
-      if (id != null && !seen.has(id)) seen.set(id, name);
+      if (id != null && !map.has(String(id))) {
+        map.set(String(id), {
+          id,
+          name,
+          icon: item.status?.icon,
+          tone: toneForStatus(name, map.size),
+          count: 0,
+        });
+      }
+      if (id != null) map.get(String(id)).count += 1;
     });
-    const tabs = [{ key: "All", label: "All" }];
-    seen.forEach((name, id) =>
-      tabs.push({ key: String(id), label: `${name} #${id}` }),
-    );
-    return tabs;
+    return map;
   }, [timeline]);
 
+  const toneByName = useMemo(() => {
+    const byName = {};
+    statusMeta.forEach((meta) => {
+      byName[meta.name] = meta.tone;
+    });
+    return byName;
+  }, [statusMeta]);
+
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return timeline.filter((item) => {
       const matchTab =
         activeTab === "All" || String(item.status?.id) === activeTab;
       const matchSearch =
-        !search ||
-        (item.status?.name || "")
-          .toLowerCase()
-          .includes(search.toLowerCase()) ||
-        String(item.status?.id || "").includes(search);
+        !q ||
+        (item.status?.name || "").toLowerCase().includes(q) ||
+        String(item.status?.id || "").includes(q);
       return matchTab && matchSearch;
     });
   }, [timeline, activeTab, search]);
@@ -498,6 +317,25 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
     (sum, item) => sum + (item.duration_in_seconds || 0),
     0,
   );
+  const longest = filtered.reduce(
+    (max, item) => Math.max(max, item.duration_in_seconds || 0),
+    0,
+  );
+  const activeCount = filtered.filter((item) => item.is_active).length;
+
+  const summary = useMemo(() => {
+    const raw = rowData?.custom_status_duration_summary || {};
+    const rows = Object.entries(raw).map(([name, seconds]) => ({
+      name,
+      label: prettifyName(name),
+      seconds: Number(seconds) || 0,
+      tone: toneByName[name] || (name.toLowerCase().includes("break") ? "warning" : "secondary"),
+    }));
+    const total = rows
+      .filter((r) => !r.name.startsWith("total_"))
+      .reduce((sum, r) => sum + r.seconds, 0);
+    return { rows, total };
+  }, [rowData, toneByName]);
 
   const [mapModal, setMapModal] = useState({
     open: false,
@@ -515,502 +353,287 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
     toggle();
   };
 
+  const isFiltered = activeTab !== "All" || search.trim() !== "";
+
+  const stats = [
+    { key: "total", icon: "ri-timer-line", tone: "success", label: "Total time", value: formatDuration(totalDuration) },
+    { key: "entries", icon: "ri-list-check-2", tone: "primary", label: isFiltered ? "Filtered entries" : "Entries", value: filtered.length },
+    { key: "longest", icon: "ri-trophy-line", tone: "warning", label: "Longest session", value: formatDuration(longest) },
+    { key: "active", icon: "ri-pulse-line", tone: activeCount ? "danger" : "secondary", label: "Active now", value: activeCount },
+  ];
+
   return (
     <>
-      <Modal isOpen={isOpen} toggle={handleToggle} centered size="lg">
-        <ModalHeader toggle={handleToggle}>
-          <span style={{ fontSize: "15px", fontWeight: 500 }}>
-            Custom Status Timeline
+      <Modal
+        data-testid="status-timeline-dialog"
+        isOpen={isOpen}
+        toggle={handleToggle}
+        centered
+        size="lg"
+        contentClassName="cstl-content"
+      >
+        <div className="cstl-head">
+          <span className="cstl-head-icon">
+            <i className="ri-time-line" />
           </span>
-          {dateLabel && (
-            <span
-              style={{
-                fontSize: "12px",
-                color: "#888",
-                marginLeft: "10px",
-                fontWeight: 400,
-              }}
-            >
-              {dateLabel}
-            </span>
-          )}
-        </ModalHeader>
+          <div className="flex-grow-1 min-w-0">
+            <h5 className="cstl-title">Custom Status Timeline</h5>
+            <div className="cstl-sub">
+              {dateLabel && (
+                <span>
+                  <i className="ri-calendar-line" />
+                  {dateLabel}
+                </span>
+              )}
+              {timeline.length > 0 && (
+                <span>
+                  <i className="ri-stack-line" />
+                  {statusMeta.size} {statusMeta.size === 1 ? "status" : "statuses"}
+                </span>
+              )}
+            </div>
+          </div>
+          <button data-testid="status-timeline-close-button" type="button" className="cstl-close" onClick={handleToggle} aria-label="Close">
+            <i className="ri-close-line" />
+          </button>
+        </div>
 
-        <ModalBody
-          className="cst-scroll"
-          style={{
-            maxHeight: "72vh",
-            overflowY: "auto",
-            overflowX: "hidden",
-            paddingRight: "18px",
-          }}
-        >
+        <div className="cstl-body cstl-scroll">
           {timeline.length === 0 ? (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "40px 0",
-              }}
-            >
-              <i
-                className="mdi mdi-timeline-clock-outline"
-                style={{
-                  fontSize: "48px",
-                  color: "#ccc",
-                  marginBottom: "12px",
-                }}
-              />
-              <p style={{ color: "#999", fontSize: "15px", margin: 0 }}>
-                No custom status timeline entries found.
-              </p>
+            <div className="cstl-empty">
+              <span className="cstl-empty-icon">
+                <i className="ri-history-line" />
+              </span>
+              <div className="cstl-empty-title">No timeline entries</div>
+              <div className="cstl-empty-sub">No custom statuses were used on this day.</div>
             </div>
           ) : (
             <>
-              {/* ── Search ── */}
-              <div style={{ position: "relative", marginBottom: "12px" }}>
-                <Search
-                  size={14}
-                  style={{
-                    position: "absolute",
-                    left: "10px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    opacity: 0.4,
-                  }}
-                />
-                <Input
-                  placeholder="Search by status name or ID…"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setActiveTab("All");
-                  }}
-                  style={{
-                    paddingLeft: "32px",
-                    background: "#f5f5f5",
-                    border: "0.5px solid #ddd",
-                    borderRadius: "8px",
-                    fontSize: "13px",
-                  }}
-                />
+              <div className="cstl-stats">
+                {stats.map((s) => (
+                  <div key={s.key} className="cstl-stat" style={toneVar(s.tone)}>
+                    <span className="cstl-stat-icon">
+                      <i className={s.icon} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="cstl-stat-value">{s.value}</div>
+                      <div className="cstl-stat-label">{s.label}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {/* ── Tabs ── */}
-              {uniqueTabs.length > 2 && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "6px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  {uniqueTabs.map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => {
-                        setActiveTab(tab.key);
-                        setSearch("");
-                      }}
-                      style={{
-                        padding: "4px 14px",
-                        borderRadius: "999px",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                        border: "0.5px solid",
-                        transition: "all 0.15s",
-                        background:
-                          activeTab === tab.key ? "#405189" : "#f5f5f5",
-                        color: activeTab === tab.key ? "#fff" : "#666",
-                        borderColor: activeTab === tab.key ? "#405189" : "#ccc",
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+              {summary.rows.length > 0 && (
+                <div className="cstl-dist">
+                  <div className="cstl-section-label">
+                    <i className="ri-bar-chart-horizontal-line" />
+                    Time distribution
+                  </div>
+                  {summary.total > 0 && (
+                    <div className="cstl-dist-bar">
+                      {summary.rows
+                        .filter((r) => r.seconds > 0 && !r.name.startsWith("total_"))
+                        .map((r) => (
+                          <span
+                            key={r.name}
+                            style={{ ...toneVar(r.tone), width: `${(r.seconds / summary.total) * 100}%` }}
+                            title={`${r.label}: ${formatDuration(r.seconds)}`}
+                          />
+                        ))}
+                    </div>
+                  )}
+                  <div className="cstl-legend">
+                    {summary.rows.map((r) => (
+                      <span
+                        key={r.name}
+                        className={`cstl-legend-item ${r.seconds ? "" : "is-zero"}`}
+                        style={toneVar(r.tone)}
+                      >
+                        <span className="cstl-legend-dot" />
+                        <span className="cstl-legend-name">{r.label}</span>
+                        <b>{formatDuration(r.seconds)}</b>
+                        {summary.total > 0 && r.seconds > 0 && !r.name.startsWith("total_") && (
+                          <span className="cstl-legend-pct">
+                            {Math.round((r.seconds / summary.total) * 100)}%
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* ── Summary strip ── */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  marginBottom: "20px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div
-                  style={{
-                    background: "#f0f4ff",
-                    borderRadius: "8px",
-                    padding: "8px 16px",
-                    fontSize: "13px",
-                    color: "#405189",
-                    fontWeight: 500,
-                    border: "0.5px solid #c5cff0",
-                  }}
-                >
-                  <i className="mdi mdi-clock-outline me-1" />
-                  Total Duration: <b>{formatDuration(totalDuration)}</b>
-                </div>
-                <div
-                  style={{
-                    background: "#f0faf4",
-                    borderRadius: "8px",
-                    padding: "8px 16px",
-                    fontSize: "13px",
-                    color: "#0a7b5e",
-                    fontWeight: 500,
-                    border: "0.5px solid #b3dfc9",
-                  }}
-                >
-                  <i className="mdi mdi-format-list-numbered me-1" />
-                  {activeTab === "All" && !search ? "Total" : "Filtered"}{" "}
-                  Entries: <b>{filtered.length}</b>
-                </div>
-              </div>
-
-              {/* ── Custom Status Duration Summary ── */}
-              {rowData?.custom_status_duration_summary &&
-                Object.keys(rowData.custom_status_duration_summary).length >
-                  0 && (
-                  <div
-                    style={{
-                      marginBottom: "16px",
-                      background: "#f8f9fc",
-                      border: "0.5px solid #e2e5ee",
-                      borderRadius: "10px",
-                      padding: "12px 16px",
+              <div className="cstl-toolbar">
+                <div className="cstl-search">
+                  <i className="ri-search-line" />
+                  <input
+                    data-testid="status-timeline-search-input"
+                    type="text"
+                    placeholder="Search by status name or ID…"
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setActiveTab("All");
                     }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#999",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.4px",
-                        marginBottom: "10px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        fontWeight: 600,
+                  />
+                  {search && (
+                    <button data-testid="status-timeline-clear-search-button" type="button" onClick={() => setSearch("")} aria-label="Clear search">
+                      <i className="ri-close-circle-fill" />
+                    </button>
+                  )}
+                </div>
+                {statusMeta.size > 1 && (
+                  <div className="cstl-tabs">
+                    <button
+                      data-testid="status-timeline-all-button"
+                      type="button"
+                      className={`cstl-tab ${activeTab === "All" ? "is-active" : ""}`}
+                      style={toneVar("success")}
+                      onClick={() => {
+                        setActiveTab("All");
+                        setSearch("");
                       }}
                     >
-                      <i className="mdi mdi-chart-bar me-1" />
-                      Status Duration Summary
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                      }}
-                    >
-                      {Object.entries(
-                        rowData.custom_status_duration_summary,
-                      ).map(([name, seconds]) => (
-                        <div
-                          key={name}
-                          style={{
-                            background: "#fff",
-                            border: "1px solid #e9ecef",
-                            borderRadius: "8px",
-                            padding: "8px 14px",
-                            fontSize: "12px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: "8px",
-                              height: "8px",
-                              borderRadius: "50%",
-                              background: "#405189",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span style={{ color: "#444", fontWeight: 500 }}>
-                            {name}
-                          </span>
-                          <span
-                            style={{
-                              background: "#f0f4ff",
-                              color: "#405189",
-                              borderRadius: "5px",
-                              padding: "2px 8px",
-                              fontSize: "11px",
-                              fontWeight: 600,
-                              border: "0.5px solid #c5cff0",
-                            }}
-                          >
-                            {formatDuration(seconds)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                      All
+                      <span className="cstl-tab-count">{timeline.length}</span>
+                    </button>
+                    {[...statusMeta.entries()].map(([key, meta]) => (
+                      <button
+                        key={key}
+                        data-testid={testId("status-timeline-tab", key)}
+                        type="button"
+                        className={`cstl-tab ${activeTab === key ? "is-active" : ""}`}
+                        style={toneVar(meta.tone)}
+                        onClick={() => {
+                          setActiveTab(key);
+                          setSearch("");
+                        }}
+                      >
+                        {meta.icon && <span className="cstl-tab-emoji">{meta.icon}</span>}
+                        {meta.name}
+                        <span className="cstl-tab-count">{meta.count}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
+              </div>
 
-              {/* ── No results ── */}
               {filtered.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "30px 0" }}>
-                  <i
-                    className="mdi mdi-magnify-close"
-                    style={{
-                      fontSize: "36px",
-                      color: "#ccc",
-                      display: "block",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <p style={{ color: "#999", fontSize: "14px", margin: 0 }}>
-                    No results match your search.
-                  </p>
+                <div className="cstl-empty is-small">
+                  <span className="cstl-empty-icon">
+                    <i className="ri-search-eye-line" />
+                  </span>
+                  <div className="cstl-empty-title">No matching entries</div>
+                  <div className="cstl-empty-sub">Try a different search or filter.</div>
                 </div>
               ) : (
-                /* ── Timeline list ── */
-                <div style={{ position: "relative" }}>
-                  {/* Vertical line */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: "19px",
-                      top: "8px",
-                      bottom: "8px",
-                      width: "2px",
-                      background: "#e4e6ee",
-                      zIndex: 0,
-                    }}
-                  />
-
+                <div className="cstl-list">
                   {filtered.map((item, idx) => {
                     const statusName = item.status?.name || "Unknown";
                     const statusIcon = item.status?.icon || "😐";
-                    const badgeColor = getStatusColor(statusName);
+                    const tone =
+                      statusMeta.get(String(item.status?.id))?.tone ||
+                      toneForStatus(statusName, idx);
                     const isActive = item.is_active;
-
-                    // ✅ Extract start_notes and end_notes (new API)
-                    // Also keep legacy fallback: item.notes / item.note / item.remarks
                     const startNotes = item.start_notes ?? null;
                     const endNotes = item.end_notes ?? null;
                     const legacyNotes =
                       !startNotes && !endNotes
                         ? (item.notes ?? item.note ?? item.remarks ?? null)
                         : null;
+                    const startDay = formatDay(item.start_time);
+                    const endDay = formatDay(item.end_time);
 
                     return (
                       <div
                         key={idx}
-                        style={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: "16px",
-                          marginBottom:
-                            idx < filtered.length - 1 ? "20px" : "0",
-                          position: "relative",
-                          zIndex: 1,
-                        }}
+                        className={`cstl-item ${isActive ? "is-active" : ""}`}
+                        style={toneVar(tone)}
                       >
-                        {/* Icon bubble */}
-                        <div
-                          style={{
-                            width: "40px",
-                            height: "40px",
-                            borderRadius: "50%",
-                            background: isActive ? "#405189" : "#f4f5f8",
-                            border: `2px solid ${isActive ? "#405189" : "#dce0ef"}`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "18px",
-                            flexShrink: 0,
-                            boxShadow: "0 0 0 3px #fff",
-                          }}
-                        >
-                          <span role="img" aria-label={statusName}>
-                            {statusIcon}
+                        <div className="cstl-rail">
+                          <span className="cstl-bubble">
+                            <span role="img" aria-label={statusName}>
+                              {statusIcon}
+                            </span>
                           </span>
                         </div>
 
-                        {/* Card */}
-                        <div
-                          style={{
-                            flex: 1,
-                            background: "#fff",
-                            border: "0.5px solid #e2e5ee",
-                            borderRadius: "10px",
-                            padding: "12px 16px",
-                            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-                          }}
-                        >
-                          {/* Top row */}
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              flexWrap: "wrap",
-                              gap: "8px",
-                              marginBottom: "10px",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontWeight: 500,
-                                  fontSize: "14px",
-                                  color: "#222",
-                                }}
-                              >
-                                {statusName}
+                        <div className="cstl-card">
+                          <div className="cstl-card-top">
+                            <div className="cstl-card-title-wrap">
+                              <span className="cstl-card-title">{statusName}</span>
+                              <span className={`cstl-state ${isActive ? "is-live" : ""}`}>
+                                {isActive ? (
+                                  <>
+                                    <span className="cstl-live-dot" />
+                                    Active
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="ri-check-line" />
+                                    Completed
+                                  </>
+                                )}
                               </span>
-                              <Badge
-                                color={badgeColor}
-                                pill
-                                style={{ fontSize: "11px" }}
-                              >
-                                {isActive ? "Active" : "Completed"}
-                              </Badge>
                               {item.status?.id && (
-                                <Badge
-                                  color="light"
-                                  style={{
-                                    fontSize: "11px",
-                                    color: "#666",
-                                    border: "0.5px solid #ddd",
-                                  }}
-                                >
-                                  ID #{item.status.id}
-                                </Badge>
+                                <span className="cstl-id">#{item.status.id}</span>
                               )}
                             </div>
-                            <div
-                              style={{
-                                background: "#f0f4ff",
-                                color: "#405189",
-                                borderRadius: "6px",
-                                padding: "3px 10px",
-                                fontSize: "12px",
-                                fontWeight: 600,
-                                border: "0.5px solid #c5cff0",
-                              }}
-                            >
-                              <i className="mdi mdi-timer-outline me-1" />
-                              {formatDuration(item.duration_in_seconds)}
-                            </div>
+                            <span className="cstl-seq">Entry {idx + 1}</span>
                           </div>
 
-                          {/* Time grid */}
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr 1fr",
-                              gap: "8px",
-                              marginBottom: "10px",
-                            }}
-                          >
-                            <div style={timeBox}>
-                              <div style={timeBoxLabel}>
-                                <i className="mdi mdi-arrow-right-circle-outline me-1 text-success" />
-                                Start Time
-                              </div>
-                              <div style={timeBoxValue}>
-                                {formatDateTime(item.start_time)}
-                              </div>
-                            </div>
-                            <div style={timeBox}>
-                              <div style={timeBoxLabel}>
-                                <i className="mdi mdi-arrow-left-circle-outline me-1 text-danger" />
-                                End Time
-                              </div>
-                              <div style={timeBoxValue}>
-                                {item.end_time ? (
-                                  formatDateTime(item.end_time)
-                                ) : (
-                                  <span
-                                    style={{
-                                      color: "#28a745",
-                                      fontStyle: "italic",
-                                    }}
-                                  >
-                                    Still Active
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Location row */}
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              flexWrap: "wrap",
-                              borderTop: "0.5px solid #f0f0f0",
-                              paddingTop: "8px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "11px",
-                                color: "#999",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.4px",
-                                marginRight: "2px",
-                              }}
-                            >
-                              <i className="mdi mdi-map-marker-outline me-1" />
-                              Location:
-                            </span>
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "6px",
-                                flexWrap: "wrap",
-                                alignItems: "center",
-                              }}
-                            >
-                              <span style={{ fontSize: "11px", color: "#555" }}>
-                                Start —
+                          <div className="cstl-span">
+                            <div className="cstl-point is-start">
+                              <span className="cstl-point-label">
+                                <i className="ri-play-circle-fill" />
+                                Start
                               </span>
-                              <LocationTag
-                                location={item.start_location}
-                                label="Start"
-                                onMapClick={openMap}
-                              />
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  color: "#555",
-                                  marginLeft: "4px",
-                                }}
-                              >
-                                End —
+                              <span className="cstl-point-time">{formatTime(item.start_time)}</span>
+                              {startDay && <span className="cstl-point-day">{startDay}</span>}
+                            </div>
+
+                            <div className="cstl-span-mid">
+                              <span className="cstl-span-line" />
+                              <span className="cstl-duration">
+                                <i className="ri-timer-flash-line" />
+                                {formatDuration(item.duration_in_seconds)}
                               </span>
-                              <LocationTag
-                                location={item.end_location}
-                                label="End"
-                                onMapClick={openMap}
-                              />
+                              <span className="cstl-span-line" />
+                            </div>
+
+                            <div className="cstl-point is-end">
+                              <span className="cstl-point-label">
+                                <i className="ri-stop-circle-fill" />
+                                End
+                              </span>
+                              {item.end_time ? (
+                                <>
+                                  <span className="cstl-point-time">{formatTime(item.end_time)}</span>
+                                  {endDay && <span className="cstl-point-day">{endDay}</span>}
+                                </>
+                              ) : (
+                                <span className="cstl-point-time is-live">Still active</span>
+                              )}
                             </div>
                           </div>
 
-                          {/* ✅ Notes — start_notes (green) + end_notes (red) */}
+                          <div className="cstl-locs">
+                            <div className="cstl-loc-row">
+                              <span className="cstl-loc-label">
+                                <i className="ri-map-pin-line" />
+                                Start
+                              </span>
+                              <LocationTag location={item.start_location} label="Start" onMapClick={openMap} testId={testId("status-timeline", itemTestKey(item), "start-location-button")} />
+                            </div>
+                            <div className="cstl-loc-row">
+                              <span className="cstl-loc-label">
+                                <i className="ri-map-pin-line" />
+                                End
+                              </span>
+                              <LocationTag location={item.end_location} label="End" onMapClick={openMap} testId={testId("status-timeline", itemTestKey(item), "end-location-button")} />
+                            </div>
+                          </div>
+
                           <NotesBlock
                             startNotes={startNotes}
                             endNotes={endNotes}
@@ -1024,20 +647,9 @@ const CustomStatusTimelineModal = ({ isOpen, toggle, rowData }) => {
               )}
             </>
           )}
-
-          <div className="d-flex justify-content-center mt-4">
-            <Button
-              color="warning"
-              onClick={handleToggle}
-              style={{ minWidth: "100px" }}
-            >
-              Close
-            </Button>
-          </div>
-        </ModalBody>
+        </div>
       </Modal>
 
-      {/* Map sub-modal */}
       <LocationMapModal
         isOpen={mapModal.open}
         toggle={closeMap}
@@ -1064,7 +676,7 @@ const CustomStatusTimeline = ({ rowData, dataKey, ...props }) => {
     <Cell {...props}>
       <div>
         {count > 0 ? (
-          <Link to="#" className="link-opacity-75 ms-1" onClick={toggle}>
+          <Link data-testid="status-timeline-custom-status-link" to="#" className="link-opacity-75 ms-1" onClick={toggle}>
             {count} Custom Status
           </Link>
         ) : (
@@ -1081,5 +693,17 @@ const CustomStatusTimeline = ({ rowData, dataKey, ...props }) => {
   );
 };
 
-export { CustomStatusTimelineModal, CustomStatusTimeline, LocationMapModal };
+export {
+  CustomStatusTimelineModal,
+  CustomStatusTimeline,
+  LocationMapModal,
+  LocationTag,
+  NotesBlock,
+  formatDuration,
+  formatTime,
+  formatDay,
+  prettifyName,
+  toneForStatus,
+  toneVar,
+};
 export default CustomStatusTimeline;

@@ -13,6 +13,20 @@ import {
   leave_type_day_unit,
 } from "../../common/constant/Constants";
 import { setLeaveTypeTableFilterKeys } from "../../redux/reducers/ChildReducer/TableFilterReducer";
+import {
+  ApvEmpty,
+  ApvReason,
+  ApvStatus,
+  ApvTitle,
+} from "../../component/common/approval/ApprovalCells";
+
+// Leave type id → colour + icon (1 Paid, 2 Unpaid, 3 On Duty, 4 Comp Off).
+const TYPE_STYLE = {
+  1: { tone: "success", icon: "ri-hand-coin-line" },
+  2: { tone: "danger", icon: "ri-money-dollar-circle-line" },
+  3: { tone: "info", icon: "ri-briefcase-4-line" },
+  4: { tone: "primary", icon: "ri-exchange-line" },
+};
 
 const LeaveType = () => {
   const dispatch = useDispatch();
@@ -72,25 +86,32 @@ const LeaveType = () => {
       filterable: false,
       id: "name",
       accessor: (obj) => {
-        return <b>{obj.name}</b>;
+        const t = TYPE_STYLE[obj.type] || TYPE_STYLE[1];
+        const isDay = obj.unit === leave_type_day_unit;
+        return (
+          <ApvTitle
+            icon={isDay ? "ri-calendar-event-line" : "ri-time-line"}
+            tone={t.tone}
+            title={obj.name}
+            sub={isDay ? "Day-based leave" : "Hour-based leave"}
+          />
+        );
       },
     },
     {
       Header: "Description",
-      accessor: "description",
       filterable: false,
       id: "description",
+      accessor: (obj) => <ApvReason text={obj.description} />,
     },
     {
       Header: "Type",
       id: "type",
       filterable: false,
       accessor: (obj) => {
-        let htmltag = types.map((type, i) =>
-          obj.type == type.id ? type.label : "",
-        );
-
-        return <>{htmltag}</>;
+        const label = types.find((type) => type.id == obj.type)?.label;
+        const t = TYPE_STYLE[obj.type];
+        return label ? <ApvStatus tone={t.tone} icon={t.icon} label={label} /> : <ApvEmpty />;
       },
     },
     {
@@ -98,13 +119,14 @@ const LeaveType = () => {
       id: "unit",
       filterable: false,
       accessor: (obj) => {
-        let leave_count = obj.allowed_count;
-        let leave_unit = obj.unit === leave_type_day_unit ? "Day" : "Hour";
+        const count = Number(obj.allowed_count) || 0;
+        const isDay = obj.unit === leave_type_day_unit;
+        const unit = isDay ? (count === 1 ? "day" : "days") : count === 1 ? "hour" : "hours";
         return (
-          <>
-            {leave_count}
-            <small> {leave_unit} / Year</small>
-          </>
+          <span className="apv-quota">
+            <b>{count}</b>
+            <small>{unit} / year</small>
+          </span>
         );
       },
     },
@@ -112,18 +134,12 @@ const LeaveType = () => {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.status ? "Active" : "Inactive";
-        let statusClass = obj.status ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) =>
+        obj.status ? (
+          <ApvStatus tone="success" icon="ri-checkbox-circle-line" label="Active" />
+        ) : (
+          <ApvStatus tone="secondary" icon="ri-forbid-line" label="Inactive" />
+        ),
     },
   ];
 

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import Select from "react-select";
+import Select from "../../../../shared/ui/TestableSelect";
 import {
   Modal,
   ModalHeader,
@@ -24,11 +24,13 @@ import {
   addRecurring,
   editRecurring,
 } from "../../../../redux/reducers/ChildReducer/RecurringReducer";
+import ModalCloseButton from "../../../../shared/ui/ModalCloseButton";
 
 /* Toggle */
 const Toggle = ({ value, onChange }) => (
   <div className="form-check form-switch m-0">
     <Input
+      data-testid="variable-pay-value-checkbox"
       type="checkbox"
       className="form-check-input"
       checked={value}
@@ -134,8 +136,8 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
   }, [isOpen]);
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
-      <ModalHeader toggle={toggle}>
+    <Modal data-testid="variable-pay-create-component-dialog" isOpen={isOpen} toggle={toggle} size="lg" centered>
+      <ModalHeader close={<ModalCloseButton onClick={toggle} testId="variable-pay-create-component-close-button" />} toggle={toggle}>
         {isNew ? "Create Component" : "Edit Component"}
       </ModalHeader>
 
@@ -145,6 +147,7 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
           <FormGroup>
             <Label>Component Name</Label>
             <Input
+              data-testid="variable-pay-create-component-name-input"
               name="name"
               value={formik.values.name}
               onChange={formik.handleChange}
@@ -158,6 +161,7 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
               <FormGroup>
                 <Label>Payout Frequency</Label>
                 <Select
+                  testId="variable-pay-create-component-payout-frequency"
                   options={PAYOUT_FREQUENCY_OPTIONS}
                   value={getOption(
                     PAYOUT_FREQUENCY_OPTIONS,
@@ -269,11 +273,12 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
           </Row>
 
           {/* CALCULATION */}
-          <div className="mt-4 p-3 border rounded bg-light">
+          <div className="mt-4 p-3 border rounded surface-muted">
             <Row className="align-items-end">
               <Col md={4}>
                 <Label>Calculation Type</Label>
                 <Select
+                  testId="variable-pay-create-component-calculation-type"
                   options={CALCULATION_TYPE_OPTIONS}
                   value={getOption(
                     CALCULATION_TYPE_OPTIONS,
@@ -292,6 +297,7 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
                 <Col md={4}>
                   <Label>Based On</Label>
                   <Select
+                    testId="variable-pay-create-component-based-on"
                     options={BASED_ON_OPTIONS}
                     value={getOption(
                       BASED_ON_OPTIONS,
@@ -314,6 +320,7 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
                     : "Enter Annual Amount"}
                 </Label>
                 <Input
+                  data-testid="variable-pay-create-component-calculation-value-input"
                   name="calculation_value"
                   value={formik.values.calculation_value}
                   onChange={formik.handleChange}
@@ -325,10 +332,10 @@ const VariableModal = ({ isOpen, toggle, component, onSaved }) => {
       </ModalBody>
 
       <ModalFooter>
-        <Button className="btn-danger" onClick={toggle}>
+        <Button data-testid="variable-pay-create-component-cancel-button" className="btn-danger" onClick={toggle}>
           Cancel
         </Button>
-        <Button className="btn-success" onClick={formik.handleSubmit}>
+        <Button data-testid="variable-pay-create-component-create-button" className="btn-success" onClick={formik.handleSubmit}>
           <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
           {isNew ? "Create" : "Update"}
         </Button>

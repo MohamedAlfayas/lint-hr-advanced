@@ -18,14 +18,31 @@ import {
   NavLink,
   Row,
   Spinner,
-  Table,
 } from "reactstrap";
+import { Box, Chip, IconButton, Tooltip } from "@mui/material";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
+import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
 import classnames from "classnames";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
+import AppTable from "../../../shared/ui/table/AppTable";
+import { StatusChip } from "../../../shared/ui/table/cells";
 import { fetchStatusMasterAdmin, saveStatusMaster, colorFor } from "./statusHelpers";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
+
+const MUI_CHIP_COLOR = {
+  primary: "primary",
+  secondary: "default",
+  success: "success",
+  danger: "error",
+  warning: "warning",
+  info: "info",
+  dark: "default",
+};
 
 // Bootstrap contextual colors — matches colorFor()'s vocabulary in statusHelpers.js
 const colorOptions = [
@@ -227,7 +244,7 @@ const StatusMasterTab = () => {
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: action,
-      confirmButtonColor: row.is_active ? "#dc3545" : "#0ab39c",
+      confirmButtonColor: row.is_active ? "var(--vz-danger)" : "var(--vz-success)",
     }).then((result) => {
       if (!result.isConfirmed) return;
       saveStatusMaster({ id: row.id, is_active: !row.is_active })
@@ -240,6 +257,74 @@ const StatusMasterTab = () => {
   };
 
   const sortedRows = [...rows].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  const columns = useMemo(
+    () => [
+      {
+        id: "sort_order",
+        accessorFn: (r) => r.sort_order ?? 0,
+        header: "Order",
+        size: 80,
+        filterVariant: "range",
+      },
+      {
+        accessorKey: "code",
+        header: "Code",
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <code>{row.original.code}</code>
+            {row.original.is_system && <Chip size="small" variant="outlined" label="System" />}
+          </Box>
+        ),
+      },
+      {
+        accessorKey: "label",
+        header: "Preview",
+        Cell: ({ row }) => {
+          const c = row.original.color || colorFor(row.original.code);
+          return (
+            <Chip
+              size="small"
+              color={MUI_CHIP_COLOR[c] || "default"}
+              label={row.original.label}
+              sx={c === "dark" ? { bgcolor: "grey.800", color: "common.white" } : undefined}
+            />
+          );
+        },
+      },
+      {
+        id: "allowed_next",
+        accessorFn: (r) => (r.allowed_next || []).join(", "),
+        header: "Next Statuses",
+        Cell: ({ cell }) => cell.getValue() || "—",
+      },
+      {
+        id: "flags",
+        accessorFn: (r) =>
+          [r.is_initial && "Initial", r.is_terminal && "Terminal", r.is_locked && "Locked"]
+            .filter(Boolean)
+            .join(", "),
+        header: "Flags",
+        Cell: ({ row }) => (
+          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+            {row.original.is_initial && <Chip size="small" color="info" label="Initial" />}
+            {row.original.is_terminal && (
+              <Chip size="small" label="Terminal" sx={{ bgcolor: "grey.800", color: "common.white" }} />
+            )}
+            {row.original.is_locked && <Chip size="small" variant="outlined" label="Locked" />}
+          </Box>
+        ),
+      },
+      {
+        id: "is_active",
+        accessorFn: (r) => (r.is_active ? "Active" : "Inactive"),
+        header: "Active",
+        filterVariant: "select",
+        Cell: ({ row }) => <StatusChip active={row.original.is_active} />,
+      },
+    ],
+    [],
+  );
 
   return (
     <Card>
@@ -254,7 +339,7 @@ const StatusMasterTab = () => {
             </p>
           </Col>
           <Col xs="auto">
-            <Button color="primary" size="sm" onClick={openCreateModal}>
+            <Button data-testid="payroll-status-master-add-status-button" color="primary" size="sm" onClick={openCreateModal}>
               + Add Status
             </Button>
           </Col>
@@ -264,6 +349,7 @@ const StatusMasterTab = () => {
           {scopeTabs.map((tab) => (
             <NavItem key={tab.id}>
               <NavLink
+                data-testid={testId("payroll-status-master", itemTestKey(tab), "link")}
                 style={{ cursor: "pointer" }}
                 className={classnames({ active: activeScope === tab.id })}
                 onClick={() => toggleScope(tab.id)}
@@ -274,92 +360,49 @@ const StatusMasterTab = () => {
           ))}
         </Nav>
 
-        {loading ? (
-          <div className="text-center py-4">
-            <Spinner size="sm" /> <span className="ms-2">Loading...</span>
-          </div>
-        ) : (
-          <Table hover responsive className="align-middle">
-            <thead>
-              <tr>
-                <th style={{ width: 60 }}>Order</th>
-                <th>Code</th>
-                <th>Preview</th>
-                <th>Next Statuses</th>
-                <th style={{ width: 130 }}>Flags</th>
-                <th style={{ width: 80 }}>Active</th>
-                <th style={{ width: 150 }} className="text-end">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedRows.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center text-muted py-4">
-                    No statuses configured for this scope yet.
-                  </td>
-                </tr>
-              ) : (
-                sortedRows.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.sort_order ?? 0}</td>
-                    <td>
-                      <code>{row.code}</code>
-                      {row.is_system && (
-                        <Badge color="light" className="text-dark border ms-2">System</Badge>
-                      )}
-                    </td>
-                    <td>
-                      <Badge color={row.color || colorFor(row.code)}>{row.label}</Badge>
-                    </td>
-                    <td className="text-muted" style={{ fontSize: 12, maxWidth: 220 }}>
-                      {(row.allowed_next || []).length === 0
-                        ? "—"
-                        : row.allowed_next.join(", ")}
-                    </td>
-                    <td>
-                      {row.is_initial && <Badge color="info" className="me-1 mb-1">Initial</Badge>}
-                      {row.is_terminal && <Badge color="dark" className="me-1 mb-1">Terminal</Badge>}
-                      {row.is_locked && <Badge color="secondary" className="me-1 mb-1">Locked</Badge>}
-                    </td>
-                    <td>
-                      {row.is_active ? (
-                        <Badge color="success">Active</Badge>
-                      ) : (
-                        <Badge color="secondary">Inactive</Badge>
-                      )}
-                    </td>
-                    <td className="text-end">
-                      <Button
-                        color="link"
-                        size="sm"
-                        className="p-0 me-3"
-                        onClick={() => openEditModal(row)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        color="link"
-                        size="sm"
-                        className={`p-0 ${row.is_active ? "text-danger" : "text-success"}`}
-                        onClick={() => handleToggleActive(row)}
-                      >
-                        {row.is_active ? "Deactivate" : "Activate"}
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </Table>
-        )}
+        <AppTable
+          columns={columns}
+          data={sortedRows}
+          isLoading={loading}
+          onRefresh={loadAll}
+          exportFileName={`status-master-${activeScope}`}
+          emptyMessage="No statuses configured for this scope yet."
+          getRowId={(row) => String(row.id)}
+          enableRowActions
+          positionActionsColumn="last"
+          displayColumnDefOptions={{ "mrt-row-actions": { header: "Actions", size: 100 } }}
+          renderRowActions={({ row }) => (
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <Tooltip title="Edit">
+                <IconButton data-testid="payroll-status-master-edit-button" size="small" color="primary" onClick={() => openEditModal(row.original)}>
+                  <EditOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={row.original.is_active ? "Deactivate" : "Activate"}>
+                <IconButton
+                  data-testid="payroll-status-master-block-button"
+                  size="small"
+                  color={row.original.is_active ? "error" : "success"}
+                  onClick={() => handleToggleActive(row.original)}
+                >
+                  {row.original.is_active ? (
+                    <BlockOutlinedIcon fontSize="small" />
+                  ) : (
+                    <CheckCircleOutlineRoundedIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+        />
       </CardBody>
 
-      <Modal isOpen={modalOpen} toggle={closeModal} centered size="lg">
-        <ModalHeader toggle={closeModal}>
+      <Modal data-testid="payroll-status-master-edit-dialog" isOpen={modalOpen} toggle={closeModal} centered size="lg">
+        <ModalHeader close={<ModalCloseButton onClick={closeModal} testId="payroll-status-master-edit-close-button" />} toggle={closeModal}>
           {form.id ? "Edit Status" : "Add Status"} —{" "}
           {form.scope === "run" ? "Payroll Run" : "Payslip"}
           {form.is_system && (
-            <Badge color="light" className="text-dark border ms-2">System</Badge>
+            <Badge color="light" className="badge-surface ms-2">System</Badge>
           )}
         </ModalHeader>
         <ModalBody>
@@ -369,6 +412,7 @@ const StatusMasterTab = () => {
                 <FormGroup>
                   <Label for="statusCode">Code</Label>
                   <Input
+                    data-testid="payroll-status-master-edit-code-input"
                     id="statusCode"
                     placeholder="e.g. pending_approval"
                     value={form.code}
@@ -388,6 +432,7 @@ const StatusMasterTab = () => {
                 <FormGroup>
                   <Label for="statusOrder">Order</Label>
                   <Input
+                    data-testid="payroll-status-master-edit-order-input"
                     id="statusOrder"
                     type="number"
                     value={form.sort_order}
@@ -404,6 +449,7 @@ const StatusMasterTab = () => {
             <FormGroup>
               <Label for="statusLabel">Label</Label>
               <Input
+                data-testid="payroll-status-master-edit-label-input"
                 id="statusLabel"
                 placeholder="e.g. Pending Approval"
                 value={form.label}
@@ -416,6 +462,7 @@ const StatusMasterTab = () => {
             <FormGroup>
               <Label for="statusDescription">Description</Label>
               <Input
+                data-testid="payroll-status-master-edit-description-textarea"
                 id="statusDescription"
                 type="textarea"
                 rows={2}
@@ -430,6 +477,7 @@ const StatusMasterTab = () => {
                 <FormGroup>
                   <Label>Badge Color</Label>
                   <Select
+                    testId="payroll-status-master-edit-badge-color"
                     options={colorOptions}
                     value={form.color}
                     onChange={(opt) => setForm({ ...form, color: opt })}
@@ -447,6 +495,7 @@ const StatusMasterTab = () => {
             <FormGroup>
               <Label>Next Statuses</Label>
               <Select
+                testId="payroll-status-master-edit-allowed-next"
                 isMulti
                 options={nextOptions}
                 value={form.allowed_next}
@@ -462,6 +511,7 @@ const StatusMasterTab = () => {
               <FormGroup>
                 <Label>Requires Run At Least</Label>
                 <Select
+                  testId="payroll-status-master-edit-requires-run-at-least"
                   isMulti
                   options={runCodeOptions}
                   value={form.requires_run_at_least}
@@ -483,6 +533,7 @@ const StatusMasterTab = () => {
               <Col md={4}>
                 <FormGroup switch>
                   <Input
+                    data-testid="payroll-status-master-edit-initial-switch"
                     type="switch"
                     role="switch"
                     id="statusInitial"
@@ -496,6 +547,7 @@ const StatusMasterTab = () => {
               <Col md={4}>
                 <FormGroup switch>
                   <Input
+                    data-testid="payroll-status-master-edit-terminal-switch"
                     type="switch"
                     role="switch"
                     id="statusTerminal"
@@ -509,6 +561,7 @@ const StatusMasterTab = () => {
               <Col md={4}>
                 <FormGroup switch>
                   <Input
+                    data-testid="payroll-status-master-edit-locked-switch"
                     type="switch"
                     role="switch"
                     id="statusLocked"
@@ -524,6 +577,7 @@ const StatusMasterTab = () => {
             {form.scope === "run" && (
               <FormGroup switch>
                 <Input
+                  data-testid="payroll-status-master-edit-editable-switch"
                   type="switch"
                   role="switch"
                   id="statusEditable"
@@ -538,6 +592,7 @@ const StatusMasterTab = () => {
 
             <FormGroup switch>
               <Input
+                data-testid="payroll-status-master-edit-active-switch"
                 type="switch"
                 role="switch"
                 id="statusActive"
@@ -549,10 +604,10 @@ const StatusMasterTab = () => {
           </Form>
         </ModalBody>
         <ModalFooter>
-          <Button color="secondary" outline onClick={closeModal} disabled={saving}>
+          <Button data-testid="payroll-status-master-edit-cancel-button" color="secondary" outline onClick={closeModal} disabled={saving}>
             Cancel
           </Button>
-          <Button color="primary" onClick={handleSave} disabled={saving}>
+          <Button data-testid="payroll-status-master-edit-save-changes-button" color="primary" onClick={handleSave} disabled={saving}>
             {saving ? <Spinner size="sm" /> : form.id ? "Save Changes" : "Create"}
           </Button>
         </ModalFooter>

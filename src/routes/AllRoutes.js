@@ -27,6 +27,7 @@ import {
   CREATE_TASK_ACCESS_KEY,
   EDIT_TASK_ACCESS_KEY,
   TASK_VIEW_ACCESS_KEY,
+  PAYROLL_VIEW_ACCESS_KEY,
 } from "../common/constant/RoleConstants";
 import Status from "../pages/Task/Status/Status";
 import Priorities from "../pages/Task/Priorities/Priorities";
@@ -67,6 +68,7 @@ import Notifications from "../pages/notification/Notifications";
 // import AttendanceReport from "../pages/attendance/AttendanceReport";
 
 const Dashboard = lazy(() => import("../pages/dashboard/Dashboard"));
+const CrmDashboard = lazy(() => import("../pages/Crm/Dashboard/CrmDashboard"));
 const Login = lazy(() => import("../pages/auth/login/Login"));
 const Register = lazy(() => import("../pages/auth/register/Register"));
 const ForgetPassword = lazy(
@@ -81,11 +83,12 @@ const WorkSchedule = lazy(() => import("../pages/workschedule/WorkSchedule"));
 const MyReimbursementsPage = lazy(
   () => import("../pages/reimbursement/MyReimbursementsPage"),
 );
-const Holidays = lazy(() => import("../pages/holidays/Holidays"));
+const Holidays = lazy(() => import("../features/holidays/pages/HolidaysPage"));
 const LeaveType = lazy(() => import("../pages/leave/LeaveType"));
 const LeaveApproval = lazy(() => import("../pages/leave/LeaveApproval"));
 const LeaveDashboard = lazy(() => import("../pages/leave/Leaves"));
 const CustomField = lazy(() => import("../pages/customField/CustomField"));
+const Payslip = lazy(() => import("../pages/payroll/EmployeePayslip"));
 const PayRoll = lazy(() => import("../pages/payroll/EmployeePayslip"));
 const Xlsx = lazy(() => import("../pages/xlsx/Xlsx"));
 const PayRollConfig = lazy(() => import("../pages/payroll/PayRollConfig"));
@@ -100,6 +103,12 @@ const AttendanceReport = lazy(
 );
 const AttendanceApproval = lazy(
   () => import("../pages/attendanceApproval/AttendanceApproval"),
+);
+const AttendanceBulkEditPage = lazy(
+  () => import("../features/attendanceBulkEdit/pages/AttendanceBulkEditPage"),
+);
+const FaceProfilesPage = lazy(
+  () => import("../features/faceProfiles/pages/FaceProfilesPage"),
 );
 
 const defaultRoutes = [
@@ -168,11 +177,16 @@ const privateRoutes = [
     component: <CustomField />,
     perm: [CUSTOM_FIELD_VIEW_ACCESS_KEY],
   },
-  { path: "/payroll", component: <PayRoll />, perm: "all" },
+  { path: "/payslip", component: <Payslip />, perm: "all" },
+  {
+    path: "/payroll",
+    component: <PayRollConfig />,
+    perm: [PAYROLL_VIEW_ACCESS_KEY],
+  },
   {
     path: "/payrollconfig",
-    component: <PayRollConfig />,
-    perm: "all",
+    component: <Navigate to="/payroll" />,
+    perm: [PAYROLL_VIEW_ACCESS_KEY],
   },
   {
     path: "/attendance",
@@ -245,6 +259,7 @@ const privateRoutes = [
       EDIT_CLIENT_ACCESS_KEY,
     ],
   },
+  { path: "/crm-dashboard", component: <CrmDashboard />, perm: "all" },
   { path: "/projects", component: <Projects />, perm: "all" },
   { path: "/tasks", component: <TaskTab />,   perm: [TASK_VIEW_ACCESS_KEY, CREATE_TASK_ACCESS_KEY, EDIT_TASK_ACCESS_KEY], },
   {
@@ -272,6 +287,10 @@ const privateRoutes = [
     component: <Notifications />,
     perm: "all",
   },
+  // Admin-only: an empty perm list matches nothing, and admins get every route.
+  { path: "/face-profiles", component: <FaceProfilesPage />, perm: [] },
+  { path: "/attendance-bulk-edit", component: <AttendanceBulkEditPage />, perm: "all" },
+  { path: "/admin-attendance-bulk-edit", component: <AttendanceBulkEditPage admin />, perm: [] },
 ];
 
 const publicRoutes = [

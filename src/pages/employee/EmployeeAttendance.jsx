@@ -1,6 +1,6 @@
 import { DatePicker } from "antd";
-import React, { useEffect, useState } from "react";
-import Select from "react-select";
+import React, { useEffect, useRef, useState } from "react";
+import Select from "../../shared/ui/TestableSelect";
 import { Card, CardBody, CardHeader, Col, Row } from "reactstrap";
 import {
   MonthFormat,
@@ -89,6 +89,16 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
     BuildTable(final_filter_keys);
   };
 
+  const { attendanceRefreshTick } = useSelector(
+    (state) => state.AttendanceReportReducer,
+  );
+  const lastRefreshTickRef = useRef(attendanceRefreshTick);
+  useEffect(() => {
+    if (attendanceRefreshTick === lastRefreshTickRef.current) return;
+    lastRefreshTickRef.current = attendanceRefreshTick;
+    handleFilter();
+  }, [attendanceRefreshTick]);
+
   return (
     <div>
       <React.Fragment>
@@ -106,6 +116,7 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
                       className="form-control"
                       placeholder="Select Month"
                       onChange={handleDateRangeChange}
+                      data-testid="employee-attendance-month-input"
                     />
                   </div>
                 </Col>
@@ -114,6 +125,7 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
                     <Select
                       name="status_attendance"
                       id="status_attendance"
+                      testId="employee-attendance-status-filter"
                       options={hr_status_options || []}
                       placeholder="Select a Status"
                       value={

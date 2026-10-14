@@ -16,6 +16,7 @@ import classnames from "classnames";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import { Link } from "react-router-dom";
 import TaxSlabModal from "./TaxSlabModal";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 
 const BasicComponentsTab = ({
   payrollobj,
@@ -45,6 +46,7 @@ const BasicComponentsTab = ({
         <Nav tabs className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
           <NavItem>
             <NavLink
+              data-testid="basic-components-esi-employees-state-insurance-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "1" })}
               onClick={() => toggleTab("1")}
@@ -54,6 +56,7 @@ const BasicComponentsTab = ({
           </NavItem>
           <NavItem>
             <NavLink
+              data-testid="basic-components-epf-employees-provident-fund-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "2" })}
               onClick={() => toggleTab("2")}
@@ -63,6 +66,7 @@ const BasicComponentsTab = ({
           </NavItem>
           <NavItem>
             <NavLink
+              data-testid="basic-components-professional-tax-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "3" })}
               onClick={() => toggleTab("3")}
@@ -72,6 +76,7 @@ const BasicComponentsTab = ({
           </NavItem>
           <NavItem>
             <NavLink
+              data-testid="basic-components-labour-welfare-fund-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "4" })}
               onClick={() => toggleTab("4")}
@@ -96,13 +101,14 @@ const BasicComponentsTab = ({
                       <div className="d-flex align-items-center">
                         <div className="flex-grow-1">
                           <h5 className="mb-0 fs-14">
-                            <Link to="#" className="text-body">ESI</Link>
+                            <Link data-testid="basic-components-esi-link" to="#" className="text-body">ESI</Link>
                           </h5>
                         </div>
                         <div className="flex-shrink-0">
                           <div className="d-flex gap-1 align-items-center my-n2">
                             <div className="form-check form-switch form-switch-success">
                               <Input
+                                data-testid="basic-components-enable-esi-checkbox"
                                 className="form-check-input"
                                 type="checkbox"
                                 role="switch"
@@ -177,13 +183,14 @@ const BasicComponentsTab = ({
                       <div className="d-flex align-items-center">
                         <div className="flex-grow-1">
                           <h5 className="mb-0 fs-14">
-                            <Link to="#" className="text-body">EPF</Link>
+                            <Link data-testid="basic-components-epf-link" to="#" className="text-body">EPF</Link>
                           </h5>
                         </div>
                         <div className="flex-shrink-0">
                           <div className="d-flex gap-1 align-items-center my-n2">
                             <div className="form-check form-switch form-switch-success">
                               <Input
+                                data-testid="basic-components-enable-epf-checkbox"
                                 className="form-check-input"
                                 type="checkbox"
                                 role="switch"
@@ -196,11 +203,12 @@ const BasicComponentsTab = ({
                               </Label>
                             </div>
                             <a
+                              data-testid="basic-components-edit-link"
                               onClick={() => onEPFEdit(payrollobj.basic_components.epf)}
                               className="text-primary d-inline-block edit-item-btn ms-2"
                               href="javascript:void(0)"
                             >
-                              <i className="ri-pencil-fill fs-16"></i>
+                              <i className="ri-pencil-line fs-16"></i>
                             </a>
                           </div>
                         </div>
@@ -274,7 +282,7 @@ const BasicComponentsTab = ({
                         <div className="d-flex align-items-center">
                           <div className="flex-grow-1">
                             <h5 className="mb-0 fs-14">
-                              <Link to="#" className="text-body">
+                              <Link data-testid={testId("basic-components", itemTestKey(item), "link")} to="#" className="text-body">
                                 {item.company}
                                 <span className="badge border border-dark text-body ms-2">
                                   {item.tag}
@@ -286,6 +294,7 @@ const BasicComponentsTab = ({
                             <div className="d-flex gap-1 align-items-center my-n2">
                               <div className="form-check form-switch form-switch-success">
                                 <Input
+                                  data-testid={testId("basic-components-is-active", itemTestKey(item), "checkbox")}
                                   className="form-check-input"
                                   type="checkbox"
                                   role="switch"
@@ -298,11 +307,12 @@ const BasicComponentsTab = ({
                                 </Label>
                               </div>
                               <a
+                                data-testid={testId("basic-components-edit", itemTestKey(item), "link")}
                                 onClick={() => onTaxEdit(item.slabs, item)}
                                 className="text-primary d-inline-block edit-item-btn ms-2"
                                 href="javascript:void(0)"
                               >
-                                <i className="ri-pencil-fill fs-16"></i>
+                                <i className="ri-pencil-line fs-16"></i>
                               </a>
                             </div>
                           </div>
@@ -327,6 +337,7 @@ const BasicComponentsTab = ({
                             <p className="text-muted mb-1">PT Slabs</p>
                             <p>
                               <Link
+                                data-testid={testId("basic-components-view-tax-slabs", itemTestKey(item), "link")}
                                 to="#"
                                 onClick={() => showTaxSlabModal(item.slabs)}
                                 className="link-success"
@@ -357,13 +368,14 @@ const BasicComponentsTab = ({
                     <div className="d-flex align-items-center">
                       <div className="flex-grow-1">
                         <h5 className="mb-0 fs-14">
-                          <Link to="#" className="text-body">Tamil Nadu</Link>
+                          <Link data-testid="basic-components-tamil-nadu-link" to="#" className="text-body">Tamil Nadu</Link>
                         </h5>
                       </div>
                       <div className="flex-shrink-0">
                         <div className="d-flex gap-1 align-items-center my-n2">
                           <div className="form-check form-switch form-switch-success">
                             <Input
+                              data-testid="basic-components-enable-labour-fund-checkbox"
                               className="form-check-input"
                               type="checkbox"
                               role="switch"

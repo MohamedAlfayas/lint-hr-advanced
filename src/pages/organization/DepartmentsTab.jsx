@@ -1,36 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  Modal,
-  ModalBody,
-  ModalHeader,
-  Row,
-} from "reactstrap";
 import { OrganizationChart } from "primereact/organizationchart";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  setDepartmentData,
   setComponentToShow,
   setFormObj,
   setFormTitle,
   setFormWidthPercentage,
   toggleRSBView,
 } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { Link } from "react-router-dom";
-
 // Prime React Css
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 
 // Prime React Minified Css
 import "primereact/resources/primereact.min.css";
 
-import avatar1 from "../../assets/images/users/avatar-1.jpg";
-import avatar2 from "../../assets/images/users/avatar-2.jpg";
-import avatar3 from "../../assets/images/users/avatar-3.jpg";
 import OrgModal from "./common/OrgModal";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setDepartmentDetails } from "../../redux/reducers/ChildReducer/DepartmentReducer";
@@ -41,6 +24,24 @@ import {
 } from "../../common/constant/RoleConstants";
 
 import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
+import { initialsOf } from "../../component/common/approval/ApprovalCells";
+import "./DepartmentsTab.scss";
+import { testId } from "../../shared/testing/testId";
+
+const LEVEL_TONES = ["primary", "success", "info", "warning", "purple", "pink"];
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 1.4;
+const ZOOM_STEP = 0.1;
+
+const MemberAvatar = ({ member }) => {
+  const [broken, setBroken] = useState(false);
+  const name = [member.first_name, member.last_name].filter(Boolean).join(" ");
+  return member.profile_url && !broken ? (
+    <img src={member.profile_url} alt={name} title={name} onError={() => setBroken(true)} />
+  ) : (
+    <span title={name}>{member.first_name?.charAt(0)?.toUpperCase() || "?"}</span>
+  );
+};
 
 const DepartmentsTab = () => {
   const EmployeeData = GetLocalStorageData("employee");
@@ -72,6 +73,7 @@ const DepartmentsTab = () => {
 
   const [showCreateBtn, setShowCreateBtn] = useState(false);
   const [showEditBtn, setShowEditBtn] = useState(false);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     setShowCreateBtn(CheckRoleAccess(CREATE_DEPARTMENT_ACCESS_KEY));
@@ -90,184 +92,191 @@ const DepartmentsTab = () => {
   const [departmentId, setDepartmentId] = useState(0);
   const [departmentName, setDepartmentName] = useState(0);
 
-  const nodeTemplate1 = (node) => {
-    let emp_list_for_this_department =
-      EmployeeData.filter(
-        (d) =>
-          d.primary_department_id_list.includes(node.id) &&
-          d.is_active === true,
-      ) || [];
+  const activeEmployees = useMemo(
+    () => (EmployeeData || []).filter((d) => d.is_active === true),
+    [EmployeeData],
+  );
+
+  const { departmentCount, levelById, maxDepth } = useMemo(() => {
+    const levels = {};
+    let count = 0;
+    let deepest = 0;
+    const walk = (nodes = [], depth = 0) =>
+      nodes.forEach((n) => {
+        count += 1;
+        levels[n.id] = depth;
+        deepest = Math.max(deepest, depth);
+        walk(n.children, depth + 1);
+      });
+    walk(department_data);
+    return { departmentCount: count, levelById: levels, maxDepth: deepest + 1 };
+  }, [department_data]);
+
+  const openDepartment = (node) => {
+    setDepartmentId(node.id);
+    setDepartmentName(node.name);
+    toggleOrgModal();
+  };
+
+  const changeZoom = (delta) =>
+    setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round((z + delta) * 10) / 10)));
+
+  const nodeTemplate = (node) => {
+    const members = activeEmployees.filter((d) =>
+      (d.primary_department_id_list || []).includes(node.id),
+    );
+    const isRoot = !node.pid;
+    const level = levelById[node.id] ?? 0;
+    const tone = isRoot ? "root" : LEVEL_TONES[(level - 1) % LEVEL_TONES.length];
+    const subCount = (node.children || []).length;
+    const shown = members.slice(0, 4);
+    const label = node.label || node.name || "Department";
 
     return (
-      <Col xxl={12} lg={12}>
-        <div className="org-card">
-          <div className="d-flex justify-content-between align-items-start">
-            <div className="org-card-info">
-              <Link
-                onClick={() => {
-                  toggleOrgModal();
-                  setDepartmentId(node.id);
-                  setDepartmentName(node.name);
-                }}
-                className="org-card-title"
-              >
-                {node.label}
-              </Link>
-              <div className="org-card-subtitle">
-                {node.data?.department_type || "Department"}
-              </div>
-            </div>
-
-            <div className="d-flex gap-1">
-              <button
-                onClick={() => {
-                  toggleOrgModal();
-                  setDepartmentId(node.id);
-                  setDepartmentName(node.name);
-                }}
-                type="button"
-                className="btn btn-icon text-muted btn-sm fs-16 org-card-eye"
-              >
-                <i className="ri-eye-line"></i>
-              </button>
-
-              {showEditBtn && (
-                <button
-                  onClick={() => handleDepartmentCreateOrEdit(node.id, node)}
-                  type="button"
-                  className="btn btn-icon text-muted btn-sm fs-16 org-card-edit"
-                >
-                  <i className="ri-pencil-fill"></i>
-                </button>
-              )}
-            </div>
+      <div className={`org-node is-${tone}`} style={{ animationDelay: `${Math.min(level, 6) * 90}ms` }}>
+        <div className="org-node-top">
+          <span className="org-node-icon">
+            {isRoot ? <i className="ri-building-2-line" /> : initialsOf(label) || "D"}
+          </span>
+          <div className="org-node-title">
+            <button type="button" title={label} onClick={() => openDepartment(node)} data-testid={testId("department-node", label, "button")}>
+              {label}
+            </button>
+            <small>
+              {isRoot ? "Organization" : node.data?.department_type || `Level ${level} department`}
+            </small>
           </div>
-
-          <div className="org-card-bottom">
-            <div className="avatar-group">
-              {emp_list_for_this_department.slice(0, 2).map((item, key) => (
-                <React.Fragment key={key}>
-                  {item.profile_url ? (
-                    <div className="avatar-group-item">
-                      <Link to="#" className="d-inline-block">
-                        <div className="flex-shrink-0">
-                          <img
-                            src={item.profile_url}
-                            alt=""
-                            className="avatar-xs rounded-circle acitivity-avatar"
-                            style={{ objectFit: "cover" }}
-                            data-bs-toggle="tooltip"
-                            title={item.first_name}
-                          />
-                        </div>
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="avatar-group-item">
-                      <Link to="#">
-                        <div className="flex-shrink-0">
-                          <div
-                            className="avatar-xs rounded-circle acitivity-avatar"
-                            style={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              background: "#0ab39c",
-                            }}
-                            data-bs-toggle="tooltip"
-                            title={item.first_name}
-                          >
-                            <span
-                              className="first_letter"
-                              style={{ color: "white" }}
-                            >
-                              {item?.first_name?.charAt(0) || "?"}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-              {emp_list_for_this_department.length > 2 && (
-                <div className="avatar-group-item">
-                  <Link to="#">
-                    <div className="flex-shrink-0">
-                      <div
-                        className="avatar-xs rounded-circle acitivity-avatar bg-info"
-                        style={{
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                        data-bs-toggle="tooltip"
-                        title={emp_list_for_this_department.length}
-                      >
-                        <span
-                          className="first_letter"
-                          style={{ color: "white" }}
-                        >
-                          +{emp_list_for_this_department.length - 2}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              )}
-            </div>
-
-            <div className="org-card-count-badge">
-              <span className="org-card-count-number">
-                {emp_list_for_this_department.length}
-              </span>
-              <span className="org-card-count-label">Employees</span>
-            </div>
+          <div className="org-node-actions">
+            <button data-testid="department-view-employees-button" type="button" title="View employees" onClick={() => openDepartment(node)}>
+              <i className="ri-eye-line" />
+            </button>
+            {showEditBtn && (
+              <button
+                data-testid="department-edit-department-button"
+                type="button"
+                title="Edit department"
+                onClick={() => handleDepartmentCreateOrEdit(node.id, node)}
+              >
+                <i className="ri-pencil-line" />
+              </button>
+            )}
           </div>
         </div>
-      </Col>
+
+        <div className="org-node-foot">
+          {members.length ? (
+            <div
+              className="org-node-people"
+              title={members.map((m) => [m.first_name, m.last_name].filter(Boolean).join(" ")).join(", ")}
+            >
+              {shown.map((m) => (
+                <MemberAvatar key={m.id} member={m} />
+              ))}
+              {members.length > shown.length && <span className="is-more">+{members.length - shown.length}</span>}
+            </div>
+          ) : (
+            <span className="org-node-empty">No employees</span>
+          )}
+          <div className="org-node-stats">
+            {subCount > 0 && (
+              <span className="org-chip is-sub" title={`${subCount} sub-department${subCount === 1 ? "" : "s"}`}>
+                <i className="ri-node-tree" />
+                {subCount}
+              </span>
+            )}
+            <span className={`org-chip${members.length ? "" : " is-zero"}`} title={`${members.length} employees`}>
+              <i className="ri-team-line" />
+              {members.length}
+            </span>
+          </div>
+        </div>
+      </div>
     );
   };
 
   return (
     <React.Fragment>
-      <Card>
-        <CardHeader>
-          {showCreateBtn === true && (
-            <span className="float-end">
-              <button
-                type="button"
-                className="btn btn-success add-btn"
-                id="create-btn"
-                style={{ textTransform: "capitalize" }}
-                onClick={() => {
-                  handleDepartmentCreateOrEdit(0);
-                }}
-              >
-                <i className="ri-add-line align-bottom me-1"></i>New
-                Department{" "}
-              </button>
+      <div className="org-shell">
+        <div className="org-head">
+          <div className="org-head-title">
+            <span className="org-head-icon">
+              <i className="ri-organization-chart" />
             </span>
-          )}
-          <h5 className="card-title">Department</h5>
-        </CardHeader>
-        <CardBody>
-          <div className="card overflow-x-auto">
-            {department_data.length ? (
-              <OrganizationChart
-                value={department_data}
-                nodeTemplate={nodeTemplate1}
-              />
-            ) : (
-              <React.Fragment>
-                <div className="text-center">
-                  <h2>No Data</h2>
-                </div>
-              </React.Fragment>
-            )}
+            <div>
+              <h5>Departments</h5>
+              <p>Organization structure and team distribution</p>
+            </div>
           </div>
-        </CardBody>
-      </Card>
+
+          <div className="org-head-stats">
+            <span>
+              <i className="ri-git-merge-line" />
+              <b>{departmentCount}</b> Departments
+            </span>
+            <span>
+              <i className="ri-team-line" />
+              <b>{activeEmployees.length}</b> Active employees
+            </span>
+            <span>
+              <i className="ri-node-tree" />
+              <b>{maxDepth}</b> Levels
+            </span>
+          </div>
+
+          {showCreateBtn && (
+            <button
+              data-testid="department-new-department-button"
+              type="button"
+              className="btn btn-success btn-sm org-new-btn"
+              onClick={() => handleDepartmentCreateOrEdit(0)}
+            >
+              <i className="ri-add-line align-bottom me-1" />
+              New Department
+            </button>
+          )}
+        </div>
+
+        <div className="org-canvas-wrap">
+          <div className="org-zoom">
+            <button data-testid="department-zoom-out-button" type="button" title="Zoom out" onClick={() => changeZoom(-ZOOM_STEP)} disabled={zoom <= ZOOM_MIN}>
+              <i className="ri-zoom-out-line" />
+            </button>
+            <span>{Math.round(zoom * 100)}%</span>
+            <button data-testid="department-zoom-in-button" type="button" title="Zoom in" onClick={() => changeZoom(ZOOM_STEP)} disabled={zoom >= ZOOM_MAX}>
+              <i className="ri-zoom-in-line" />
+            </button>
+            <button data-testid="department-reset-zoom-button" type="button" title="Reset zoom" onClick={() => setZoom(1)} disabled={zoom === 1}>
+              <i className="ri-focus-3-line" />
+            </button>
+          </div>
+
+          <div className="org-canvas">
+          {department_data.length ? (
+            <div className="org-stage" style={{ zoom }}>
+              <OrganizationChart value={department_data} nodeTemplate={nodeTemplate} />
+            </div>
+          ) : (
+            <div className="org-empty">
+              <span>
+                <i className="ri-organization-chart" />
+              </span>
+              <p>No departments yet</p>
+              {showCreateBtn && (
+                <button
+                  data-testid="department-create-the-first-department-button"
+                  type="button"
+                  className="btn btn-soft-success btn-sm"
+                  onClick={() => handleDepartmentCreateOrEdit(0)}
+                >
+                  <i className="ri-add-line align-bottom me-1" />
+                  Create the first department
+                </button>
+              )}
+            </div>
+          )}
+          </div>
+        </div>
+      </div>
 
       <OrgModal
         showOrgModal={showOrgModal}

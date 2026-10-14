@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardBody, Col, Row } from "reactstrap";
-import SimpleBar from "simplebar-react";
+import { Chip } from "@mui/material";
+import AppTable from "../../shared/ui/table/AppTable";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { gender_options } from "../../common/constant/Constants";
 
@@ -122,268 +123,282 @@ const EmployeeOverview = (props) => {
     return { name, ...palette };
   };
 
+  const formatTaskDate = (value) =>
+    value
+      ? new Date(value).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "-";
+
+  const taskColumns = useMemo(
+    () => [
+      {
+        id: "title",
+        accessorFn: (task) => task.title || "Untitled Task",
+        header: "Title",
+        Cell: ({ row }) => (
+          <div style={{ maxWidth: "180px" }}>
+            <div className="fw-medium text-truncate" title={row.original.title}>
+              {row.original.title || "Untitled Task"}
+            </div>
+            <small className="text-muted text-capitalize">
+              {row.original.related_to || "-"}
+            </small>
+          </div>
+        ),
+      },
+      {
+        id: "status",
+        accessorFn: (task) => getTaskStatus(task).name,
+        header: "Status",
+        Cell: ({ row }) => {
+          const statusInfo = getTaskStatus(row.original);
+          return (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={statusInfo.name}
+              sx={{
+                bgcolor: `${statusInfo.text}1a`,
+                color: statusInfo.text,
+                borderColor: statusInfo.border,
+                fontWeight: 500,
+              }}
+            />
+          );
+        },
+      },
+      {
+        id: "time",
+        accessorFn: (task) => task.start_time || "",
+        header: "Time",
+        exportValue: (task) =>
+          `Start: ${formatTaskDate(task.start_time)} End: ${formatTaskDate(task.end_time)}`,
+        Cell: ({ row }) => (
+          <>
+            <small className="text-muted d-block">
+              <span className="fw-medium">Start:</span>{" "}
+              {formatTaskDate(row.original.start_time)}
+            </small>
+            <small className="text-muted d-block">
+              <span className="fw-medium">End:</span>{" "}
+              {formatTaskDate(row.original.end_time)}
+            </small>
+          </>
+        ),
+      },
+    ],
+    [],
+  );
+
+  const formatDate = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime())
+      ? value
+      : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const SectionHeader = ({ icon, tone, title, action }) => (
+    <div className="eo-section-head">
+      <div className="d-flex align-items-center gap-2">
+        <span className={`eo-head-icon eo-${tone}`}>
+          <i className={icon} />
+        </span>
+        <h6 className="mb-0 fw-semibold">{title}</h6>
+      </div>
+      {action}
+    </div>
+  );
+
+  const payrollStats = [
+    {
+      label: "Latest Net Salary",
+      value: payrollObj?.latestNetSalary || "-",
+      hint: payrollObj?.latestPayMonth || "-",
+      icon: "ri-money-dollar-circle-line",
+      tone: "success",
+    },
+    {
+      label: "Last Pay Date",
+      value: payrollObj?.lastPayDate || "-",
+      hint: payrollObj?.latestPayMonth || "-",
+      icon: "ri-calendar-check-line",
+      tone: "info",
+    },
+    {
+      label: "Total Payslips",
+      value: payrollObj?.totalPayslips ?? 0,
+      hint: "This Year",
+      icon: "ri-file-list-3-line",
+      tone: "warning",
+    },
+  ];
+
   return (
-    <div className="mb-4">
-      <Row className="align-items-stretch">
+    <div className="mb-4 eo-root">
+      <Row className="align-items-stretch g-3">
         {/* Left: Employee Details */}
         <Col xxl={5} lg={5} md={12} className="d-flex">
-          <Card className="h-100 w-100 d-flex flex-column">
-            <CardBody className="d-flex flex-column flex-grow-1" style={{ minHeight: 0 }}>
-              <div className="d-flex align-items-center mb-4">
-                <div
-                  className="d-flex align-items-center justify-content-center flex-shrink-0"
-                  style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "50%",
-                    backgroundColor: "#e7ecff",
-                  }}
-                >
-                  <i
-                    className="ri-user-line"
-                    style={{ fontSize: "20px", color: "#0e1d8e" }}
-                  ></i>
-                </div>
-                <h5 className="card-title mb-0 ms-3">Employee Details</h5>
-              </div>
+          <Card className="h-100 w-100 mb-0 eo-card">
+            <CardBody className="d-flex flex-column">
+              <SectionHeader icon="ri-user-line" tone="primary" title="Employee Details" />
 
-              <SimpleBar className="flex-grow-1" style={{ minHeight: 0 }}>
-                <div className="table-responsive">
-                  <table className="table table-borderless mb-0">
-                    <tbody>
-                      {detailRows.map((row, idx) => (
-                        <tr key={idx}>
-                          <td className="ps-0" style={{ width: "40px",verticalAlign: "middle" }}>
-                            <div
-                              className="d-flex align-items-center justify-content-center"
-                              style={{
-                                width: "32px",
-                                height: "32px",
-                                borderRadius: "50%",
-                                backgroundColor: "#e7ecff",
-                              }}
-                            >
-                              <i
-                                className={row.icon}
-                                style={{ fontSize: "15px", color: "#0e1d8e" }}
-                              ></i>
-                            </div>
-                          </td>
-                          <th
-                            className="fw-medium text-body"
-                            style={{ width: "160px",verticalAlign: "middle" }}
-                          >
-                            {row.label}
-                          </th>
-                          <td className="text-muted" style={{ verticalAlign: "middle" }}>:</td>
-                          <td className="text-muted" style={{ verticalAlign: "middle" }}>{row.value || "-"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </SimpleBar>
+              <div className="eo-details">
+                {detailRows.map((row) => {
+                  const isDate = /Date/.test(row.label);
+                  const value = isDate ? formatDate(row.value) : row.value;
+                  return (
+                    <div key={row.label} className="eo-detail">
+                      <span className="eo-detail-icon">
+                        <i className={row.icon} />
+                      </span>
+                      <div className="eo-detail-text">
+                        <div className="eo-detail-label">{row.label}</div>
+                        <div
+                          className={`eo-detail-value${value && value !== "-" ? "" : " is-empty"}`}
+                          title={typeof value === "string" ? value : undefined}
+                        >
+                          {value && value !== "-" ? value : "Not set"}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </CardBody>
           </Card>
         </Col>
 
         {/* Right: Payroll + Tasks */}
-        <Col xxl={7} lg={7} md={12} className="d-flex flex-column">
-          {/* Payroll Overview */}
-          <Card>
+        <Col xxl={7} lg={7} md={12} className="d-flex flex-column gap-3">
+          <Card className="mb-0 eo-card">
             <CardBody>
-              <div className="d-flex align-items-center mb-4">
-                <div
-                  className="d-flex align-items-center justify-content-center flex-shrink-0"
-                  style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "50%",
-                    backgroundColor: "#d6f5ef",
-                  }}
-                >
-                  <i
-                    className="ri-wallet-3-line"
-                    style={{ fontSize: "20px", color: "#057465" }}
-                  ></i>
-                </div>
-                <h5 className="card-title mb-0 ms-3">Payroll Overview</h5>
-              </div>
+              <SectionHeader
+                icon="ri-wallet-3-line"
+                tone="success"
+                title="Payroll Overview"
+                action={
+                  <button type="button" className="eo-link" onClick={props.onViewPayslips} data-testid="employee-overview-view-payslips-button">
+                    View Payslips <i className="ri-arrow-right-line" />
+                  </button>
+                }
+              />
 
-              <Row className="g-3">
-                <Col md={4} xs={12}>
-                  <div className="p-3 rounded bg-success-subtle h-100">
-                    <p className="text-muted mb-1">Latest Net Salary</p>
-                    <h4 className="text-success mb-1">
-                      {payrollObj?.latestNetSalary || "-"}
-                    </h4>
-                    <small className="text-muted">
-                      {payrollObj?.latestPayMonth || "-"}
-                    </small>
+              <div className="eo-stats">
+                {payrollStats.map((stat) => (
+                  <div key={stat.label} className={`eo-stat eo-${stat.tone}`}>
+                    <span className="eo-stat-icon">
+                      <i className={stat.icon} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="eo-stat-label">{stat.label}</div>
+                      <div className="eo-stat-value">{stat.value}</div>
+                      <div className="eo-stat-hint">{stat.hint}</div>
+                    </div>
                   </div>
-                </Col>
-                <Col md={4} xs={12}>
-                  <div className="p-3 rounded bg-info-subtle h-100">
-                    <p className="text-muted mb-1">Last Pay Date</p>
-                    <h4 className="mb-1">{payrollObj?.lastPayDate || "-"}</h4>
-                    <small className="text-muted">
-                      {payrollObj?.latestPayMonth || "-"}
-                    </small>
-                  </div>
-                </Col>
-                <Col md={4} xs={12}>
-                  <div className="p-3 rounded bg-warning-subtle h-100 text-center">
-                    <p className="text-muted mb-1">Total Payslips</p>
-                    <h4 className="text-danger mb-1">
-                      {payrollObj?.totalPayslips ?? 0}
-                    </h4>
-                    <small className="text-muted">This Year</small>
-                  </div>
-                </Col>
-              </Row>
-
-              <div
-                onClick={props.onViewPayslips}
-                role="button"
-                className="d-flex align-items-center justify-content-between mt-4 p-3 rounded border text-decoration-none"
-                style={{ cursor: "pointer" }}
-              >
-                <span className="fw-medium text-primary">View Payslips</span>
-                <i className="ri-arrow-right-line text-primary"></i>
+                ))}
               </div>
             </CardBody>
           </Card>
 
-          {/* Recent CRM Tasks */}
-         
-        <Card className="flex-grow-1 d-flex flex-column mb-0">
-          <CardBody className="d-flex flex-column flex-grow-1">
-            <div className="d-flex align-items-center justify-content-between mb-4">
-              <div className="d-flex align-items-center">
-                <div
-                  className="d-flex align-items-center justify-content-center flex-shrink-0"
-                  style={{
-                    width: "42px",
-                    height: "42px",
-                    borderRadius: "50%",
-                    backgroundColor: "#e7ecff",
-                  }}
-                >
-                  <i
-                    className="ri-task-line"
-                    style={{ fontSize: "20px", color: "#540570" }}
-                  ></i>
-                </div>
-                <h5 className="card-title mb-0 ms-3">Recent Tasks</h5>
-              </div>
-            </div>
+          <Card className="flex-grow-1 mb-0 eo-card">
+            <CardBody className="d-flex flex-column">
+              <SectionHeader
+                icon="ri-task-line"
+                tone="purple"
+                title="Recent Tasks"
+                action={
+                  <Link to={tasksLink || "#"} className="eo-link" data-testid="employee-overview-view-all-tasks-link">
+                    View All <i className="ri-arrow-right-line" />
+                  </Link>
+                }
+              />
 
-            {/* <SimpleBar style={{ height: "260px" }} className="pe-1"> */}
-            
               {recentTasks.length ? (
-                <SimpleBar className="flex-grow-1 pe-1" style={{ minHeight: 0 }}>
-                <div className="table-responsive">
-                  <table className="table table-borderless table-nowrap align-middle mb-0">
-                    <thead className="text-muted" style={{ fontSize: "12px" }}>
-                      <tr>
-                        <th className="ps-0">Title</th>
-                        <th>Status</th>
-                        <th className="text-end pe-0">Time</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentTasks.map((task) => {
-                        const statusInfo = getTaskStatus(task);
-                        return (
-                          <tr key={task.id} className="border-bottom">
-                            <td className="ps-0" style={{ maxWidth: "180px" }}>
-                              <div
-                                className="fw-medium text-truncate"
-                                title={task.title}
-                              >
-                                {task.title || "Untitled Task"}
-                              </div>
-                              <small className="text-muted text-capitalize">
-                                {task.related_to || "-"}
-                              </small>
-                            </td>
-                            <td>
-                              {/* <span
-                                className="badge"
-                                style={{
-                                  backgroundColor: `${statusInfo.color}22`,
-                                  color: statusInfo.color,
-                                  border: `1px solid ${statusInfo.color}`,
-                                }}
-                              >
-                                {statusInfo.name}
-                              </span> */}
-                              <span
-                                className="badge"
-                                style={{
-                                  backgroundColor: statusInfo.bg,
-                                  color: statusInfo.text,
-                                  border: `1px solid ${statusInfo.border}`,
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {statusInfo.name}
-                              </span>
-
-                            </td>
-                            <td className="text-end pe-0">
-                              <small className="text-muted d-block">
-                                <span className="fw-medium">Start:</span>{" "}
-                                {task.start_time
-                                  ? new Date(task.start_time).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "-"}
-                              </small>
-                              <small className="text-muted d-block">
-                                <span className="fw-medium">End:</span>{" "}
-                                {task.end_time
-                                  ? new Date(task.end_time).toLocaleDateString("en-GB", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })
-                                  : "-"}
-                              </small>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                <div className="flex-grow-1" style={{ minHeight: 0 }}>
+                  <AppTable
+                    columns={taskColumns}
+                    data={recentTasks}
+                    getRowId={(task) => String(task.id)}
+                    enablePagination={false}
+                    enableRowSelection={false}
+                    initialState={{ density: "compact" }}
+                  />
                 </div>
-                </SimpleBar>
               ) : (
-                <div
-                  className="d-flex align-items-center justify-content-center flex-grow-1"
-                  // style={{ height: "260px" }}
-                >
-                  <Lottie options={noDataOptions} height={160} width={160} />
-                  {/* <p className="text-muted text-center mb-0">
-                    No tasks assigned yet.
-                  </p> */}
+                <div className="eo-empty">
+                  <Lottie options={noDataOptions} height={120} width={120} />
+                  <div className="fw-semibold mt-1">No tasks yet</div>
+                  <div className="text-muted fs-12">Tasks assigned to this employee will appear here.</div>
                 </div>
               )}
-           
-
-            <Link
-              to={tasksLink || "#"}
-              className="d-flex align-items-center justify-content-between mt-3 p-3 rounded border text-decoration-none"
-            >
-              <span className="fw-medium text-primary">View All Tasks</span>
-              <i className="ri-arrow-right-line text-primary"></i>
-            </Link>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
         </Col>
       </Row>
+
+      <style>{`
+        .eo-card { border-radius: 14px; }
+        .eo-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+        .eo-head-icon {
+          width:36px; height:36px; border-radius:10px; font-size:18px;
+          display:inline-flex; align-items:center; justify-content:center;
+          color:var(--eo-c); background:rgba(var(--eo-rgb), .12);
+        }
+        .eo-primary { --eo-c:var(--vz-primary); --eo-rgb:var(--vz-primary-rgb); }
+        .eo-success { --eo-c:var(--vz-success); --eo-rgb:var(--vz-success-rgb); }
+        .eo-info { --eo-c:var(--vz-info); --eo-rgb:var(--vz-info-rgb); }
+        .eo-warning { --eo-c:var(--vz-warning); --eo-rgb:var(--vz-warning-rgb); }
+        .eo-purple { --eo-c:#7c5cf5; --eo-rgb:124,92,245; }
+        .eo-link {
+          display:inline-flex; align-items:center; gap:4px; border:0; background:transparent; padding:4px 8px;
+          border-radius:8px; font-size:13px; font-weight:600; color:var(--vz-primary); text-decoration:none;
+        }
+        .eo-link:hover { background:rgba(var(--vz-primary-rgb), .08); color:var(--vz-primary); }
+        .eo-link i { transition:transform .15s ease; }
+        .eo-link:hover i { transform:translateX(3px); }
+
+        .eo-details { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+        @media (max-width: 575.98px) { .eo-details { grid-template-columns:1fr; } }
+        .eo-detail {
+          display:flex; align-items:center; gap:10px; padding:10px 12px; min-width:0;
+          border:1px solid var(--vz-border-color); border-radius:12px; transition:border-color .15s ease, background-color .15s ease;
+        }
+        .eo-detail:hover { border-color:rgba(var(--vz-primary-rgb), .35); background:rgba(var(--vz-primary-rgb), .03); }
+        .eo-detail-icon {
+          width:32px; height:32px; flex:0 0 32px; border-radius:9px; font-size:16px;
+          display:inline-flex; align-items:center; justify-content:center;
+          color:var(--vz-primary); background:rgba(var(--vz-primary-rgb), .1);
+        }
+        .eo-detail-text { min-width:0; }
+        .eo-detail-label { font-size:11px; color:var(--vz-secondary-color); text-transform:uppercase; letter-spacing:.4px; }
+        .eo-detail-value {
+          font-size:13px; font-weight:600; color:var(--vz-heading-color, var(--vz-body-color));
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .eo-detail-value.is-empty { color:var(--vz-secondary-color); font-weight:400; font-style:italic; }
+
+        .eo-stats { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+        @media (max-width: 767.98px) { .eo-stats { grid-template-columns:1fr; } }
+        .eo-stat {
+          display:flex; align-items:flex-start; gap:12px; padding:14px; border-radius:12px;
+          background:rgba(var(--eo-rgb), .08); border:1px solid rgba(var(--eo-rgb), .2);
+        }
+        .eo-stat-icon {
+          width:38px; height:38px; flex:0 0 38px; border-radius:10px; font-size:19px;
+          display:inline-flex; align-items:center; justify-content:center;
+          color:#fff; background:var(--eo-c); box-shadow:0 4px 10px rgba(var(--eo-rgb), .3);
+        }
+        .eo-stat-label { font-size:12px; color:var(--vz-secondary-color); }
+        .eo-stat-value { font-size:18px; font-weight:700; color:var(--vz-heading-color, var(--vz-body-color)); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .eo-stat-hint { font-size:11.5px; color:var(--vz-secondary-color); }
+        .min-w-0 { min-width:0; }
+
+        .eo-empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px 0; min-height:200px; }
+      `}</style>
     </div>
   );
 };

@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { PageSkeleton } from "../../../component/common/skeleton/Skeleton";
 import {
-  Table, Input, Nav, NavItem, NavLink,
-  TabContent, TabPane, Alert, CardHeader, Card, Row, Col,
+  Nav, NavItem, NavLink,
+  TabContent, TabPane, Alert,
 } from "reactstrap";
 import classnames from "classnames";
+import { Box, Chip, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import CheckCircleOutlineRoundedIcon from "@mui/icons-material/CheckCircleOutlineRounded";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { DatePicker } from "antd";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
+import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
@@ -19,6 +25,15 @@ import { MonthFormat } from "../../../common/constant/Constants";
 import TypeFormModal from "./Modal/TypeFormModal";   // type create/edit modal
 import HRClaimModal  from "./Modal/HRClaimModal";    // HR submits on behalf of employee
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
+import AppTable from "../../../shared/ui/table/AppTable";
+import { EditAction, StatusChip } from "../../../shared/ui/table/cells";
+import {
+  ApvChip,
+  ApvDate,
+  ApvEmployee,
+  ApvLeaveType,
+  ApvStatus,
+} from "../../../component/common/approval/ApprovalCells";
 
 dayjs.extend(customParseFormat);
 
@@ -41,106 +56,217 @@ const fmt = (v) => {
   return isNaN(n) ? "0.00" : n.toFixed(2);
 };
 
-
-
-// Small avatar with initials fallback when no photo is available
-const initials = (name = "") =>
-  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("");
-
-const EmployeeAvatar = ({ photo, name, size = 32 }) => {
-  const [errored, setErrored] = useState(false);
-  if (photo && !errored) {
-    return (
-      <img
-        src={photo}
-        alt={name}
-        onError={() => setErrored(true)}
-        style={{
-          width: size, height: size, borderRadius: "50%",
-          objectFit: "cover", flexShrink: 0,
-        }}
-      />
-    );
-  }
-  return (
-    <div
-      className="d-flex align-items-center justify-content-center bg-success-subtle text-success fw-medium"
-      style={{ width: size, height: size, borderRadius: "50%", fontSize: 12, flexShrink: 0 }}
-    >
-      {initials(name) || "?"}
-    </div>
-  );
+const CLAIM_STATUS = {
+  approved: { tone: "success", icon: "ri-checkbox-circle-line" },
+  rejected: { tone: "danger", icon: "ri-close-circle-line" },
+  submitted: { tone: "warning", icon: "ri-time-line" },
 };
+
+const capLabel = (v) => (v > 0 ? `₹${v}` : "No cap");
+
+const typeFlags = (t) => [t.receipt_required && "Receipt", t.is_taxable && "Taxable"].filter(Boolean);
+
+const NotesCell = ({ text }) => (
+  <Tooltip title={text} placement="top-start" enterDelay={400}>
+    <Typography
+      variant="body2"
+      sx={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+    >
+      {text}
+    </Typography>
+  </Tooltip>
+);
+
 
 // ─── Types table ──────────────────────────────────────────────────────────────
 
-const TypesTable = ({ types, loading, onEdit }) => (
-  <Table bordered hover responsive className="align-middle" style={{ fontSize: 14 }}>
-    <thead className="table-light">
-      <tr>
-        <th>Name</th>
-        <th>Mode</th>
-        <th>Rate / unit</th>
-        <th>Per-claim cap</th>
-        <th>Period cap</th>
-        <th>Frequency</th>
-        <th>Flags</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {loading ? (
-        <tr><td colSpan={9} className="text-center py-4 text-muted">Loading...</td></tr>
-      ) : types.length === 0 ? (
-        <tr>
-          <td colSpan={9} className="text-center py-4 text-muted">
-            No reimbursement types yet. Click "Add Type" to create one.
-          </td>
-        </tr>
-      ) : types.map((t) => (
-        <tr key={t.id}>
-          <td>
-            <div className="fw-medium">{t.name}</div>
-            {t.description && <small className="text-muted">{t.description}</small>}
-          </td>
-          <td>
-            {t.calculation_mode === "rate_x_units"
-              ? <span className="badge bg-info-subtle text-info text-uppercase px-2 py-1">Rate × Units</span>
-              : <span className="badge bg-secondary-subtle text-secondary text-uppercase px-2 py-1">Flat</span>}
-          </td>
-          <td>
-            {t.calculation_mode === "rate_x_units"
-              ? `₹${t.meta?.rate} / ${t.meta?.unit_label}`
-              : "—"}
-          </td>
-          <td>{t.max_amount_per_claim > 0  ? `₹${t.max_amount_per_claim}`  : "No cap"}</td>
-          <td>{t.max_amount_per_period > 0 ? `₹${t.max_amount_per_period}` : "No cap"}</td>
-          <td>{FREQUENCY_LABELS[t.frequency] || t.frequency}</td>
-          <td>
-            <div className="d-flex gap-1 flex-wrap">
-              {t.receipt_required && <span className="badge bg-warning-subtle text-warning px-2 py-1">Receipt</span>}
-              {t.is_taxable       && <span className="badge bg-danger-subtle  text-danger  px-2 py-1">Taxable</span>}
-            </div>
-          </td>
-          <td>
-            <span className={`badge text-uppercase px-3 py-2 bg-${t.is_active ? "success" : "warning"}-subtle text-${t.is_active ? "success" : "warning"}`}>
-              {t.is_active ? "Active" : "Inactive"}
-            </span>
-          </td>
-          <td className="text-center">
-            <i className="ri-pencil-line" onClick={() => onEdit(t)} style={{ cursor: "pointer" }} />
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </Table>
-);
+const TypesTable = ({ types, loading, onEdit }) => {
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "name",
+        header: "Name",
+        Cell: ({ row }) => (
+          <Box>
+            <Typography variant="body2" fontWeight={600}>{row.original.name}</Typography>
+            {row.original.description && (
+              <Typography variant="caption" color="text.secondary">
+                {row.original.description}
+              </Typography>
+            )}
+          </Box>
+        ),
+      },
+      {
+        id: "mode",
+        accessorFn: (t) => (t.calculation_mode === "rate_x_units" ? "Rate × Units" : "Flat"),
+        header: "Mode",
+        filterVariant: "select",
+        Cell: ({ row, cell }) => (
+          <Chip
+            size="small"
+            variant="outlined"
+            color={row.original.calculation_mode === "rate_x_units" ? "info" : "default"}
+            label={cell.getValue()}
+            sx={{ fontWeight: 600, textTransform: "uppercase" }}
+          />
+        ),
+      },
+      {
+        id: "rate",
+        accessorFn: (t) =>
+          t.calculation_mode === "rate_x_units" ? `₹${t.meta?.rate} / ${t.meta?.unit_label}` : "—",
+        header: "Rate / unit",
+      },
+      {
+        id: "max_amount_per_claim",
+        accessorFn: (t) => Number(t.max_amount_per_claim) || 0,
+        header: "Per-claim cap",
+        filterVariant: "range",
+        Cell: ({ cell }) => capLabel(cell.getValue()),
+        exportValue: (t) => capLabel(t.max_amount_per_claim),
+      },
+      {
+        id: "max_amount_per_period",
+        accessorFn: (t) => Number(t.max_amount_per_period) || 0,
+        header: "Period cap",
+        filterVariant: "range",
+        Cell: ({ cell }) => capLabel(cell.getValue()),
+        exportValue: (t) => capLabel(t.max_amount_per_period),
+      },
+      {
+        id: "frequency",
+        accessorFn: (t) => FREQUENCY_LABELS[t.frequency] || t.frequency || "",
+        header: "Frequency",
+        filterVariant: "select",
+      },
+      {
+        id: "flags",
+        accessorFn: (t) => typeFlags(t).join(", "),
+        header: "Flags",
+        Cell: ({ row }) => (
+          <Stack direction="row" spacing={0.5} flexWrap="wrap">
+            {row.original.receipt_required && <Chip size="small" color="warning" variant="outlined" label="Receipt" />}
+            {row.original.is_taxable && <Chip size="small" color="error" variant="outlined" label="Taxable" />}
+          </Stack>
+        ),
+      },
+      {
+        id: "status",
+        accessorFn: (t) => (t.is_active ? "Active" : "Inactive"),
+        header: "Status",
+        filterVariant: "select",
+        Cell: ({ row }) => <StatusChip active={row.original.is_active} />,
+      },
+    ],
+    []
+  );
+
+  return (
+    <AppTable
+      columns={columns}
+      data={types}
+      isLoading={loading}
+      exportFileName="reimbursement-types"
+      emptyMessage={'No reimbursement types yet. Click "Add Type" to create one.'}
+      enableRowActions
+      positionActionsColumn="last"
+      displayColumnDefOptions={{ "mrt-row-actions": { header: "Action", size: 80 } }}
+      renderRowActions={({ row }) => <EditAction onClick={() => onEdit(row.original)} />}
+    />
+  );
+};
 
 // ─── Claims table ─────────────────────────────────────────────────────────────
 
-const ClaimsTable = ({ claims, types, loading, onDelete, onDecide }) => {
+const ClaimsTable = ({ claims, types, loading, onDelete, onDecide, filters, endActions }) => {
   const total = claims.reduce((s, c) => s + parseFloat(c.computed_amount || 0), 0);
+
+  const columns = useMemo(() => {
+    const typeOf = (c) => types.find((x) => x.id === parseInt(c.reimbursement_type));
+    const inputText = (c) => {
+      const t = typeOf(c);
+      const isRate = t?.calculation_mode === "rate_x_units";
+      return isRate && c.claim_data?.units
+        ? `${c.claim_data.units} ${t?.meta?.unit_label} × ₹${t?.meta?.rate}`
+        : `₹${fmt(c.claim_data?.amount)}`;
+    };
+
+    return [
+      {
+        id: "employee",
+        accessorFn: (c) => String(c.employee_name || c.employee || "—"),
+        header: "Employee",
+        size: 220,
+        exportValue: (c) => `${c.employee_name || c.employee || "—"}${c.emp_id ? ` (${c.emp_id})` : ""}`,
+        Cell: ({ row }) => (
+          <ApvEmployee
+            employee={{
+              first_name: String(row.original.employee_name || row.original.employee || "—"),
+              profile_url: row.original.employee_photo,
+            }}
+            sub={row.original.emp_id ? `#${row.original.emp_id}` : null}
+          />
+        ),
+        Footer: () => (claims.length > 0 ? <strong>Total</strong> : null),
+      },
+      {
+        id: "department",
+        accessorFn: (c) => c.department_name || "—",
+        header: "Department",
+        Cell: ({ cell }) => (
+          <ApvChip icon="ri-building-line">{cell.getValue() === "—" ? "" : cell.getValue()}</ApvChip>
+        ),
+      },
+      {
+        id: "type",
+        accessorFn: (c) => c.type_name || typeOf(c)?.name || "—",
+        header: "Type",
+        filterVariant: "select",
+        Cell: ({ cell }) => <ApvLeaveType name={cell.getValue()} />,
+      },
+      {
+        accessorKey: "claim_date",
+        header: "Date",
+        Cell: ({ cell }) => <ApvDate value={cell.getValue()} />,
+      },
+      { id: "input", accessorFn: inputText, header: "Input" },
+      {
+        id: "computed_amount",
+        accessorFn: (c) => parseFloat(c.computed_amount || 0),
+        header: "Amount",
+        filterVariant: "range",
+        Cell: ({ row }) => (
+          <span className="fw-medium text-success">₹{fmt(row.original.computed_amount)}</span>
+        ),
+        exportValue: (c) => fmt(c.computed_amount),
+        Footer: () =>
+          claims.length > 0 ? <span className="fw-medium text-success">₹{fmt(total)}</span> : null,
+      },
+      {
+        id: "status",
+        accessorFn: (c) => c.status || "",
+        header: "Status",
+        filterVariant: "select",
+        Cell: ({ row }) => {
+          const s = CLAIM_STATUS[row.original.status] || CLAIM_STATUS.submitted;
+          return (
+            <ApvStatus
+              tone={s.tone}
+              icon={s.icon}
+              label={String(row.original.status || "submitted").replace(/^\w/, (c) => c.toUpperCase())}
+            />
+          );
+        },
+      },
+      {
+        id: "notes",
+        accessorFn: (c) => c.claim_data?.description || "—",
+        header: "Notes",
+        Cell: ({ cell }) => <NotesCell text={cell.getValue()} />,
+      },
+    ];
+  }, [types, claims.length, total]);
 
   return (
     <>
@@ -161,101 +287,41 @@ const ClaimsTable = ({ claims, types, loading, onDelete, onDecide }) => {
         </div>
       )}
 
-      <Table bordered hover responsive className="align-middle" style={{ fontSize: 14 }}>
-        <thead className="table-light">
-          <tr>
-            <th>Employee</th>
-            <th>Department</th>
-            <th>Type</th>
-            <th>Date</th>
-            <th>Input</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Notes</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={9} className="text-center py-4 text-muted">Loading...</td></tr>
-          ) : claims.length === 0 ? (
-            <tr><td colSpan={9} className="text-center py-4 text-muted">No claims found.</td></tr>
-          ) : claims.map((c) => {
-            const t      = types.find((x) => x.id === parseInt(c.reimbursement_type));
-            const isRate = t?.calculation_mode === "rate_x_units";
-            return (
-              <tr key={c.id}>
-                <td>
-                  <div className="d-flex align-items-center gap-2">
-                    <EmployeeAvatar photo={c.employee_photo} name={c.employee_name} />
-                    <div>
-                      <div className="fw-medium">{c.employee_name || c.employee || "—"}</div>
-                      {c.emp_id && <small className="text-muted">{c.emp_id}</small>}
-                    </div>
-                  </div>
-                </td>
-                <td>{c.department_name || "—"}</td>
-                <td>{c.type_name || t?.name || "—"}</td>
-                <td>{c.claim_date}</td>
-                <td>
-                  {isRate && c.claim_data?.units
-                    ? `${c.claim_data.units} ${t?.meta?.unit_label} × ₹${t?.meta?.rate}`
-                    : `₹${fmt(c.claim_data?.amount)}`}
-                </td>
-                <td className="fw-medium text-success">₹{fmt(c.computed_amount)}</td>
-                <td>
-                  <span className={`badge text-uppercase px-2 py-1 ${
-                    c.status === "approved"  ? "bg-success-subtle text-success" :
-                    c.status === "rejected"  ? "bg-danger-subtle  text-danger"  :
-                                              "bg-warning-subtle text-warning"
-                  }`}>
-                    {c.status}
-                  </span>
-                </td>
-                <td style={{ maxWidth: 160 }}>
-                  <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {c.claim_data?.description || "—"}
-                  </div>
-                </td>
-                <td className="text-center">
-                  <div className="d-flex gap-2 justify-content-center align-items-center">
-                    {c.status === "submitted" && (
-                      <>
-                        <i
-                          className="ri-checkbox-circle-line text-success fs-16"
-                          style={{ cursor: "pointer" }}
-                          title="Approve"
-                          onClick={() => onDecide(c, "approved")}
-                        />
-                        <i
-                          className="ri-close-circle-line text-danger fs-16"
-                          style={{ cursor: "pointer" }}
-                          title="Reject"
-                          onClick={() => onDecide(c, "rejected")}
-                        />
-                      </>
-                    )}
-                    <i
-                      className="ri-delete-bin-line text-danger"
-                      style={{ cursor: "pointer" }}
-                      title="Delete"
-                      onClick={() => onDelete(c)}
-                    />
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        {claims.length > 0 && (
-          <tfoot>
-            <tr className="table-light">
-              <td colSpan={5} className="fw-medium">Total</td>
-              <td colSpan={4} className="fw-medium text-success">₹{fmt(total)}</td>
-            </tr>
-          </tfoot>
+      <AppTable
+        columns={columns}
+        data={claims}
+        isLoading={loading}
+        exportFileName="reimbursement-claims"
+        emptyMessage="No claims found."
+        toolbarActions={filters}
+        toolbarEndActions={endActions}
+        enableRowActions
+        positionActionsColumn="last"
+        displayColumnDefOptions={{ "mrt-row-actions": { header: "Action", size: 120 } }}
+        renderRowActions={({ row }) => (
+          <Box sx={{ display: "flex", gap: 0.5 }}>
+            {row.original.status === "submitted" && (
+              <>
+                <Tooltip title="Approve">
+                  <IconButton data-testid="reimbursements-check-circle-outline-button" size="small" color="success" onClick={() => onDecide(row.original, "approved")}>
+                    <CheckCircleOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Reject">
+                  <IconButton data-testid="reimbursements-cancel-button" size="small" color="error" onClick={() => onDecide(row.original, "rejected")}>
+                    <CancelOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+            <Tooltip title="Delete">
+              <IconButton data-testid="reimbursements-delete-outline-button" size="small" color="error" onClick={() => onDelete(row.original)}>
+                <DeleteOutlineRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         )}
-      </Table>
+      />
     </>
   );
 };
@@ -276,7 +342,6 @@ const ReimbursementsTab = () => {
   const [typesLoading, setTypesLoading] = useState(false);
   const [typeModal, setTypeModal]       = useState(false);
   const [editingType, setEditingType]   = useState(null);
-  const [typeSearch, setTypeSearch]     = useState("");
 
   // Claims — fetched in full once, filtered client-side
   const [claims, setClaims]               = useState([]);
@@ -332,6 +397,7 @@ const ReimbursementsTab = () => {
   const employeeOptions = useMemo(() => ([
     { id: "0", label: "All Employees", value: "0" },
     ...employees.map((e) => ({
+      ...e,
       id: String(e.id),
       label: `${e.first_name || ""} ${e.last_name || ""}`.trim() || e.emp_id || `#${e.id}`,
       value: String(e.id),
@@ -420,7 +486,7 @@ const ReimbursementsTab = () => {
       html: `Remove this reimbursement claim${
         claim?.type_name ? ` for <b style="color:#7066e0">${claim.type_name}</b>` : ""
       }${claim?.employee_name ? ` (${claim.employee_name})` : ""}?<br/>
-        <span style="color:#0ab39c;font-weight:500">₹${fmt(claim?.computed_amount)}</span>`,
+        <span style="color:var(--vz-success);font-weight:500">₹${fmt(claim?.computed_amount)}</span>`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -459,10 +525,10 @@ const ReimbursementsTab = () => {
       html: `${isApprove ? "Approve" : "Reject"} this ${claim?.type_name || "reimbursement"} claim${
         claim?.employee_name ? ` for ${claim.employee_name}` : ""
       }?<br/>
-        <span style="color:#0ab39c;font-weight:500">₹${fmt(claim?.computed_amount)}</span>`,
+        <span style="color:var(--vz-success);font-weight:500">₹${fmt(claim?.computed_amount)}</span>`,
       icon: isApprove ? "question" : "warning",
       showCancelButton: true,
-      confirmButtonColor: isApprove ? "#0ab39c" : "#d33",
+      confirmButtonColor: isApprove ? "var(--vz-success)" : "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: isApprove ? "Yes, Approve" : "Yes, Reject",
       cancelButtonText: "Cancel",
@@ -503,10 +569,6 @@ const ReimbursementsTab = () => {
     }
   };
 
-  const filteredTypes = types.filter((t) =>
-    (t.name || "").toLowerCase().includes(typeSearch.toLowerCase())
-  );
-
   // ── Filter + sort (latest first) ──────────────────────────────────────
   const visibleClaims = useMemo(() => {
     return claims
@@ -527,7 +589,7 @@ const ReimbursementsTab = () => {
 
   // ── Gate until policy resolved ────────────────────────────────────────
   if (policyLoading) {
-    return <div className="text-center py-5 text-muted">Loading policy...</div>;
+    return <PageSkeleton testId="reimbursements-loading-skeleton" label="Loading reimbursement policy" />;
   }
 
   if (!policyId) {
@@ -544,6 +606,7 @@ const ReimbursementsTab = () => {
       <Nav tabs className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
         <NavItem>
           <NavLink
+            data-testid="reimbursements-reimbursement-types-link"
             style={{ cursor: "pointer" }}
             className={classnames({ active: activeTab === "types" })}
             onClick={() => setActiveTab("types")}
@@ -553,6 +616,7 @@ const ReimbursementsTab = () => {
         </NavItem>
         <NavItem>
           <NavLink
+            data-testid="reimbursements-claims-link"
             style={{ cursor: "pointer" }}
             className={classnames({ active: activeTab === "claims" })}
             onClick={() => setActiveTab("claims")}
@@ -571,23 +635,18 @@ const ReimbursementsTab = () => {
 
         {/* ── Types tab ── */}
         <TabPane tabId="types">
-          <CardHeader className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-            <Input
-              placeholder="Search type..."
-              value={typeSearch}
-              onChange={(e) => setTypeSearch(e.target.value)}
-              style={{ width: 220 }}
-            />
+          <div className="d-flex justify-content-end align-items-center mb-3">
             <button
+              data-testid="reimbursements-add-type-button"
               type="button"
               className="btn btn-success add-btn"
               onClick={() => { setEditingType(null); setTypeModal(true); }}
             >
               <i className="ri-add-line align-bottom me-1" />Add Type
             </button>
-          </CardHeader>
+          </div>
           <TypesTable
-            types={filteredTypes}
+            types={types}
             loading={typesLoading}
             onEdit={(t) => { setEditingType(t); setTypeModal(true); }}
           />
@@ -595,79 +654,88 @@ const ReimbursementsTab = () => {
 
         {/* ── Claims tab ── */}
         <TabPane tabId="claims">
-          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-            <h5 className="mb-0">Claims</h5>
-            <button
-              type="button"
-              className="btn btn-success add-btn"
-              onClick={() => setClaimModal(true)}
-            >
-              <i className="ri-add-line align-bottom me-1" />Submit Claim
-            </button>
-          </div>
-
-          {/* ── Filter bar (matches MyReimbursements.jsx / AttendanceFilter.jsx) ── */}
-          <Card>
-            <CardHeader className="border-0 rounded">
-              <Row className="g-2">
-                <Col xl={2}>
-                  <DatePicker
-                    value={filterKeys.thisMonth ? dayjs(filterKeys.thisMonth, MonthFormat) : null}
-                    format={MonthFormat}
-                    picker="month"
-                    allowClear={true}
-                    placeholder="Select Month"
-                    className="form-control"
-                    onChange={handleDateRangeChange}
-                  />
-                </Col>
-
-                <Col xl={2}>
-                  <Select
-                    options={STATUS_OPTIONS}
-                    placeholder="Select Status"
-                    value={STATUS_OPTIONS.find((d) => d.id === filterKeys.status)}
-                    onChange={handleStatusChange}
-                  />
-                </Col>
-
-                <Col xl={2}>
-                  <Select
-                    options={typeOptions}
-                    placeholder="Select Type"
-                    value={typeOptions.find((d) => d.id === filterKeys.type)}
-                    onChange={handleTypeChange}
-                  />
-                </Col>
-
-                <Col xl={2}>
-                  <Select
-                    options={departmentOptions}
-                    placeholder="Select Department"
-                    value={departmentOptions.find((d) => d.id === filterKeys.department)}
-                    onChange={handleDepartmentChange}
-                  />
-                </Col>
-
-                <Col xl={2}>
-                  <Select
-                    options={employeeOptions}
-                    placeholder="Select Employee"
-                    value={employeeOptions.find((d) => d.id === filterKeys.employee)}
-                    onChange={handleEmployeeChange}
-                  />
-                </Col>
-              </Row>
-            </CardHeader>
-          </Card>
-
           <ClaimsTable
             claims={visibleClaims}
             types={types}
             loading={claimsLoading}
             onDelete={handleDeleteClaim}
             onDecide={handleDecideClaim}
+            filters={
+              <div className="claims-toolbar-filters">
+                <DatePicker
+                  value={filterKeys.thisMonth ? dayjs(filterKeys.thisMonth, MonthFormat) : null}
+                  format={MonthFormat}
+                  picker="month"
+                  allowClear={true}
+                  placeholder="Select Month"
+                  className="form-control"
+                  onChange={handleDateRangeChange}
+                />
+                <Select
+                  testId="reimbursements-select-status"
+                  options={STATUS_OPTIONS}
+                  placeholder="Select Status"
+                  value={STATUS_OPTIONS.find((d) => d.id === filterKeys.status)}
+                  onChange={handleStatusChange}
+                  menuPortalTarget={document.body}
+                  styles={{ menuPortal: (base) => ({ ...base, zIndex: 1600 }) }}
+                />
+                <Select
+                  testId="reimbursements-select-type"
+                  options={typeOptions}
+                  placeholder="Select Type"
+                  value={typeOptions.find((d) => d.id === filterKeys.type)}
+                  onChange={handleTypeChange}
+                  menuPortalTarget={document.body}
+                  styles={{ menuPortal: (base) => ({ ...base, zIndex: 1600 }) }}
+                />
+                <Select
+                  testId="reimbursements-select-department"
+                  options={departmentOptions}
+                  placeholder="Select Department"
+                  value={departmentOptions.find((d) => d.id === filterKeys.department)}
+                  onChange={handleDepartmentChange}
+                  menuPortalTarget={document.body}
+                  styles={{ menuPortal: (base) => ({ ...base, zIndex: 1600 }) }}
+                />
+                <Select
+                  testId="reimbursements-select-employee"
+                  options={employeeOptions}
+                  placeholder="Select Employee"
+                  value={employeeOptions.find((d) => d.id === filterKeys.employee)}
+                  onChange={handleEmployeeChange}
+                  components={{ Option: EmployeeDisplayInSelect }}
+                  menuPortalTarget={document.body}
+                  styles={{ menuPortal: (base) => ({ ...base, zIndex: 1600 }) }}
+                />
+              </div>
+            }
+            endActions={
+              <button
+                data-testid="reimbursements-submit-claim-button"
+                type="button"
+                className="btn btn-success add-btn text-nowrap"
+                onClick={() => setClaimModal(true)}
+              >
+                <i className="ri-add-line align-bottom me-1" />Submit Claim
+              </button>
+            }
           />
+          <style>{`
+            .claims-toolbar-filters {
+              display:flex; flex-wrap:nowrap; gap:8px; align-items:center;
+              max-width:100%; overflow-x:auto; padding-bottom:2px; scrollbar-width:thin;
+            }
+            .claims-toolbar-filters > * { width:150px; min-width:150px; flex:0 0 auto; }
+            .claims-toolbar-filters > .ant-picker { width:140px; min-width:140px; }
+            .claims-toolbar-filters [class*='-indicatorSeparator'] { display:none; }
+            .claims-toolbar-filters [class*='-indicatorContainer'] { padding:0 6px; }
+            .claims-toolbar-filters .form-control,
+            .claims-toolbar-filters .ant-picker { height:40px; }
+            .claims-toolbar-filters [class*='-control'] { min-height:40px; height:40px; flex-wrap:nowrap; }
+            .claims-toolbar-filters [class*='-placeholder'],
+            .claims-toolbar-filters [class*='-singleValue'] { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          `}</style>
         </TabPane>
 
       </TabContent>

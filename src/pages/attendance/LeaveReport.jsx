@@ -18,6 +18,7 @@ import { ButtonToolbar, IconButton, Table } from "rsuite";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { ApvEmployee } from "../../component/common/approval/ApprovalCells";
 import { MonthFormat } from "../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -26,6 +27,9 @@ import { DatePicker } from "antd";
 import { Api } from "../../common/api/Api";
 import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
 import "../../common/css/lc_style.css";
+import "./reports.scss";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
+import { testId } from "../../shared/testing/testId";
 
 const ExcelJs = require("exceljs");
 
@@ -342,85 +346,24 @@ const LeaveReport = () => {
   // EMPLOYEE FIXED CELL
   // ====================================================
 
-  const FixedColumns = ({ rowData, index, ...props }) => {
+  const FixedColumns = ({ rowData, ...props }) => {
     // const emp = employee_data.find((e) => rowData.employee_id === e.id) || {};
     const emp = rowData.employee || {};
 
-    const html_tag = (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          {emp.profile_url ? (
-            <img
-              src={emp.profile_url}
-              alt=""
-              className="avatar-xs rounded-circle"
-              style={{
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div
-              className="avatar-xs rounded-circle"
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#0ab39c",
-              }}
-              title={emp.first_name}
-            >
-              <span
-                className="first_letter"
-                style={{
-                  color: "white",
-                }}
-              >
-                {emp?.first_name?.charAt(0) || ""}
-              </span>
-            </div>
-          )}
-        </div>
+    const html_tag = <ApvEmployee employee={emp} />;
 
-        <div className="flex-grow-1">
-          <Link to="#" className="link-body-emphasis mb-0">
-            <h5
-              className="fs-14 mb-1"
-              style={{
-                textAlign: "left",
-              }}
-            >
-              {emp.first_name}
-            </h5>
-          </Link>
-
-          <div
-            className="fs-14 mb-1"
-            style={{
-              textAlign: "left",
-            }}
-          >
-            {emp.email}
-          </div>
-        </div>
-      </div>
-    );
-
-    const rowBg =
-      index % 2 === 0
-        ? layoutModeType === "dark"
-          ? "#1a1a1a"
-          : "white"
-        : layoutModeType === "dark"
-          ? "#242933"
-          : "#e6f7ff";
+    const rowBg = layoutModeType === "dark" ? "#242933" : "#e6f7ff";
 
     return (
       <Cell
         {...props}
         style={{
           backgroundColor: rowBg,
-          alignItems: "flex-start",
+          display: "flex",
+          alignItems: "center",
           justifyContent: "flex-start",
+          paddingTop: 0,
+          paddingBottom: 0,
           paddingRight: "10px",
         }}
       >
@@ -460,6 +403,7 @@ const LeaveReport = () => {
 
             {hasApps && (
               <Link
+                data-testid="leave-report-view-link"
                 to="#"
                 className="mt-1"
                 style={{
@@ -623,6 +567,7 @@ const LeaveReport = () => {
       >
         <ButtonToolbar>
           <IconButton
+            data-testid={testId("leave-report-row", rowData?.emp_id ?? rowData?.employee_id, "download-button")}
             appearance="subtle"
             onClick={exportEmp}
             icon={
@@ -915,7 +860,7 @@ const LeaveReport = () => {
           </span>
         }
       >
-        <Column width={100} align="center">
+        <Column flexGrow={1} minWidth={100} align="center">
           <HeaderCell
             style={{
               fontWeight: "bold",
@@ -937,7 +882,7 @@ const LeaveReport = () => {
 
   const summaryColumns = [
     ...leaveTypes.map((lt) => (
-      <Column width={130} align="center" key={`lt_${lt.id}`}>
+      <Column flexGrow={1} minWidth={130} align="center" key={`lt_${lt.id}`}>
         <HeaderCell
           style={{
             background: headerBgColor,
@@ -957,7 +902,7 @@ const LeaveReport = () => {
       </Column>
     )),
 
-    <Column width={130} align="center" key="total-leaves">
+    <Column flexGrow={1} minWidth={130} align="center" key="total-leaves">
       <HeaderCell
         style={{
           background: headerBgColor,
@@ -1025,6 +970,7 @@ const LeaveReport = () => {
         <button
           type="button"
           className={p === page ? "page-link active" : "page-link"}
+          data-testid={testId("leave-report-page", p, "button")}
           onClick={() => handlePageChange(p)}
         >
           {p}
@@ -1034,7 +980,7 @@ const LeaveReport = () => {
   });
 
   const pageSizeOptions = PAGE_SIZE_OPTIONS.map((size) => (
-    <option key={size} value={size}>
+    <option key={size} value={size} data-testid={testId("leave-report-page-size-option", size)}>
       {"Show " + size}
     </option>
   ));
@@ -1065,11 +1011,20 @@ const LeaveReport = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <Card>
-            <CardHeader className="border-0 rounded">
+          <Card className="rpt-card">
+            <CardHeader className="rpt-head border-0">
+              <div className="rpt-title">
+                <span className="rpt-title-icon">
+                  <i className="ri-calendar-event-line"></i>
+                </span>
+                <div className="rpt-title-text">
+                  <h5>Leave Report</h5>
+                  <p>Monthly leave taken by your team, by leave type.</p>
+                </div>
+              </div>
               <Row className="g-2 align-items-center">
                 {/* Month */}
-                <Col xl={2}>
+                <Col xs={12} sm={5} md={4} xl={3} xxl={2}>
                   <div className="form-icon right">
                     <DatePicker
                       value={dayjs(filterKeys?.month, MonthFormat)}
@@ -1084,9 +1039,10 @@ const LeaveReport = () => {
                 </Col>
 
                 {/* Search */}
-                <Col xl={3}>
+                <Col xs={12} sm={7} md={8} xl={4} xxl={3}>
                   <div className="position-relative">
                     <Input
+                      data-testid="leave-report-search-employee-input"
                       type="text"
                       className="form-control"
                       placeholder="Search employee..."
@@ -1133,34 +1089,30 @@ const LeaveReport = () => {
                 </Col>
 
                 {/* Summary */}
-                <Col xl={3}>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="badge bg-danger-subtle text-danger fs-12 p-2">
+                <Col xs={12} md={7} xl={5} xxl={3}>
+                  <div className="d-flex flex-wrap align-items-center gap-2">
+                    <span className="rpt-chip is-danger">
                       Total Leaves: <b>{teamTotalLeaves}</b>
                     </span>
 
-                    <span className="badge bg-info-subtle text-info fs-12 p-2">
+                    <span className="rpt-chip is-info">
                       Employees: <b>{report.length}</b>
                     </span>
 
-                    <span className="badge bg-primary-subtle text-primary fs-12 p-2">
+                    <span className="rpt-chip is-primary">
                       Total: <b>{totalCount}</b>
                     </span>
                   </div>
                 </Col>
 
                 {/* Export */}
-                <Col xl={4} className="text-end">
-                  <div className="d-flex justify-content-end gap-2">
+                <Col xs={12} md={5} xl={12} xxl={4} className="text-end">
+                  <div className="rpt-actions d-flex justify-content-end gap-2">
                     <Button
+                      data-testid="leave-report-export-button"
                       type="button"
-                      className="btn btn-info"
+                      className="btn rpt-btn is-soft"
                       onClick={() => openExportModal("page")}
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        fontSize: "0.75rem",
-                        width: "80px",
-                      }}
                     >
                       <i className="ri-file-download-line align-bottom me-1"></i>
                       Export
@@ -1168,14 +1120,10 @@ const LeaveReport = () => {
 
                     <Button
                       type="button"
-                      className="btn btn-success"
+                      className="btn rpt-btn is-primary"
+                      data-testid="leave-report-download-all-button"
                       onClick={() => openExportModal("all")}
                       disabled={exportingAll}
-                      style={{
-                        padding: "0.25rem 0.5rem",
-                        fontSize: "0.75rem",
-                        width: "100px",
-                      }}
                     >
                       {exportingAll ? (
                         <Spinner size="sm" />
@@ -1190,8 +1138,8 @@ const LeaveReport = () => {
                 </Col>
 
                 {/* Export Modal */}
-                <Modal isOpen={showModal} toggle={toggleModal} centered>
-                  <ModalHeader toggle={toggleModal}></ModalHeader>
+                <Modal data-testid="leave-report-show-dialog" isOpen={showModal} toggle={toggleModal} centered>
+                  <ModalHeader close={<ModalCloseButton onClick={toggleModal} testId="leave-report-show-close-button" />} toggle={toggleModal}></ModalHeader>
 
                   <ModalBody className="py-3 px-5">
                     <div className="mt-2 text-center">
@@ -1214,6 +1162,7 @@ const LeaveReport = () => {
 
                     <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                       <Button
+                        data-testid="leave-report-show-footer-close-button"
                         type="button"
                         className="btn w-sm btn-light"
                         onClick={toggleModal}
@@ -1222,6 +1171,7 @@ const LeaveReport = () => {
                       </Button>
 
                       <Button
+                        data-testid="leave-report-show-download-button"
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
@@ -1256,7 +1206,8 @@ const LeaveReport = () => {
           rowHeight={60}
           autoHeight
           loading={loading}
-          className="mb-3"
+          className="mb-3 rpt-table"
+          affixHeader={70}
           affixHorizontalScrollbar
         >
           <Column width={250} fixed="left" align="center">
@@ -1302,6 +1253,7 @@ const LeaveReport = () => {
                   className={prevDisabled ? "page-item disabled" : "page-item"}
                 >
                   <button
+                    data-testid="leave-report-previous-button"
                     type="button"
                     className="page-link"
                     disabled={prevDisabled}
@@ -1319,6 +1271,7 @@ const LeaveReport = () => {
                   className={nextDisabled ? "page-item disabled" : "page-item"}
                 >
                   <button
+                    data-testid="leave-report-next-button"
                     type="button"
                     className="page-link"
                     disabled={nextDisabled}
@@ -1333,6 +1286,7 @@ const LeaveReport = () => {
             {/* Page size */}
             <div className="col-sm-auto">
               <select
+                testId="leave-report-page-size"
                 className="form-select custom-select-medium text-muted my-select"
                 value={pageSize}
                 onChange={handlePageSizeChange}
@@ -1348,12 +1302,13 @@ const LeaveReport = () => {
         ================================================== */}
 
         <Modal
+          data-testid="leave-report-date-dialog"
           isOpen={detailModal}
           toggle={() => setDetailModal(false)}
           centered
           className="custom-modal"
         >
-          <ModalHeader toggle={() => setDetailModal(false)}>
+          <ModalHeader close={<ModalCloseButton onClick={() => setDetailModal(false)} testId="leave-report-date-close-button" />} toggle={() => setDetailModal(false)}>
             <h5
               className="modal-title"
               style={{
@@ -1417,7 +1372,8 @@ const LeaveReport = () => {
 
             <div className="text-center mt-3">
               <Button
-                className="btn btn-warning"
+                data-testid="leave-report-date-footer-close-button"
+                className="btn btn-light modal-dismiss-btn"
                 onClick={() => setDetailModal(false)}
               >
                 Close

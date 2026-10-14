@@ -8,7 +8,7 @@ import {
   attendance_type_options,
 } from "../../common/constant/Constants";
 import { DatePicker } from "antd";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
@@ -178,6 +178,7 @@ const PayRollFilter = () => {
             <Col xl={2}>
               <div className="form-icon right">
                 <Select
+                  testId="payroll-filter-status-attendance"
                   name="status_attendance"
                   id="status_attendance"
                   options={hr_status_options || []}
@@ -196,6 +197,7 @@ const PayRollFilter = () => {
             <Col xl={2}>
               <div className="form-icon right">
                 <Select
+                  testId="payroll-filter-record-attendance"
                   name="record_attendance"
                   id="record_attendance"
                   options={record_options || []}
@@ -212,6 +214,7 @@ const PayRollFilter = () => {
             <Col xl={2}>
               <div className="form-icon right">
                 <Select
+                  testId="payroll-filter-type-attendance"
                   name="type_attendance"
                   id="type_attendance"
                   options={attendance_type_options || []}
@@ -229,6 +232,7 @@ const PayRollFilter = () => {
             <Col xl={2}>
               <div className="form-icon right">
                 <Select
+                  testId="payroll-filter-employee-attendance"
                   name="employee_attendance"
                   id="employee_attendance"
                   //  options={employeeOptions || []}
@@ -248,6 +252,7 @@ const PayRollFilter = () => {
 
             <Col xl={1}>
               <button
+                data-testid="payroll-filter-filters-button"
                 type="button"
                 //  onClick={handleFilter}
                 className="btn btn-danger "
@@ -258,6 +263,7 @@ const PayRollFilter = () => {
 
             <Col xl={1}>
               <button
+                data-testid="payroll-filter-export-button"
                 type="button"
                 //  onClick={handleFilter}
                 className="btn btn-info add-btn"

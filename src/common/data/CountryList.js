@@ -253,6 +253,7 @@ import za from "../../assets/images/flags/za.svg";
 import zm from "../../assets/images/flags/zm.svg";
 import zw from "../../assets/images/flags/zw.svg";
 import { IndiaStates, SwitzerlandStates,SriLankaStates } from "../constant/Constants";
+import CountryStates from "./CountryStates";
 
 const CountryList = [
   {
@@ -2548,5 +2549,19 @@ const CountryList = [
     countryCode: "+263",
   },
 ];
+
+CountryList.forEach((country) => {
+  if (country.states?.length) return;
+  country.states = (CountryStates[country.countryName] || []).map((name) => ({
+    id: name,
+    label: name,
+    value: name,
+  }));
+});
+
+/** Countries that have a state list, A–Z — for address country pickers. */
+export const countriesWithStates = CountryList.filter((c) => c.states.length).sort((a, b) =>
+  a.countryName.localeCompare(b.countryName),
+);
 
 export default CountryList;

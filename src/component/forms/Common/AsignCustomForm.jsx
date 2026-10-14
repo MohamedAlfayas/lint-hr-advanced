@@ -1,45 +1,57 @@
 // AsignCustomForm.jsx
-import React, { useEffect, useState } from "react";
-
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Col, Form, Label, Row, Button, FormFeedback } from "reactstrap";
-
-import Select from "react-select";
-import { useFormik } from "formik";
+import { useForm, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
-
 import { toast } from "react-toastify";
 
 import {
   addMapping,
   editMapping,
 } from "../../../redux/reducers/ChildReducer/AssignCustomFormReducer";
-
 import { toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
-
-import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
-
 import { PostApi } from "../../../common/api/PostApi";
-
-import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
-import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
-import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import { PutApi } from "../../../common/api/PutApi";
+import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
+import SidebarFormLayout from "../../../shared/ui/SidebarFormLayout";
+import { FormAutocomplete, FormSection } from "../../../shared/ui/form";
 
-const MAPPING_STORAGE_KEY = "custom_form_mapping";
 const CUSTOM_FORM_STORAGE_KEY = "custom_form";
 
-const validationSchema = Yup.object({
-  custom_form: Yup.object().nullable().required("Please select a custom form"),
-  custom_status: Yup.object()
+const schema = Yup.object({
+  custom_form: Yup.mixed().nullable().required("Please select a custom form"),
+  custom_status: Yup.mixed()
     .nullable()
     .required("Please select a custom status"),
-  department: Yup.object().nullable().required("Please select a department"),
+  department: Yup.mixed().nullable().required("Please select a department"),
   employee_id_list: Yup.array()
     .min(1, "Please select at least one employee")
     .required("Please select at least one employee"),
 });
+
+const optionValue = (o) => o?.value;
+
+const findOptionValue = (options, id) =>
+  id
+    ? options.find((opt) => Number(opt.value) === Number(id))?.value ?? null
+    : null;
+
+const employeesInDepartment = (employees, departmentId) => {
+  if (departmentId === null || departmentId === undefined) return [];
+  return employees
+    .filter((emp) =>
+      (emp.primary_department_id_list || []).some(
+        (depId) => Number(depId) === Number(departmentId),
+      ),
+    )
+    .map((emp) => ({
+      value: emp.id,
+      label:
+        emp.first_name || emp.employee_name || emp.full_name || `#${emp.id}`,
+      ...emp,
+    }));
+};
 
 const AsignCustomForm = () => {
   const dispatch = useDispatch();
@@ -48,392 +60,229 @@ const AsignCustomForm = () => {
 
   const isEdit = Boolean(form_obj?.id);
 
-  // ================= STATE =================
-  const [customFormOptions, setCustomFormOptions] = useState([]);
-  const [statusOptions, setStatusOptions] = useState([]);
-  const [departmentOptions, setDepartmentOptions] = useState([]);
-  const [allEmployees, setAllEmployees] = useState([]);
-  const [employeeOptions, setEmployeeOptions] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const formik = useFormik({
-    initialValues: {
-      custom_form: null,
-      custom_status: null,
-      department: null,
-      employee_id_list: [],
-    },
-    validationSchema,
-    onSubmit: async (values) => {
-      const payload = {
-        ...(isEdit && { id: form_obj.id }),
-        custom_form: values.custom_form.value,
-        custom_status: values.custom_status.value,
-        employee_id_list: values.employee_id_list.map((opt) => opt.value),
-      };
+  const customFormOptions = useMemo(
+    () =>
+      (GetLocalStorageData(CUSTOM_FORM_STORAGE_KEY) || []).map((f) => ({
+        value: f.id,
+        label: f.name,
+      })),
+    [],
+  );
 
-      dispatch(setLoaderVisible(true));
+  const statusOptions = useMemo(
+    () =>
+      (GetLocalStorageData("custom_statuses") || []).map((st) => ({
+        value: st.id,
+        label: st.name,
+      })),
+    [],
+  );
 
-      try {
-        const response = isEdit
-          ? await PutApi("custom/employee-custom-form-mapping/", payload, false)
-          : await PostApi(
-              "custom/employee-custom-form-mapping/",
-              payload,
-              false,
-            );
+  const departmentOptions = useMemo(
+    () =>
+      (GetLocalStorageData("department") || []).map((dep) => ({
+        value: dep.id,
+        label: dep.name || dep.department_name,
+      })),
+    [],
+  );
 
-        if (response?.status === 200 || response?.status === 201) {
-          const responseData = response?.data?.data || response?.data;
+  const allEmployees = useMemo(
+    () => GetLocalStorageData("employee") || [],
+    [],
+  );
 
-          dispatch(
-            isEdit ? editMapping(responseData) : addMapping(responseData),
-          );
+  // form_obj has no "department" field of its own — in edit mode it's inferred
+  // from the primary_department_id_list of the first mapped employee.
+  const toFormValues = useCallback(
+    (obj) => {
+      const mappedIds = new Set(
+        (obj?.employee_id_list || []).map((id) => Number(id)),
+      );
 
-          toast.success(
-            response?.data?.message || "Custom Form mapped successfully.",
-          );
-          dispatch(toggleRSBView(false));
-        } else {
-          const errorData = response?.data || {};
-
-          // field-level errors come back as { field_name: ["msg1", "msg2"] }
-          const fieldErrors = Object.keys(errorData).filter((key) =>
-            Array.isArray(errorData[key]),
-          );
-
-          if (fieldErrors.length) {
-            const formikErrors = {};
-            fieldErrors.forEach((field) => {
-              formikErrors[field] = errorData[field].join(" ");
-              formik.setFieldTouched(field, true, false);
-            });
-            formik.setErrors(formikErrors);
-
-            // show the first message as a toast too
-            toast.error(errorData[fieldErrors[0]][0]);
-          } else {
-            toast.error(
-              errorData?.error_message ||
-                errorData?.detail ||
-                "Something went wrong!",
-            );
-          }
+      let department = null;
+      if (obj?.id && mappedIds.size) {
+        const firstMatched = allEmployees.find((emp) =>
+          mappedIds.has(Number(emp.id)),
+        );
+        const deptId = firstMatched?.primary_department_id_list?.[0];
+        if (deptId !== undefined) {
+          department = findOptionValue(departmentOptions, deptId);
         }
-      } catch (error) {
-        console.log("ERROR =", error);
-        toast.error("API Error");
       }
 
-      dispatch(setLoaderVisible(false));
+      const employee_id_list = employeesInDepartment(allEmployees, department)
+        .filter((opt) => mappedIds.has(Number(opt.value)))
+        .map((opt) => opt.value);
+
+      return {
+        custom_form: findOptionValue(customFormOptions, obj?.custom_form),
+        custom_status: findOptionValue(statusOptions, obj?.custom_status),
+        department,
+        employee_id_list,
+      };
     },
+    [allEmployees, customFormOptions, statusOptions, departmentOptions],
+  );
+
+  const { control, handleSubmit, reset, setValue, setError, watch } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
   });
 
-  // ================= LOAD CUSTOM FORM OPTIONS FROM LOCAL STORAGE =================
   useEffect(() => {
-    const forms = GetLocalStorageData(CUSTOM_FORM_STORAGE_KEY) || [];
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset, toFormValues]);
 
-    const options = forms.map((f) => ({
-      value: f.id,
-      label: f.name,
-    }));
+  const department = useWatch({ control, name: "department" });
 
-    setCustomFormOptions(options);
+  const employeeOptions = useMemo(
+    () => employeesInDepartment(allEmployees, department),
+    [allEmployees, department],
+  );
 
-    if (form_obj?.custom_form) {
-      const match = options.find(
-        (opt) => Number(opt.value) === Number(form_obj.custom_form),
+  // On department change keep only employees that still belong to it; in edit
+  // mode the originally mapped employees of that department are re-selected.
+  useEffect(() => {
+    const sub = watch((values, { name, type }) => {
+      if (name !== "department" || type !== "change") return;
+
+      const options = employeesInDepartment(allEmployees, values.department);
+      const optionIds = new Set(options.map((opt) => opt.value));
+      const mappedIds = new Set(
+        (form_obj?.employee_id_list || []).map((id) => Number(id)),
       );
-      formik.setFieldValue("custom_form", match || null);
-    }
-  }, []);
 
-  // ================= LOAD CUSTOM STATUS OPTIONS =================
-  useEffect(() => {
-    const statuses = GetLocalStorageData("custom_statuses") || [];
-
-    const options = statuses.map((st) => ({
-      value: st.id,
-      label: st.name,
-    }));
-
-    setStatusOptions(options);
-
-    if (form_obj?.custom_status) {
-      const match = options.find(
-        (opt) => Number(opt.value) === Number(form_obj.custom_status),
+      const preselected = options
+        .filter((opt) => mappedIds.has(Number(opt.value)))
+        .map((opt) => opt.value);
+      const stillValid = (values.employee_id_list || []).filter((id) =>
+        optionIds.has(id),
       );
-      formik.setFieldValue("custom_status", match || null);
-    }
-  }, []);
 
-  // ================= LOAD DEPARTMENT OPTIONS =================
-  useEffect(() => {
-    const dep_options = GetLocalStorageData("department") || [];
-
-    const options = dep_options.map((dep) => ({
-      value: dep.id,
-      label: dep.name || dep.department_name,
-    }));
-
-    setDepartmentOptions(options);
-  }, []);
-
-  // ================= LOAD ALL EMPLOYEES (RAW, NOT YET FILTERED) =================
-  useEffect(() => {
-    const employee_data = GetLocalStorageData("employee") || [];
-    setAllEmployees(employee_data);
-  }, []);
-
-  // ================= FILTER EMPLOYEES WHENEVER DEPARTMENT CHANGES =================
-  useEffect(() => {
-    if (!formik.values.department) {
-      setEmployeeOptions([]);
-      formik.setFieldValue("employee_id_list", []);
-      return;
-    }
-
-    const selectedDeptId = Number(formik.values.department.value);
-
-    const filtered = allEmployees.filter((emp) =>
-      (emp.primary_department_id_list || []).some(
-        (depId) => Number(depId) === selectedDeptId,
-      ),
-    );
-
-    const options = filtered.map((emp) => ({
-      value: emp.id,
-      label:
-        emp.first_name || emp.employee_name || emp.full_name || `#${emp.id}`,
-      ...emp,
-    }));
-
-    setEmployeeOptions(options);
-
-    // keep only previously selected employees that still belong to this department
-    const idSet = new Set(options.map((opt) => opt.value));
-    const stillValid = formik.values.employee_id_list.filter((sel) =>
-      idSet.has(sel.value),
-    );
-    if (stillValid.length !== formik.values.employee_id_list.length) {
-      formik.setFieldValue("employee_id_list", stillValid);
-    }
-  }, [formik.values.department, allEmployees]);
-
-  // ================= EDIT MODE PRESELECT: CUSTOM FORM / STATUS =================
-  useEffect(() => {
-    if (form_obj?.custom_form && customFormOptions.length) {
-      const match = customFormOptions.find(
-        (opt) => Number(opt.value) === Number(form_obj.custom_form),
+      setValue(
+        "employee_id_list",
+        preselected.length ? preselected : stillValid,
+        { shouldDirty: true },
       );
-      formik.setFieldValue("custom_form", match || null);
+    });
+    return () => sub.unsubscribe();
+  }, [watch, setValue, allEmployees, form_obj]);
+
+  const onSubmit = async (values) => {
+    const payload = {
+      ...(isEdit && { id: form_obj.id }),
+      custom_form: values.custom_form,
+      custom_status: values.custom_status,
+      employee_id_list: values.employee_id_list,
+    };
+
+    setIsSubmitting(true);
+
+    try {
+      const response = isEdit
+        ? await PutApi("custom/employee-custom-form-mapping/", payload, false)
+        : await PostApi("custom/employee-custom-form-mapping/", payload, false);
+
+      if (response?.status === 200 || response?.status === 201) {
+        const responseData = response?.data?.data || response?.data;
+
+        dispatch(isEdit ? editMapping(responseData) : addMapping(responseData));
+
+        toast.success(
+          response?.data?.message || "Custom Form mapped successfully.",
+        );
+        dispatch(toggleRSBView(false));
+      } else {
+        const errorData = response?.data || {};
+
+        // field-level errors come back as { field_name: ["msg1", "msg2"] }
+        const fieldErrors = Object.keys(errorData).filter((key) =>
+          Array.isArray(errorData[key]),
+        );
+
+        if (fieldErrors.length) {
+          fieldErrors.forEach((field) => {
+            setError(field, {
+              type: "server",
+              message: errorData[field].join(" "),
+            });
+          });
+
+          toast.error(errorData[fieldErrors[0]][0]);
+        } else {
+          toast.error(
+            errorData?.error_message ||
+              errorData?.detail ||
+              "Something went wrong!",
+          );
+        }
+      }
+    } catch (error) {
+      console.log("ERROR =", error);
+      toast.error("API Error");
     }
-  }, [customFormOptions]);
 
-  useEffect(() => {
-    if (form_obj?.custom_status && statusOptions.length) {
-      const match = statusOptions.find(
-        (opt) => Number(opt.value) === Number(form_obj.custom_status),
-      );
-      formik.setFieldValue("custom_status", match || null);
-    }
-  }, [statusOptions]);
-
-  // ================= EDIT MODE: DERIVE DEPARTMENT FROM SELECTED EMPLOYEES =================
-  // form_obj has no "department" field of its own — it's inferred from the
-  // primary_department_id_list of the first mapped employee.
-  useEffect(() => {
-    if (
-      !isEdit ||
-      !form_obj?.employee_id_list?.length ||
-      !allEmployees.length ||
-      !departmentOptions.length ||
-      formik.values.department // already set, don't override
-    ) {
-      return;
-    }
-
-    const idSet = new Set(form_obj.employee_id_list.map((id) => Number(id)));
-    const matchedEmployees = allEmployees.filter((emp) =>
-      idSet.has(Number(emp.id)),
-    );
-
-    if (!matchedEmployees.length) return;
-
-    const deptId = matchedEmployees[0]?.primary_department_id_list?.[0];
-    if (deptId === undefined) return;
-
-    const match = departmentOptions.find(
-      (opt) => Number(opt.value) === Number(deptId),
-    );
-
-    if (match) {
-      formik.setFieldValue("department", match);
-    }
-  }, [allEmployees, departmentOptions, form_obj]);
-
-  // ================= EDIT MODE: PRESELECT EMPLOYEES ONCE OPTIONS ARE FILTERED =================
-  useEffect(() => {
-    if (!form_obj?.employee_id_list?.length || !employeeOptions.length) return;
-
-    const idSet = new Set(form_obj.employee_id_list.map((id) => Number(id)));
-    const preselected = employeeOptions.filter((opt) =>
-      idSet.has(Number(opt.value)),
-    );
-
-    if (preselected.length) {
-      formik.setFieldValue("employee_id_list", preselected);
-    }
-  }, [employeeOptions]);
+    setIsSubmitting(false);
+  };
 
   return (
-    <React.Fragment>
-      <Row>
-        <Col xl={12}>
-          <Form onSubmit={formik.handleSubmit}>
-            <Row>
-              {/* CUSTOM FORM */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label className="form-label">Custom Form *</Label>
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      isSubmitting={isSubmitting}
+      submitLabel={isEdit ? "Update" : "Save"}
+    >
+      <FormSection title="Form">
+        <FormAutocomplete
+          name="custom_form"
+          control={control}
+          label="Custom form"
+          placeholder="Select Custom Form"
+          options={customFormOptions}
+          getOptionValue={optionValue}
+          required
+        />
+        <FormAutocomplete
+          name="custom_status"
+          control={control}
+          label="Custom status"
+          placeholder="Select Custom Status"
+          options={statusOptions}
+          getOptionValue={optionValue}
+          required
+        />
+      </FormSection>
 
-                  <Select
-                    name="custom_form"
-                    options={customFormOptions}
-                    value={formik.values.custom_form}
-                    onChange={(selected) =>
-                      formik.setFieldValue("custom_form", selected || null)
-                    }
-                    onBlur={() => formik.setFieldTouched("custom_form", true)}
-                    classNamePrefix="select"
-                    placeholder="Select Custom Form"
-                    className={
-                      formik.touched.custom_form && formik.errors.custom_form
-                        ? "is-invalid"
-                        : ""
-                    }
-                  />
-                  {formik.touched.custom_form && formik.errors.custom_form && (
-                    <FormFeedback type="invalid" className="d-block">
-                      {formik.errors.custom_form}
-                    </FormFeedback>
-                  )}
-                </div>
-              </Col>
-
-              {/* CUSTOM STATUS */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label className="form-label">Custom Status *</Label>
-
-                  <Select
-                    name="custom_status"
-                    options={statusOptions}
-                    value={formik.values.custom_status}
-                    onChange={(selected) =>
-                      formik.setFieldValue("custom_status", selected || null)
-                    }
-                    onBlur={() => formik.setFieldTouched("custom_status", true)}
-                    classNamePrefix="select"
-                    placeholder="Select Custom Status"
-                    className={
-                      formik.touched.custom_status &&
-                      formik.errors.custom_status
-                        ? "is-invalid"
-                        : ""
-                    }
-                  />
-                  {formik.touched.custom_status &&
-                    formik.errors.custom_status && (
-                      <FormFeedback type="invalid" className="d-block">
-                        {formik.errors.custom_status}
-                      </FormFeedback>
-                    )}
-                </div>
-              </Col>
-
-              {/* DEPARTMENT */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label className="form-label">Department *</Label>
-
-                  <Select
-                    name="department"
-                    options={departmentOptions}
-                    value={formik.values.department}
-                    onChange={(selected) =>
-                      formik.setFieldValue("department", selected || null)
-                    }
-                    onBlur={() => formik.setFieldTouched("department", true)}
-                    classNamePrefix="select"
-                    placeholder="Select Department"
-                    className={
-                      formik.touched.department && formik.errors.department
-                        ? "is-invalid"
-                        : ""
-                    }
-                  />
-                  {formik.touched.department && formik.errors.department && (
-                    <FormFeedback type="invalid" className="d-block">
-                      {formik.errors.department}
-                    </FormFeedback>
-                  )}
-                </div>
-              </Col>
-
-              {/* EMPLOYEES */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label className="form-label">Employees *</Label>
-
-                  <Select
-                    isMulti
-                    name="employee_id_list"
-                    options={employeeOptions}
-                    isDisabled={!formik.values.department}
-                    components={{ Option: EmployeeDisplayInSelect }}
-                    value={formik.values.employee_id_list}
-                    onChange={(selected) =>
-                      formik.setFieldValue("employee_id_list", selected || [])
-                    }
-                    onBlur={() =>
-                      formik.setFieldTouched("employee_id_list", true)
-                    }
-                    classNamePrefix="select"
-                    placeholder={
-                      formik.values.department
-                        ? "Select Employees"
-                        : "Select a department first"
-                    }
-                    className={
-                      formik.touched.employee_id_list &&
-                      formik.errors.employee_id_list
-                        ? "is-invalid"
-                        : ""
-                    }
-                  />
-                  {formik.touched.employee_id_list &&
-                    formik.errors.employee_id_list && (
-                      <FormFeedback type="invalid" className="d-block">
-                        {formik.errors.employee_id_list}
-                      </FormFeedback>
-                    )}
-                </div>
-              </Col>
-
-              {/* SAVE */}
-              <Col lg={12}>
-                <div className="text-end">
-                  <Button color="success" className="btn-label" type="submit">
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-                    {isEdit ? "Update" : "Save"}
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+      <FormSection title="Assign to">
+        <FormAutocomplete
+          name="department"
+          control={control}
+          label="Department"
+          placeholder="Select Department"
+          options={departmentOptions}
+          getOptionValue={optionValue}
+          required
+        />
+        <FormAutocomplete
+          name="employee_id_list"
+          control={control}
+          label="Employees"
+          placeholder={
+            department !== null && department !== undefined
+              ? "Select Employees"
+              : "Select a department first"
+          }
+          options={employeeOptions}
+          getOptionValue={optionValue}
+          multiple
+          required
+          disabled={department === null || department === undefined}
+        />
+      </FormSection>
+    </SidebarFormLayout>
   );
 };
 

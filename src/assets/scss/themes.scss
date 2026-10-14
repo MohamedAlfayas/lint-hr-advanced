@@ -173,19 +173,6 @@ $value in $theme-colors {
   transform: translateX(-50%);
 }
 
-.Toastify {
-  .Toastify__toast {
-    min-height: 43px;
-  }
-
-  .Toastify__close-button {
-    top: 6px;
-  }
-
-  .Toastify__close-button--light {
-    color: $light;
-  }
-}
 
 // Tranfer List
 
@@ -266,10 +253,10 @@ $value in $theme-colors {
           border-color: var(--#{$prefix}primary);
       }
       
-      .css-1p3m7a8-multiValue {
+      [class*="-multiValue"] {
           color: var(--#{$prefix}white);
           background-color: var(--#{$prefix}primary);
-          .css-wsp0cs-MultiValueGeneric{
+          [class*="-MultiValueGeneric"]{
               color: var(--#{$prefix}white);
           }
 
@@ -288,10 +275,10 @@ $value in $theme-colors {
       color: var(--#{$prefix}body-color);
       border-color: var(--#{$prefix}border-color);
 
-      .css-1p3m7a8-multiValue {
+      [class*="-multiValue"] {
           color: var(--#{$prefix}white);
           background-color: var(--#{$prefix}primary);
-          .css-wsp0cs-MultiValueGeneric{
+          [class*="-MultiValueGeneric"]{
               color: var(--#{$prefix}white);
           }
 

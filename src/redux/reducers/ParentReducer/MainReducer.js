@@ -52,8 +52,10 @@ import CustomFormReducer from "../ChildReducer/CustomFormReducer";
 import AssignCustomFormReducer from "../ChildReducer/AssignCustomFormReducer";
 import TrackingConfigReducer from "../ChildReducer/TrackingConfigReducer";
 import NotificationReducer from "../ChildReducer/NotificationReducer";
+import { baseApi } from "../../../shared/api/baseApi";
 
 export const MainReducer = combineReducers({
+  [baseApi.reducerPath]: baseApi.reducer,
   MetaReducer: MetaReducer,
   EmployeeReducer: EmployeeReducer,
   LayoutReducer: LayoutReducer,

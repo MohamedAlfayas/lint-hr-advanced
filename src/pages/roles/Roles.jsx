@@ -10,6 +10,11 @@ import RsuiteTable from "../../component/common/table/RsuiteTable";
 import { role_component_name } from "../../common/constant/Constants";
 
 import { default_roles_list } from "../../common/constant/RoleConstants";
+import {
+  ApvChip,
+  ApvStatus,
+  ApvTitle,
+} from "../../component/common/approval/ApprovalCells";
 
 const Roles = () => {
   const dispatch = useDispatch();
@@ -42,45 +47,44 @@ const Roles = () => {
       Header: "Name",
       filterable: false,
       id: "name",
-      accessor: (obj) => {
-        return <b>{obj.name}</b>;
-      },
+      accessor: (obj) => (
+        <ApvTitle
+          icon="ri-shield-user-line"
+          title={obj.name}
+          sub={obj.description}
+          tone={obj.is_admin ? "danger" : "primary"}
+        />
+      ),
     },
     {
       Header: "Employees",
-      accessor: "total_employees",
       filterable: false,
       id: "total_employees",
+      accessor: (obj) => (
+        <ApvChip icon="ri-team-line">{String(obj.total_employees ?? 0)}</ApvChip>
+      ),
     },
     {
       Header: "Permissions",
-      accessor: "roles",
       filterable: false,
       id: "roles",
       accessor: (obj) => {
-        const matchedCount = obj.roles_list.filter((uuid) =>
+        const matchedCount = (obj.roles_list || []).filter((uuid) =>
           frontendRoleUUIDs.has(uuid),
         ).length;
-
-        return <b>{matchedCount}</b>;
+        return <ApvChip icon="ri-shield-keyhole-line">{String(matchedCount)}</ApvChip>;
       },
     },
     {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.status === 1 ? "Primary" : "Secondary";
-        let statusClass = obj.status === 1 ? "success" : "info";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) =>
+        obj.status === 1 ? (
+          <ApvStatus tone="success" icon="ri-star-line" label="Primary" />
+        ) : (
+          <ApvStatus tone="info" icon="ri-user-settings-line" label="Secondary" />
+        ),
     },
   ];
 

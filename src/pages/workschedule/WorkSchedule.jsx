@@ -10,6 +10,11 @@ import { UncontrolledTooltip } from "reactstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { setWorkSchedule } from "../../redux/reducers/ChildReducer/WorkScheduleReducer";
 import { work_schedule_component_name } from "../../common/constant/Constants";
+import {
+  ApvReason,
+  ApvStatus,
+  ApvTitle,
+} from "../../component/common/approval/ApprovalCells";
 
 const WorkSchedule = () => {
   const dispatch = useDispatch();
@@ -39,20 +44,26 @@ const WorkSchedule = () => {
       accessor: "name",
       filterable: false,
       id: "name",
-      accessor: (obj) => {
-        return <b>{obj.name}</b>;
-      },
+      accessor: (obj) => (
+        <ApvTitle
+          icon="ri-calendar-todo-line"
+          title={obj.name}
+          sub={`${(obj.workday || []).filter((d) => d.is_day_on).length} working days / week`}
+        />
+      ),
     },
     {
       Header: "Description",
-      accessor: "description",
       filterable: false,
       id: "email",
+      accessor: (obj) => <ApvReason text={obj.description} />,
     },
     {
       Header: "Timings",
       id: "timings",
       filterable: false,
+      // Each day chip has its own tooltip; skip the cell's full-text one.
+      truncate: false,
       accessor: (obj) => {
         const days = [
           { id: 1, name: "M", desc: "Monday" },
@@ -87,60 +98,54 @@ const WorkSchedule = () => {
 
         let timings_data = timings.filter((d) => d.ws_id === obj.id);
 
-        let htmltag = days.map((day, i) => {
-          let thisDayTimeObj = timings_data.find(
-            (timing) => timing.id === day.id
-          );
+        const pad = (n) => String(n ?? 0).padStart(2, "0");
+        const range = (t) => `${pad(t.s_hr)}:${pad(t.s_min)} – ${pad(t.e_hr)}:${pad(t.e_min)}`;
+        const onDays = timings_data.filter((t) => t.is_day_on === true);
+        const firstOn = onDays[0];
+
+        const htmltag = days.map((day) => {
+          const thisDayTimeObj = timings_data.find((timing) => timing.id === day.id);
+          const isOn = thisDayTimeObj?.is_day_on === true;
+          const tipId = `t_${obj.id}_${day.id}`;
 
           return (
-            <>
-              <span
-                className={
-                  !!thisDayTimeObj && thisDayTimeObj?.is_day_on === true
-                    ? "fw-bold me-1"
-                    : "fw-normal fw-lighter me-1"
-                }
-                key={thisDayTimeObj.id}
-                id={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
-              >
-                {day?.name}
+            <React.Fragment key={day.id}>
+              <span className={`apv-week-day ${isOn ? "is-on" : ""}`} id={tipId}>
+                {day.name}
               </span>
-              <UncontrolledTooltip
-                className="lc_tooltip"
-                placement="top"
-                target={`t_${thisDayTimeObj?.ws_id}_${thisDayTimeObj?.id}`}
-              >
-                {" "}
-                {thisDayTimeObj?.name}{" "}
-                {!!thisDayTimeObj && thisDayTimeObj?.is_day_on === true && (
-                  <>
-                    {`${thisDayTimeObj?.s_hr}:${thisDayTimeObj?.s_min} - ${thisDayTimeObj?.e_hr}:${thisDayTimeObj?.e_min}`}
-                  </>
-                )}
+              <UncontrolledTooltip className="lc_tooltip" placement="top" target={tipId}>
+                {day.desc}
+                {isOn ? ` · ${range(thisDayTimeObj)}` : " · Off"}
               </UncontrolledTooltip>
-            </>
+            </React.Fragment>
           );
         });
 
-        return <> {htmltag} </>;
+        return (
+          <span className="apv-shift">
+            <span className="apv-week">{htmltag}</span>
+            {firstOn && (
+              <span className="apv-shift-meta">
+                <span>
+                  <i className="ri-time-line"></i>
+                  <b>{range(firstOn)}</b>
+                </span>
+              </span>
+            )}
+          </span>
+        );
       },
     },
     {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.status ? "Active" : "Inactive";
-        let statusClass = obj.status ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) =>
+        obj.status ? (
+          <ApvStatus tone="success" icon="ri-checkbox-circle-line" label="Active" />
+        ) : (
+          <ApvStatus tone="secondary" icon="ri-forbid-line" label="Inactive" />
+        ),
     },
   ];
 

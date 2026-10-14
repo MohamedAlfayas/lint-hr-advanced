@@ -9,6 +9,7 @@ import { withTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 
 import withRouter from "../../common/js/withRouter";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 
 const VerticalLayout = (props) => {
   const navData = navdata().props.children;
@@ -34,21 +35,10 @@ const VerticalLayout = (props) => {
           leftsidbarSizeType
         );
       }
-      var hamburgerIcon = document.querySelector(".hamburger-icon");
-      if (
-        (sidebarVisibilitytype === "show" ||
-          layoutType === "vertical" ||
-          layoutType === "twocolumn") &&
-        document.querySelector(".hamburger-icon")
-      ) {
-        if (hamburgerIcon !== null) {
-          hamburgerIcon.classList.remove("open");
-        }
-      } else {
-        if (hamburgerIcon !== null) {
-          hamburgerIcon.classList.add("open");
-        }
-      }
+      // Hamburger shows "open" while the sidebar is collapsed to icons.
+      document
+        .querySelector(".hamburger-icon")
+        ?.classList.toggle("open", leftsidbarSizeType === "sm");
     } else if (windowSize < 1025 && windowSize > 767) {
       document.body.classList.remove("twocolumn-panel");
       if (document.documentElement.getAttribute("data-layout") === "vertical") {
@@ -75,10 +65,11 @@ const VerticalLayout = (props) => {
 
   useEffect(() => {
     window.addEventListener("resize", resizeSidebarMenu, true);
+    return () => window.removeEventListener("resize", resizeSidebarMenu, true);
   }, [resizeSidebarMenu]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "auto" });
     const initMenu = () => {
       const pathName = path;
       const ul = document.getElementById("navbar-nav");
@@ -179,10 +170,12 @@ const VerticalLayout = (props) => {
             ) : item.subItems ? (
               <li className="nav-item">
                 <Link
+                  data-testid={testId("sidebar-menu", itemTestKey(item), "link")}
                   onClick={item.click}
-                  className="nav-link menu-link"
+                  className={`nav-link menu-link sb-tone-${item.tone || "primary"}`}
                   to={item.link ? item.link : "/#"}
                   data-bs-toggle="collapse"
+                  aria-expanded={!!item.stateVariables}
                 >
                   <i className={item.icon}></i>
                   <span data-key="t-apps">{item.label}</span>
@@ -213,6 +206,7 @@ const VerticalLayout = (props) => {
                             {!subItem.isChildItem ? (
                               <li className="nav-item">
                                 <Link
+                                  data-testid={testId("sidebar-menu", itemTestKey(subItem), "link")}
                                   to={subItem.link ? subItem.link : "/#"}
                                   className="nav-link"
                                   id={subItem.link}
@@ -234,10 +228,12 @@ const VerticalLayout = (props) => {
                             ) : (
                               <li className="nav-item">
                                 <Link
+                                  data-testid={testId("sidebar-menu", itemTestKey(subItem), "link")}
                                   onClick={subItem.click}
                                   className="nav-link"
                                   to="/#"
                                   data-bs-toggle="collapse"
+                                  aria-expanded={!!subItem.stateVariables}
                                 >
                                   {subItem.label}
                                   {subItem.badgeName ? (
@@ -266,6 +262,7 @@ const VerticalLayout = (props) => {
                                             {!childItem.childItems ? (
                                               <li className="nav-item">
                                                 <Link
+                                                  data-testid={testId("sidebar-menu", itemTestKey(childItem), "link")}
                                                   to={
                                                     childItem.link
                                                       ? childItem.link
@@ -279,10 +276,12 @@ const VerticalLayout = (props) => {
                                             ) : (
                                               <li className="nav-item">
                                                 <Link
+                                                  data-testid={testId("sidebar-menu", itemTestKey(childItem), "link")}
                                                   to="/#"
                                                   className="nav-link"
                                                   onClick={childItem.click}
                                                   data-bs-toggle="collapse"
+                                                  aria-expanded={!!childItem.stateVariables}
                                                 >
                                                   {childItem.label}
                                                 </Link>
@@ -301,6 +300,7 @@ const VerticalLayout = (props) => {
                                                           key={key}
                                                         >
                                                           <Link
+                                                            data-testid={testId("sidebar-menu-link", itemTestKey(subChildItem), "link")}
                                                             to={
                                                               subChildItem.link
                                                             }
@@ -331,7 +331,8 @@ const VerticalLayout = (props) => {
             ) : (
               <li className="nav-item">
                 <Link
-                  className="nav-link menu-link"
+                  data-testid={testId("sidebar-menu", itemTestKey(item), "link")}
+                  className={`nav-link menu-link sb-tone-${item.tone || "primary"}`}
                   to={item.link ? item.link : "/#"}
                 >
                   <i className={item.icon}></i> <span>{item.label}</span>

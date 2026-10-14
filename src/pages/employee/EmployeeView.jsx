@@ -1,28 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import {
-  Button,
-  Card,
-  CardBody,
-  Col,
-  Container,
-  DropdownItem,
-  DropdownMenu,
-  DropdownToggle,
-  Input,
-  Label,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
-  TabContent,
-  Table,
-  TabPane,
-  UncontrolledDropdown,
-} from "reactstrap";
-
-import classnames from "classnames";
-import DummyUserImg from "../../assets/images/users/user.png";
+import { Col, Container, Row, TabContent, TabPane } from "reactstrap";
 
 import { MetaTitle } from "../../common/data/MetaTitle";
 import { useEffect } from "react";
@@ -45,8 +23,11 @@ import {
   VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
   VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
-import { useTable } from "react-table";
 import EmployeePayslip from "../payroll/EmployeePayslip";
+import { ConvertDateFormat } from "../../common/js/ConvertDateFormat";
+import { initialsOf } from "../../component/common/approval/ApprovalCells";
+import { testId } from "../../shared/testing/testId";
+import "../Crm/Projects/ProjectDetail.scss";
 
 const MONTH_NAMES = [
   "",
@@ -67,6 +48,28 @@ const getMonthName = (month) => {
   if (month === null || month === undefined || month === "") return "";
   if (isNaN(month)) return String(month);
   return MONTH_NAMES[parseInt(month, 10)] || String(month);
+};
+
+const EMPLOYEE_TABS = [
+  { id: "1", label: "Overview", icon: "ri-dashboard-line" },
+  { id: "2", label: "Attendance", icon: "ri-calendar-check-line" },
+  { id: "3", label: "Payroll", icon: "ri-wallet-3-line" },
+  { id: "4", label: "Documents", icon: "ri-folder-4-line" },
+];
+
+const EmpHeroAvatar = ({ url, name, active }) => {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [url]);
+  return (
+    <span className="emp-hero-avatar">
+      {url && !broken ? (
+        <img src={url} alt={name} onError={() => setBroken(true)} />
+      ) : (
+        <span className="emp-hero-initials">{initialsOf(name) || "?"}</span>
+      )}
+      <span className={`emp-hero-dot${active ? " is-on" : ""}`} />
+    </span>
+  );
 };
 
 const EmployeeView = () => {
@@ -272,179 +275,131 @@ const EmployeeView = () => {
     }
   };
 
+  const fullName = [profileObj?.first_name, profileObj?.last_name].filter(Boolean).join(" ");
+  const roleName = profileObj?.role?.id
+    ? RoleData.find((d) => d.id === profileObj.role.id)?.name || ""
+    : "";
+  const departmentNames = (profileObj?.primary_department_id_list || [])
+    .map((deptId) => DepartmentData.find((dept) => dept.id === deptId)?.name)
+    .filter(Boolean)
+    .join(" / ");
+
   document.title = `Employee View | ${MetaTitle}`;
 
   return (
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <Card className="border-0 shadow-sm mb-2">
-            <CardBody className="p-3">
-              <Row className="align-items-center g-4">
-                <div
-                  className={`rounded-circle d-inline-flex align-items-center justify-content-center ${
-                    !profileObj.profile_url ? "avatar-outline" : ""
-                  }`}
-                  style={{
-                    width: "96px",
-                    height: "96px",
-                  }}
-                >
-                  <img
-                    src={
-                      profileObj.profile_url
-                        ? profileObj.profile_url
-                        : DummyUserImg
-                    }
-                    style={{
-                      objectFit: "cover",
-                      width: "90px",
-                      height: "90px",
+          <div className="pdx-hero emp-hero">
+            <div className="pdx-hero-main">
+              <EmpHeroAvatar
+                url={profileObj?.profile_url}
+                name={fullName}
+                active={profileObj?.is_active !== false}
+              />
+
+              <div className="pdx-hero-text">
+                <div className="pdx-hero-title">
+                  <h4 title={fullName}>{fullName || "—"}</h4>
+                  {profileObj?.emp_id && (
+                    <span className="apv-status is-secondary">
+                      <i className="ri-hashtag"></i>
+                      {profileObj.emp_id}
+                    </span>
+                  )}
+                  <span className={`apv-status is-${profileObj?.is_active === false ? "secondary" : "success"}`}>
+                    <i className={profileObj?.is_active === false ? "ri-forbid-line" : "ri-checkbox-circle-line"}></i>
+                    {profileObj?.is_active === false ? "Inactive" : "Active"}
+                  </span>
+                </div>
+
+                <div className="pdx-hero-meta">
+                  {roleName && (
+                    <span>
+                      <i className="ri-shield-user-line"></i>
+                      <b>{roleName}</b>
+                    </span>
+                  )}
+                  {departmentNames && (
+                    <span>
+                      <i className="ri-building-line"></i>
+                      {departmentNames}
+                    </span>
+                  )}
+                  {profileObj?.email && (
+                    <a href={`mailto:${profileObj.email}`} data-testid="employee-view-email-link">
+                      <i className="ri-mail-line"></i>
+                      {profileObj.email}
+                    </a>
+                  )}
+                  {profileObj?.contact_number && (
+                    <a href={`tel:${profileObj.contact_number}`} data-testid="employee-view-phone-link">
+                      <i className="ri-phone-line"></i>
+                      {profileObj.contact_number}
+                    </a>
+                  )}
+                  {profileObj?.joining_date && (
+                    <span>
+                      <i className="ri-calendar-check-line"></i>
+                      Joined <b>{ConvertDateFormat(profileObj.joining_date)}</b>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="pdx-hero-actions">
+                {accSettingsAccess && (
+                  <button
+                    type="button"
+                    className="pdx-cta"
+                    data-testid="employee-view-account-settings-button"
+                    onClick={() => {
+                      dispatch(setEmployeeAccountSettingsData(employeeAccountData));
+                      navigate(`/account-settings/`);
                     }}
-                    alt=""
-                    className="rounded-circle"
-                  />
-                </div>
+                  >
+                    <span className="pdx-cta-icon">
+                      <i className="ri-user-settings-line"></i>
+                    </span>
+                    <span className="pdx-cta-text">
+                      <b>Account Settings</b>
+                      <small>Profile, password &amp; more</small>
+                    </span>
+                    <i className="ri-arrow-right-line pdx-cta-arrow"></i>
+                  </button>
+                )}
+                {otherEmpViewAccess === true && (
+                  <Link to="/employee" className="pdx-ghost" data-testid="employee-view-back-link">
+                    <i className="ri-arrow-left-line"></i>
+                    Employees
+                  </Link>
+                )}
+              </div>
+            </div>
 
-                <Col>
-                  <h3 className="text-dark fw-bold mb-1">
-                    {profileObj?.first_name} {profileObj?.last_name}
-                  </h3>
-                  <p className="text-muted mb-2">
-                    {profileObj?.role?.id
-                      ? RoleData.length
-                        ? RoleData.find((d) => d.id === profileObj?.role?.id)
-                            ?.name
-                        : ""
-                      : ""}{" "}
-                    /{" "}
-                    {profileObj?.primary_department_id_list
-                      ? profileObj.primary_department_id_list
-                          .map(
-                            (deptId) =>
-                              DepartmentData.find((dept) => dept.id === deptId)
-                                ?.name,
-                          )
-                          .join(" / ")
-                      : ""}
-                  </p>
-                  <div className="hstack gap-4">
-                    <div>
-                      <i className="ri-at-line me-1 text-muted fs-16 align-middle"></i>
-                      <Link
-                        to={`mailto:${profileObj?.email || ""}`}
-                        className="text-dark text-decoration-none"
-                      >
-                        {profileObj?.email || ""}
-                      </Link>
-                    </div>
-                    <div>
-                      <i className="ri-phone-line me-1 text-muted fs-16 align-middle"></i>
-                      <Link
-                        to={`tel:${profileObj?.contact_number || ""}`}
-                        className="text-dark text-decoration-none"
-                      >
-                        {profileObj?.contact_number || ""}
-                      </Link>
-                    </div>
-                  </div>
-                </Col>
-
-                <div className="col-auto d-flex gap-2">
-                  {otherEmpViewAccess === true && (
-                    <Link
-                      to="/employee"
-                      className="btn btn-outline-primary btn-sm"
-                    >
-                      <i className="ri-arrow-left-line align-bottom"></i> Back
-                      to Employee
-                    </Link>
-                  )}
-                  {accSettingsAccess && (
-                    <Button
-                      className="btn btn-outline-success btn-sm"
-                      onClick={() => {
-                        dispatch(
-                          setEmployeeAccountSettingsData(employeeAccountData),
-                        );
-                        navigate(`/account-settings/`);
-                      }}
-                    >
-                      <i className="ri-edit-box-line align-bottom"></i> Account
-                      Settings
-                    </Button>
-                  )}
-                </div>
-              </Row>
-            </CardBody>
-          </Card>
+            <div className="pdx-hero-foot">
+              <div className="pdx-tabs" role="tablist">
+                {EMPLOYEE_TABS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === t.id}
+                    className={`pdx-tab${activeTab === t.id ? " is-active" : ""}`}
+                    onClick={() => toggleTab(t.id)}
+                    data-testid={testId("employee-view-tab", t.label)}
+                  >
+                    <i className={t.icon}></i>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           <Row>
             <Col lg={12}>
               <div>
-                <div className="d-flex">
-                  <Nav
-                    className="nav-tabs nav-tabs-custom nav-success gap-2 gap-lg-3 flex-grow-1"
-                    role="tablist"
-                  >
-                    <NavItem className="fs-14">
-                      <NavLink
-                        className={classnames("fw-semibold", {
-                          active: activeTab === "1",
-                        })}
-                        onClick={() => toggleTab("1")}
-                        href="#"
-                      >
-                        <i className="ri-airplay-fill d-inline-block d-md-none"></i>{" "}
-                        <span className="d-none d-md-inline-block">
-                          Overview
-                        </span>
-                      </NavLink>
-                    </NavItem>
-                    <NavItem className="fs-14">
-                      <NavLink
-                        className={classnames("fw-semibold", {
-                          active: activeTab === "2",
-                        })}
-                        onClick={() => toggleTab("2")}
-                        href="#"
-                      >
-                        <i className="ri-list-unordered d-inline-block d-md-none"></i>{" "}
-                        <span className="d-none d-md-inline-block">
-                          Attendance
-                        </span>
-                      </NavLink>
-                    </NavItem>
-                    <NavItem className="fs-14">
-                      <NavLink
-                        className={classnames("fw-semibold", {
-                          active: activeTab === "3",
-                        })}
-                        onClick={() => toggleTab("3")}
-                        href="#"
-                      >
-                        <i className="ri-price-tag-line d-inline-block d-md-none"></i>{" "}
-                        <span className="d-none d-md-inline-block">
-                          Payroll
-                        </span>
-                      </NavLink>
-                    </NavItem>
-                    <NavItem className="fs-14">
-                      <NavLink
-                        className={classnames("fw-semibold", {
-                          active: activeTab === "4",
-                        })}
-                        onClick={() => toggleTab("4")}
-                        href="#"
-                      >
-                        <i className="ri-folder-4-line d-inline-block d-md-none"></i>{" "}
-                        <span className="d-none d-md-inline-block">
-                          Documents
-                        </span>
-                      </NavLink>
-                    </NavItem>
-                  </Nav>
-                </div>
 
                 <TabContent activeTab={activeTab} className="pt-2">
                   {!!activeTab && activeTab === "1" && (

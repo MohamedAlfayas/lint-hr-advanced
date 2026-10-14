@@ -18,6 +18,7 @@ import { ButtonToolbar, IconButton, Table } from "rsuite";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { format, differenceInMinutes } from "date-fns";
 import { Link } from "react-router-dom";
+import { ApvEmployee } from "../../component/common/approval/ApprovalCells";
 import { MonthFormat } from "../../common/constant/Constants";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
@@ -29,6 +30,7 @@ import { Api } from "../../common/api/Api";
 import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
 import { ParseTime } from "../../common/js/ParseTime";
 import "../../common/css/lc_style.css";
+import "./reports.scss";
 import {
   late_entry_display,
   on_time_entry_display,
@@ -36,6 +38,8 @@ import {
   earlyout_display,
 } from "../../common/constant/Constants";
 import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
+import { testId } from "../../shared/testing/testId";
 
 const ExcelJs = require("exceljs");
 
@@ -610,6 +614,7 @@ const AttendanceReport = () => {
       >
         <ButtonToolbar>
           <IconButton
+            data-testid={testId("attendance-report-row", rowData?.emp_id ?? rowData?.employee_id, "download-button")}
             appearance="subtle"
             icon={
               <span className="text-primary d-inline-block edit-item-btn fs-16">
@@ -923,7 +928,7 @@ const AttendanceReport = () => {
     settimeline_modal(!timeline_modal);
   };
 
-  const FixedColumns = ({ rowData, index, dataKey, ...props }) => {
+  const FixedColumns = ({ rowData, dataKey, ...props }) => {
     // const emp_name = employee_data.find(
     //   (emp) => rowData.employee_id === emp.id,
     // );
@@ -936,61 +941,9 @@ const AttendanceReport = () => {
       return <Cell {...props} dataKey="id" />;
     }
 
-    let avatar;
-    if (emp_name.profile_url) {
-      avatar = (
-        <img
-          src={emp_name.profile_url}
-          alt=""
-          className="avatar-xs rounded-circle"
-          style={{ objectFit: "cover" }}
-        />
-      );
-    } else {
-      avatar = (
-        <div
-          className="avatar-xs rounded-circle"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#0ab39c",
-          }}
-          data-bs-toggle="tooltip"
-          title={emp_name.first_name}
-        >
-          <span className="first_letter" style={{ color: "white" }}>
-            {emp_name.first_name ? emp_name.first_name.charAt(0) : ""}
-          </span>
-        </div>
-      );
-    }
+    const html_tag = <ApvEmployee employee={emp_name} />;
 
-    const html_tag = (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">{avatar}</div>
-        <div className="flex-grow-1">
-          <div>
-            <Link to="#" className="link-body-emphasis mb-0">
-              {" "}
-              <h5 className="fs-14 mb-1" style={{ textAlign: "left" }}>
-                {emp_name.first_name}
-              </h5>
-            </Link>
-          </div>
-          <div className="fs-14 mb-1" style={{ textAlign: "left" }}>
-            {emp_name.email}
-          </div>
-        </div>
-      </div>
-    );
-
-    let rowBg;
-    if (index % 2 === 0) {
-      rowBg = layoutModeType === "dark" ? "#1a1a1a" : "white";
-    } else {
-      rowBg = layoutModeType === "dark" ? "#242933" : "#e6f7ff";
-    }
+    const rowBg = layoutModeType === "dark" ? "#242933" : "#e6f7ff";
 
     return (
       <Cell
@@ -998,8 +951,11 @@ const AttendanceReport = () => {
         dataKey="id"
         style={{
           backgroundColor: rowBg,
-          alignItems: "flex-start",
+          display: "flex",
+          alignItems: "center",
           justifyContent: "flex-start",
+          paddingTop: 0,
+          paddingBottom: 0,
           paddingRight: "10px",
         }}
       >
@@ -1068,6 +1024,7 @@ const AttendanceReport = () => {
           <div>
             {entryLogLength}{" "}
             <Link
+              data-testid="attendance-report-view-link"
               className="link-opacity-75 ms-1"
               to="#"
               style={{ color: "#0AB39C" }}
@@ -1114,7 +1071,7 @@ const AttendanceReport = () => {
             <span style={{ fontWeight: "bold" }}>{formatDate(date)}</span>
           }
         >
-          <Column width={100} align="center">
+          <Column flexGrow={1} minWidth={100} align="center">
             <HeaderCell
               style={{ fontWeight: "bold", backgroundColor: bgColor }}
             >
@@ -1123,14 +1080,14 @@ const AttendanceReport = () => {
             <AttendanceData date={date} style={{ backgroundColor: bgColor }} />
           </Column>
 
-          <Column width={80} align="center" title="In">
+          <Column flexGrow={1} minWidth={80} align="center" title="In">
             <HeaderCell style={{ fontWeight: "bold", background: bgColor }}>
               In/Out
             </HeaderCell>
             <InOut date={date} style={{ backgroundColor: bgColor }} />
           </Column>
 
-          <Column width={80} align="center" title="In">
+          <Column flexGrow={1} minWidth={80} align="center" title="In">
             <HeaderCell style={{ fontWeight: "bold", background: bgColor }}>
               Duration
             </HeaderCell>
@@ -1148,7 +1105,7 @@ const AttendanceReport = () => {
   const headerBgColor = isDarkMode ? "#1a1d24" : "white";
 
   const additionalColumns = [
-    <Column width={130} align="center" key="total-days">
+    <Column flexGrow={1} minWidth={130} align="center" key="total-days">
       <HeaderCell
         style={{
           background: headerBgColor,
@@ -1165,7 +1122,7 @@ const AttendanceReport = () => {
         style={{ background: headerBgColor }}
       />
     </Column>,
-    <Column width={130} align="center" key="present-days">
+    <Column flexGrow={1} minWidth={130} align="center" key="present-days">
       <HeaderCell
         style={{
           background: headerBgColor,
@@ -1248,6 +1205,7 @@ const AttendanceReport = () => {
         <button
           type="button"
           className={linkClass}
+          data-testid={testId("attendance-report-page", p, "button")}
           onClick={() => handlePageChange(p)}
         >
           {p}
@@ -1257,7 +1215,7 @@ const AttendanceReport = () => {
   });
 
   const pageSizeOptions = PAGE_SIZE_OPTIONS.map((size) => (
-    <option key={size} value={size}>
+    <option key={size} value={size} data-testid={testId("attendance-report-page-size-option", size)}>
       {"Show " + size}
     </option>
   ));
@@ -1269,7 +1227,7 @@ const AttendanceReport = () => {
       const mapUrl =
         "https://maps.google.com/?q=" + entry.latitude + "," + entry.longitude;
       return (
-        <a href={mapUrl} target="_blank" rel="noopener noreferrer">
+        <a data-testid="attendance-report-map-url-link" href={mapUrl} target="_blank" rel="noopener noreferrer">
           <i className="mdi mdi-map-marker"></i> {entry.location || ""}
         </a>
       );
@@ -1341,10 +1299,19 @@ const AttendanceReport = () => {
     <React.Fragment>
       <div className="page-content">
         <Container fluid>
-          <Card>
-            <CardHeader className="border-0 rounded">
+          <Card className="rpt-card">
+            <CardHeader className="rpt-head border-0">
+              <div className="rpt-title">
+                <span className="rpt-title-icon">
+                  <i className="ri-calendar-check-line"></i>
+                </span>
+                <div className="rpt-title-text">
+                  <h5>Attendance Report</h5>
+                  <p>Monthly attendance for your team, day by day.</p>
+                </div>
+              </div>
               <Row className="g-2 align-items-center">
-                <Col xl={2}>
+                <Col xs={12} sm={5} md={4} xl={3} xxl={2}>
                   <div className="form-icon right">
                     <DatePicker
                       value={dayjs(filterKeys.month, MonthFormat)}
@@ -1358,9 +1325,10 @@ const AttendanceReport = () => {
                   </div>
                 </Col>
 
-                <Col xl={3}>
+                <Col xs={12} sm={7} md={5} xl={4} xxl={3}>
                   <div className="position-relative">
                     <Input
+                      data-testid="attendance-report-search-employee-input"
                       type="text"
                       className="form-control"
                       placeholder="Search employee..."
@@ -1406,16 +1374,16 @@ const AttendanceReport = () => {
                   </div>
                 </Col>
 
-                <Col className="d-flex justify-content-end align-items-center gap-2">
+                <Col
+                  xs={12}
+                  md
+                  className="rpt-actions d-flex justify-content-end align-items-center gap-2"
+                >
                   <Button
+                    data-testid="attendance-report-export-button"
                     type="button"
-                    className="btn btn-info"
+                    className="btn rpt-btn is-soft"
                     onClick={() => openExportModal("page")}
-                    style={{
-                      padding: "0.25rem 0.5rem",
-                      fontSize: "0.75rem",
-                      width: "80px",
-                    }}
                   >
                     <i className="ri-file-download-line align-bottom me-1"></i>
                     Export
@@ -1423,14 +1391,10 @@ const AttendanceReport = () => {
 
                   <Button
                     type="button"
-                    className="btn btn-success"
+                    className="btn rpt-btn is-primary"
+                    data-testid="attendance-report-download-all-button"
                     onClick={() => openExportModal("all")}
                     disabled={exportingAll}
-                    style={{
-                      padding: "0.25rem 0.5rem",
-                      fontSize: "0.75rem",
-                      width: "100px",
-                    }}
                   >
                     {exportingAll ? (
                       <Spinner size="sm" />
@@ -1443,8 +1407,8 @@ const AttendanceReport = () => {
                   </Button>
                 </Col>
 
-                <Modal isOpen={showModal} toggle={toggleModal} centered={true}>
-                  <ModalHeader toggle={toggleModal}></ModalHeader>
+                <Modal data-testid="attendance-report-show-dialog" isOpen={showModal} toggle={toggleModal} centered={true}>
+                  <ModalHeader close={<ModalCloseButton onClick={toggleModal} testId="attendance-report-show-close-button" />} toggle={toggleModal}></ModalHeader>
                   <ModalBody className="py-3 px-5">
                     <div className="mt-2 text-center">
                       <lord-icon
@@ -1460,6 +1424,7 @@ const AttendanceReport = () => {
                     </div>
                     <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
                       <Button
+                        data-testid="attendance-report-show-footer-close-button"
                         type="button"
                         className="btn w-sm btn-light"
                         onClick={toggleModal}
@@ -1467,6 +1432,7 @@ const AttendanceReport = () => {
                         Close
                       </Button>
                       <Button
+                        data-testid="attendance-report-show-download-button"
                         type="button"
                         className="btn w-sm btn-success"
                         onClick={() => {
@@ -1494,7 +1460,8 @@ const AttendanceReport = () => {
           rowHeight={60}
           autoHeight={true}
           loading={loading}
-          className="mb-3"
+          className="mb-3 rpt-table"
+          affixHeader={70}
           affixHorizontalScrollbar
         >
           <Column width={250} fixed="left" align="center">
@@ -1528,6 +1495,7 @@ const AttendanceReport = () => {
               <ul className="pagination pagination-separated pagination-md justify-content-center justify-content-sm-start mb-0">
                 <li className={prevClass}>
                   <button
+                    data-testid="attendance-report-previous-button"
                     type="button"
                     className="page-link"
                     disabled={prevDisabled}
@@ -1539,6 +1507,7 @@ const AttendanceReport = () => {
                 {pageItems}
                 <li className={nextClass}>
                   <button
+                    data-testid="attendance-report-next-button"
                     type="button"
                     className="page-link"
                     disabled={nextDisabled}
@@ -1552,6 +1521,7 @@ const AttendanceReport = () => {
 
             <div className="col-sm-auto">
               <select
+                testId="attendance-report-page-size"
                 className="form-select custom-select-medium text-muted my-select"
                 value={pageSize}
                 onChange={handlePageSizeChange}
@@ -1563,12 +1533,13 @@ const AttendanceReport = () => {
         </Container>
 
         <Modal
+          data-testid="attendance-report-date-dialog"
           isOpen={timeline_modal}
           toggle={open_timeline}
           centered
           className="custom-modal"
         >
-          <ModalHeader>
+          <ModalHeader close={<ModalCloseButton onClick={open_timeline} testId="attendance-report-date-close-button" />} toggle={open_timeline}>
             <h5
               className="modal-title"
               id="exampleModalToggleLabel"
@@ -1598,7 +1569,7 @@ const AttendanceReport = () => {
                 </table>
               </SimpleBar>
               <div className="text-center mt-3">
-                <Button className="btn btn-warning" onClick={open_timeline}>
+                <Button data-testid="attendance-report-date-footer-close-button" className="btn btn-light modal-dismiss-btn" onClick={open_timeline}>
                   Close
                 </Button>
               </div>

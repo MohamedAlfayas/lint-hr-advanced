@@ -1,0 +1,207 @@
+//
+// App-wide responsive safety net. Rules only add wrapping / shrinking /
+// scrolling where content would otherwise overflow, so desktop layouts are
+// unchanged.
+//
+
+// ───────────────────────── Every size ─────────────────────────
+
+// Nothing inside a page may push the page wider than the screen.
+.main-content {
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.page-content {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+img,
+video,
+iframe,
+canvas {
+  max-width: 100%;
+}
+
+// Flex rows wrap instead of overflowing; `row-gap` only applies once wrapped.
+.card-header.d-flex,
+.card-header > .d-flex,
+.page-title-box {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
+// Plain tables placed straight in a card scroll sideways instead of overflowing.
+.card-body:has(> .table),
+.modal-body:has(> .table) {
+  overflow-x: auto;
+}
+
+// Bootstrap grid columns inside flex rows must be allowed to shrink.
+.row > * {
+  min-width: 0;
+}
+
+// AppTable bottom bar (count + pagination)
+.app-table-bottombar {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+// ───────────────────────── Tablet and below (< 992px) ─────────────────────────
+@media (max-width: 991.98px) {
+  .page-content {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .card-header .btn,
+  .page-title-box .btn {
+    white-space: nowrap;
+  }
+
+  // Horizontal tab bars scroll rather than wrap into several rows.
+  .nav-tabs:not(.flex-column),
+  .nav-pills:not(.flex-column),
+  .nav-tabs-custom:not(.flex-column) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    > .nav-item,
+    > .nav-link {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+  }
+
+  // Table toolbars: search + filters wrap onto their own lines
+  .app-table-toolbar {
+    flex-wrap: wrap;
+
+    > * {
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+  }
+}
+
+// ───────────────────────── Phones (< 768px) ─────────────────────────
+@media (max-width: 767.98px) {
+  .page-content {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .hstack,
+  .d-flex.justify-content-between:not(.flex-nowrap):not(.flex-column) {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+  }
+
+  .card-body {
+    padding: 0.875rem;
+  }
+
+  .card-header {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .page-title-box {
+    padding: 0.625rem 0.75rem;
+
+    h4,
+    .mb-sm-0 {
+      font-size: 15px;
+    }
+    .breadcrumb {
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+  }
+
+  // Modals: use the full width with a small margin; footer buttons wrap.
+  .modal-dialog:not(.modal-fullscreen) {
+    margin: 0.5rem auto;
+    max-width: calc(100vw - 1rem);
+  }
+  .modal-header,
+  .modal-body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+
+    > .btn {
+      flex: 1 1 auto;
+    }
+  }
+
+  // Table toolbar: search full width, filters two per row
+  .app-table-toolbar {
+    .app-table-search {
+      flex: 1 1 100%;
+      min-width: 0 !important;
+      width: 100%;
+    }
+    [class*="col-"] {
+      flex: 1 1 calc(50% - 10px);
+      max-width: none;
+      min-width: 140px;
+    }
+  }
+
+  .app-table-bottombar {
+    justify-content: center !important;
+
+    .MuiTablePagination-root,
+    .MuiPagination-root {
+      margin-inline: auto;
+    }
+  }
+
+  // Filter cards above tables
+  .tf-card {
+    padding: 12px;
+  }
+
+  // Button rows in page headers stretch evenly instead of overflowing
+  .card-header .hstack > .btn,
+  .card-header .d-flex > .btn {
+    flex: 1 1 auto;
+  }
+
+  // ApexCharts toolbars overlap titles on narrow cards
+  .apexcharts-toolbar {
+    transform: scale(0.85);
+    transform-origin: top right;
+  }
+
+  // SweetAlert popups
+  .swal2-container .swal2-popup:not(.swal2-toast) {
+    width: calc(100vw - 24px) !important;
+  }
+}
+
+// ───────────────────────── Small phones (< 480px) ─────────────────────────
+@media (max-width: 479.98px) {
+  .app-table-toolbar [class*="col-"] {
+    flex-basis: 100%;
+  }
+
+  .modal-footer > .btn {
+    flex-basis: 100%;
+  }
+
+  .btn-label {
+    white-space: normal;
+  }
+}

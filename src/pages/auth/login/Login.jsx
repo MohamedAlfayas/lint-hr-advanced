@@ -2,23 +2,11 @@ import { useFormik } from "formik";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  Card,
-  CardBody,
-  Col,
-  Container,
-  Input,
-  Label,
-  Row,
-  Button,
-  Form,
-  FormFeedback,
-  Alert,
-  Spinner,
-} from "reactstrap";
+import { Container, Input, Label, Button, Form } from "reactstrap";
 import * as Yup from "yup";
 import logoLight from "../../../assets/images/logo-light.png";
-import AuthParticles from "../../../component/authparticles/AuthParticles";
+import logoDark from "../../../assets/images/logo-dark.png";
+import "./login.scss";
 import { MetaTitle } from "../../../common/data/MetaTitle";
 import { validate } from "../../../common/js/EmailValidate";
 
@@ -47,6 +35,15 @@ import { deleteToken } from "firebase/messaging";
 import { setShowAttendanceTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 import { changeLayoutMode } from "../../../layout/HtmlLayoutHelpers";
 
+const HERO_WORDS = ["people", "attendance", "payroll", "clients"];
+
+const MODULES = [
+  { label: "HRMS", icon: "ri-team-line", tone: "success" },
+  { label: "Attendance", icon: "ri-fingerprint-line", tone: "info" },
+  { label: "Payroll", icon: "ri-wallet-3-line", tone: "warning" },
+  { label: "CRM", icon: "ri-briefcase-4-line", tone: "primary" },
+];
+
 const Login = () => {
   const dispatch = useDispatch();
 
@@ -54,8 +51,26 @@ const Login = () => {
 
   const [userLogin, setUserLogin] = useState([]);
   const [passwordShow, setPasswordShow] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const clock = setInterval(() => setNow(new Date()), 1000);
+    const words = setInterval(
+      () => setWordIndex((i) => (i + 1) % HERO_WORDS.length),
+      2600,
+    );
+    return () => {
+      clearInterval(clock);
+      clearInterval(words);
+    };
+  }, []);
 
   const { showLoader } = useSelector((state) => state.LoaderReducer);
+
+  useEffect(() => {
+    dispatch(setLoaderVisible(false));
+  }, [dispatch]);
 
   const validation = useFormik({
     // enableReinitialize : use this flag when initial values needs to be changed
@@ -280,246 +295,265 @@ const Login = () => {
         console.log("Validate Domain Error - ", error);
 
         if (!!error?.response && error.response.status === 404) {
-          window.location.href = "/auth/workspace";
+          // window.location.href = "/auth/workspace";
+          console.log("Validate Domain Error - ", error);
         } else {
           toast.error(error?.response?.data?.message);
         }
       });
   }, []);
+
+  const hours = now.getHours();
+  const greeting = hours < 12 ? "Good morning" : hours < 17 ? "Good afternoon" : "Good evening";
+  const clockText = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const dateText = now.toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short" });
+  const emailInvalid = !!(validation.touched.email && validation.errors.email);
+  const passwordInvalid = !!(validation.touched.password && validation.errors.password);
+
   return (
     <React.Fragment>
       {showLoader === false ? (
-        <AuthParticles>
-          <div className="auth-page-content mt-lg-5">
-            <Container>
-              <Row>
-                <Col lg={12}>
-                  <div className="text-center mt-sm-5 mb-4 text-white-50">
-                    <div>
-                      <Link to="/" className="d-inline-block auth-logo">
-                        <img src={logoLight} alt="" height="20" />
-                      </Link>
-                    </div>
-                    <p className="mt-3 fs-15 fw-medium">Lint HR Dashboard</p>
+        <div className="lgn">
+          {/* ───────── Showcase ───────── */}
+          <aside className="lgn-hero" aria-hidden="true">
+            <span className="lgn-blob is-a" />
+            <span className="lgn-blob is-b" />
+            <span className="lgn-blob is-c" />
+            <span className="lgn-grid" />
+
+            <div className="lgn-hero-inner">
+              <div className="lgn-brand">
+                <img src={logoLight} alt="" height="24" />
+                <span className="lgn-brand-tag">HRMS · Attendance · CRM</span>
+              </div>
+
+              <div className="lgn-headline">
+                <span className="lgn-eyebrow">
+                  <span className="lgn-eyebrow-dot" />
+                  All-in-one workspace
+                </span>
+                <h1>
+                  Run your <span className="lgn-word" key={wordIndex}>{HERO_WORDS[wordIndex]}</span>
+                  <br />
+                  from a single place.
+                </h1>
+                <p>
+                  Track attendance in real time, manage people and payroll, and keep every client
+                  deal moving — all inside Lint HR.
+                </p>
+              </div>
+
+              <div className="lgn-stage">
+                {/* live check-in */}
+                <div className="lgn-card lgn-clock">
+                  <div className="lgn-card-head">
+                    <span className="lgn-live"><span />Live</span>
+                    <span className="lgn-muted">{dateText}</span>
                   </div>
-                </Col>
-              </Row>
+                  <div className="lgn-clock-time">{clockText}</div>
+                  <div className="lgn-clock-row">
+                    <div className="lgn-ring">
+                      <svg viewBox="0 0 44 44">
+                        <circle cx="22" cy="22" r="18" className="lgn-ring-track" />
+                        <circle cx="22" cy="22" r="18" className="lgn-ring-fill" />
+                      </svg>
+                      <i className="ri-fingerprint-line" />
+                    </div>
+                    <div>
+                      <div className="lgn-clock-label">Checked in · 09:02 AM</div>
+                      <div className="lgn-muted">6h 24m worked today</div>
+                    </div>
+                  </div>
+                </div>
 
-              <Row className="justify-content-center">
-                <Col md={8} lg={6} xl={5}>
-                  <Card className="mt-4">
-                    <CardBody className="p-4">
-                      <div className="text-center mt-2">
-                        <h5 className="text-primary">Welcome Back !</h5>
-                        <p className="text-muted">
-                          Sign in to continue to Lint HR.
-                        </p>
+                {/* team attendance */}
+                <div className="lgn-card lgn-chart">
+                  <div className="lgn-card-head">
+                    <span className="lgn-card-title"><i className="ri-team-line" />Team present</span>
+                    <span className="lgn-up"><i className="ri-arrow-up-line" />4.2%</span>
+                  </div>
+                  <div className="lgn-chart-value">92<small>%</small></div>
+                  <div className="lgn-bars">
+                    {[62, 78, 70, 88, 94, 84, 92].map((h, i) => (
+                      <span key={i} style={{ "--h": `${h}%`, "--d": `${i * 0.08}s` }} />
+                    ))}
+                  </div>
+                  <div className="lgn-bars-days">
+                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                      <span key={i}>{d}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CRM pipeline */}
+                <div className="lgn-card lgn-pipe">
+                  <div className="lgn-card-head">
+                    <span className="lgn-card-title"><i className="ri-briefcase-4-line" />CRM pipeline</span>
+                    <span className="lgn-muted">This month</span>
+                  </div>
+                  {[
+                    { label: "Leads", value: 86, tone: "info" },
+                    { label: "Proposals", value: 58, tone: "warning" },
+                    { label: "Won", value: 34, tone: "success" },
+                  ].map((s, i) => (
+                    <div key={s.label} className="lgn-pipe-row">
+                      <span>{s.label}</span>
+                      <div className="lgn-pipe-track">
+                        <span className={`is-${s.tone}`} style={{ "--w": `${s.value}%`, "--d": `${0.4 + i * 0.15}s` }} />
                       </div>
-                      <div className="p-2 mt-4">
-                        <Form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            validation.handleSubmit();
-                            return false;
-                          }}
-                          action="#"
-                        >
-                          <div className="mb-3">
-                            <Label htmlFor="email" className="form-label">
-                              Email
-                            </Label>
-                            <Input
-                              name="email"
-                              className="form-control"
-                              placeholder="Enter email"
-                              type="text"
-                              onChange={validation.handleChange}
-                              // onBlur={validation.handleBlur}
-                              onBlur={(e) => {
-                                const value = e.target.value
-                                  .trim()
-                                  .toLowerCase();
+                      <b>{s.value}</b>
+                    </div>
+                  ))}
+                </div>
 
-                                validation.setFieldValue("email", value);
-                                validation.handleBlur(e);
-                              }}
-                              value={validation.values.email || ""}
-                              invalid={
-                                validation.touched.email &&
-                                validation.errors.email
-                                  ? true
-                                  : false
-                              }
-                            />
-                            {validation.touched.email &&
-                            validation.errors.email ? (
-                              <FormFeedback type="invalid">
-                                {validation.errors.email}
-                              </FormFeedback>
-                            ) : null}
-                          </div>
+                {/* toast */}
+                <div className="lgn-toast">
+                  <span className="lgn-toast-icon"><i className="ri-check-line" /></span>
+                  <div>
+                    <div className="lgn-toast-title">Leave approved</div>
+                    <div className="lgn-muted">Priya · 2 days · Casual leave</div>
+                  </div>
+                </div>
+              </div>
 
-                          <div className="mb-3">
-                            <div className="float-end">
-                              <Link
-                                to="/auth/forgot-password"
-                                className="text-muted"
-                              >
-                                Forgot password?
-                              </Link>
-                            </div>
-                            <Label
-                              className="form-label"
-                              htmlFor="password-input"
-                            >
-                              Password
-                            </Label>
-                            <div className="position-relative auth-pass-inputgroup mb-3">
-                              <Input
-                                name="password"
-                                value={validation.values.password || ""}
-                                type={passwordShow ? "text" : "password"}
-                                className="form-control pe-5"
-                                placeholder="Enter Password"
-                                onChange={validation.handleChange}
-                                onBlur={validation.handleBlur}
-                                invalid={
-                                  validation.touched.password &&
-                                  validation.errors.password
-                                    ? true
-                                    : false
-                                }
-                              />
-                              {validation.touched.password &&
-                              validation.errors.password ? (
-                                <FormFeedback type="invalid">
-                                  {validation.errors.password}
-                                </FormFeedback>
-                              ) : null}
-                              {!(
-                                validation.touched.password &&
-                                validation.errors.password
-                              ) && (
-                                <button
-                                  className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted"
-                                  type="button"
-                                  id="password-addon"
-                                  onClick={() => setPasswordShow(!passwordShow)}
-                                >
-                                  {/* <i className="ri-eye-fill align-middle"></i> */}
-                                  <i
-                                    className={
-                                      passwordShow
-                                        ? "ri-eye-off-fill align-middle"
-                                        : "ri-eye-fill align-middle"
-                                    }
-                                  ></i>
-                                </button>
-                              )}
-                            </div>
-                          </div>
+              <div className="lgn-foot">
+                <div className="lgn-avatars">
+                  {[avatar1, avatar2, avatar3, avatar4, avatar5].map((src, i) => (
+                    <img key={i} src={src} alt="" />
+                  ))}
+                  <span>+2k</span>
+                </div>
+                <div className="lgn-foot-text">
+                  <b>Trusted by growing teams</b>
+                  <span>for attendance, payroll and client work</span>
+                </div>
+              </div>
+            </div>
+          </aside>
 
-                          {/* <div className="form-check">
-                            <Input
-                              className="form-check-input"
-                              type="checkbox"
-                              value=""
-                              id="auth-remember-check"
-                            />
-                            <Label
-                              className="form-check-label"
-                              htmlFor="auth-remember-check"
-                            >
-                              Remember me
-                            </Label>
-                          </div> */}
+          {/* ───────── Sign in ───────── */}
+          <main className="lgn-panel">
+            <div className="lgn-form-wrap">
+              <div className="lgn-mobile-brand">
+                <img src={logoDark} alt="Lint HR" height="24" />
+              </div>
 
-                          <div className="mt-4">
-                            {/* <span
-                              style={{
-                                display: "inline-block",
-                                width: "100%",
-                                cursor: !(validation.values.email && validation.values.password && validation.isValid)
-                                  ? "not-allowed"
-                                  : "pointer",
-                              }}
-                            > */}
-                            <Button
-                              color="success"
-                              className="btn btn-success w-100 text-center"
-                              type="submit"
-                              // disabled={!(validation.values.email && validation.values.password && validation.isValid)}
-                            >
-                              Sign In
-                            </Button>
-                            {/* </span> */}
-                          </div>
+              <div className="lgn-form-head">
+                <span className="lgn-hello">{greeting} 👋</span>
+                <h2>Welcome back</h2>
+                <p>Sign in to your Lint HR workspace to continue.</p>
+              </div>
 
-                          <div className="mt-3 text-center">
-                            <p className="mb-0">
-                              Need to Find Workspace?{" "}
-                              <Link
-                                to="/auth/workspace/"
-                                className="fw-semibold text-primary text-decoration-underline"
-                              >
-                                Find Workspace
-                              </Link>
-                            </p>
-                          </div>
+              <div className="lgn-modules">
+                {MODULES.map((m) => (
+                  <span key={m.label} className={`lgn-module is-${m.tone}`}>
+                    <i className={m.icon} />
+                    {m.label}
+                  </span>
+                ))}
+              </div>
 
-                          {/* <div className="mt-4 text-center">
-                            <div className="signin-other-title">
-                              <h5 className="fs-13 mb-4 title">Sign In with</h5>
-                            </div>
-                            <div>
-                              <Link
-                                to="#"
-                                className="btn btn-primary btn-icon me-1"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                }}
-                              >
-                                <i className="ri-facebook-fill fs-16" />
-                              </Link>
-                              <Link
-                                to="#"
-                                className="btn btn-danger btn-icon me-1"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                }}
-                              >
-                                <i className="ri-google-fill fs-16" />
-                              </Link>
-                              <Button color="dark" className="btn-icon">
-                                <i className="ri-github-fill fs-16"></i>
-                              </Button>{" "}
-                              <Button color="info" className="btn-icon">
-                                <i className="ri-twitter-fill fs-16"></i>
-                              </Button>
-                            </div>
-                          </div> */}
-                        </Form>
-                      </div>
-                    </CardBody>
-                  </Card>
+              <Form
+                className="lgn-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  validation.handleSubmit();
+                  return false;
+                }}
+                action="#"
+                noValidate
+              >
+                <div className="lgn-field">
+                  <Label htmlFor="email" className="lgn-label">Work email</Label>
+                  <div className={`lgn-input ${emailInvalid ? "is-invalid" : ""}`}>
+                    <i className="ri-mail-line lgn-input-icon" />
+                    <Input
+                      id="email"
+                      name="email"
+                      placeholder="you@company.com"
+                      type="text"
+                      autoComplete="username"
+                      onChange={validation.handleChange}
+                      onBlur={(e) => {
+                        const value = e.target.value.trim().toLowerCase();
+                        validation.setFieldValue("email", value);
+                        validation.handleBlur(e);
+                      }}
+                      value={validation.values.email || ""}
+                      invalid={emailInvalid}
+                      data-testid="login-email-input"
+                    />
+                  </div>
+                  {emailInvalid && (
+                    <div className="lgn-error" data-testid="login-email-error">
+                      <i className="ri-error-warning-line" />
+                      {validation.errors.email}
+                    </div>
+                  )}
+                </div>
 
-                  {/* <div className="mt-4 text-center">
-                    <p className="mb-0">
-                      Don't have an account ?{" "}
-                      <Link
-                        to="/auth/register"
-                        className="fw-semibold text-primary text-decoration-underline"
-                      >
-                        {" "}
-                        Signup{" "}
-                      </Link>{" "}
-                    </p>
-                  </div> */}
-                </Col>
-              </Row>
-            </Container>
-          </div>
-        </AuthParticles>
+                <div className="lgn-field">
+                  <div className="lgn-label-row">
+                    <Label htmlFor="password-input" className="lgn-label">Password</Label>
+                    <Link to="/auth/forgot-password" className="lgn-link" data-testid="login-forgot-password-link">Forgot password?</Link>
+                  </div>
+                  <div className={`lgn-input ${passwordInvalid ? "is-invalid" : ""}`}>
+                    <i className="ri-lock-2-line lgn-input-icon" />
+                    <Input
+                      id="password-input"
+                      name="password"
+                      value={validation.values.password || ""}
+                      type={passwordShow ? "text" : "password"}
+                      placeholder="Enter your password"
+                      autoComplete="current-password"
+                      onChange={validation.handleChange}
+                      onBlur={validation.handleBlur}
+                      invalid={passwordInvalid}
+                      data-testid="login-password-input"
+                    />
+                    <button
+                      type="button"
+                      className="lgn-eye"
+                      id="password-addon"
+                      onClick={() => setPasswordShow(!passwordShow)}
+                      aria-label={passwordShow ? "Hide password" : "Show password"}
+                      data-testid="login-password-toggle-button"
+                    >
+                      <i className={passwordShow ? "ri-eye-off-line" : "ri-eye-line"} />
+                    </button>
+                  </div>
+                  {passwordInvalid && (
+                    <div className="lgn-error" data-testid="login-password-error">
+                      <i className="ri-error-warning-line" />
+                      {validation.errors.password}
+                    </div>
+                  )}
+                </div>
+
+                <Button type="submit" className="lgn-submit" data-testid="login-sign-in-button">
+                  <span>Sign in</span>
+                  <i className="ri-arrow-right-line" />
+                </Button>
+
+                <div className="lgn-divider"><span>or</span></div>
+
+                <Link to="/auth/workspace/" className="lgn-workspace" data-testid="login-find-workspace-link">
+                  <span className="lgn-workspace-icon"><i className="ri-building-2-line" /></span>
+                  <span className="lgn-workspace-text">
+                    <b>Find your workspace</b>
+                    <small>Not sure which company URL to use?</small>
+                  </span>
+                  <i className="ri-arrow-right-s-line" />
+                </Link>
+              </Form>
+
+              <div className="lgn-panel-foot">
+                <span><i className="ri-shield-check-line" />Secure, encrypted sign in</span>
+                <span>© {now.getFullYear()} Lint HR · Crafted with <i className="ri-heart-3-fill lgn-heart" /> by Lintcloud</span>
+              </div>
+            </div>
+          </main>
+        </div>
       ) : (
         <Container>
           <AuthLoader />

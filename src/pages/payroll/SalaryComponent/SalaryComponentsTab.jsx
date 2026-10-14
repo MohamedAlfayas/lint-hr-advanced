@@ -232,6 +232,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
         >
           <NavItem>
             <NavLink
+              data-testid="salary-components-earnings-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "1" })}
               onClick={() => toggleTab("1")}
@@ -242,6 +243,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
 
           <NavItem>
             <NavLink
+              data-testid="salary-components-deductions-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "2" })}
               onClick={() => toggleTab("2")}
@@ -252,6 +254,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
 
           <NavItem>
             <NavLink
+              data-testid="salary-components-benefits-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "3" })}
               onClick={() => toggleTab("3")}
@@ -261,6 +264,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
           </NavItem>
           <NavItem>
             <NavLink
+              data-testid="salary-components-reimbursements-link"
               style={{ cursor: "pointer" }}
               className={classnames({ active: activeTab === "4" })}
               onClick={() => toggleTab("4")}
@@ -276,7 +280,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
           <TabPane tabId="1">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">Earnings</h5>
-              <Button color="primary" onClick={() => onEarningAdd(null, "1")}>
+              <Button data-testid="salary-components-earnings-add-button" color="primary" onClick={() => onEarningAdd(null, "1")}>
                 <i className="ri-add-line me-1"></i> Add
               </Button>
             </div>
@@ -291,7 +295,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
   <TabPane tabId="2">
     <div className="d-flex justify-content-between align-items-center mb-3">
       <h5 className="mb-0">Deductions</h5>
-      <Button color="primary" onClick={() => onEarningAdd(null, "2")}>
+      <Button data-testid="salary-components-deductions-add-button" color="primary" onClick={() => onEarningAdd(null, "2")}>
         <i className="ri-add-line me-1"></i> Add
       </Button>
     </div>
@@ -307,7 +311,7 @@ const SalaryComponentsTab = ({ onEarningAdd }) => {
           <TabPane tabId="3">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">Benefits</h5>
-              <Button color="primary" onClick={() => onEarningAdd(null, "3")}>
+              <Button data-testid="salary-components-benefits-add-button" color="primary" onClick={() => onEarningAdd(null, "3")}>
                 <i className="ri-add-line me-1"></i> Add
               </Button>
             </div>

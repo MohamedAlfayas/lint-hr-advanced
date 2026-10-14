@@ -1,5 +1,6 @@
 // src/component/maps/UsersClusterMapGoogle.jsx
 import React, { useEffect, useRef, useState } from "react";
+import { MapShell, MapSkeleton } from "../../component/common/skeleton/Skeleton";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -8,6 +9,7 @@ import {
 } from "@react-google-maps/api";
 import { useSelector } from "react-redux";
 import "../../common/css/lc_style.css";
+import { useMapThemeStyles } from "../../shared/theme/mapStyles";
 
 // ✅ Map Container Style
 const containerStyle = {
@@ -50,7 +52,9 @@ const UsersClusterMapGoogle = ({ locations }) => {
   const [groupedMarkers, setGroupedMarkers] = useState([]);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [zoom, setZoom] = useState(5);
+  const [tilesReady, setTilesReady] = useState(false);
   const mapRef = useRef(null);
+  const mapStyles = useMapThemeStyles();
 
   // ✅ Build marker data and group by lat/lng (grouping precision depends on zoom)
   useEffect(() => {
@@ -160,11 +164,13 @@ const UsersClusterMapGoogle = ({ locations }) => {
   const handleMarkerClick = (marker) => setSelectedMarker(marker);
   const handleCloseClick = () => setSelectedMarker(null);
 
-  if (!isLoaded) return <p>Loading Map...</p>;
+  if (!isLoaded) return <MapSkeleton style={{ minHeight: 300, borderRadius: 6 }} />;
 
   return (
+    <MapShell ready={tilesReady} style={{ borderRadius: 6 }}>
     <GoogleMap
       mapContainerStyle={containerStyle}
+      onTilesLoaded={() => setTilesReady(true)}
       center={groupedMarkers.length ? undefined : indiaCenter}
       zoom={groupedMarkers.length ? 10 : 5}
       onLoad={(map) => {
@@ -178,6 +184,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
         streetViewControl: false,
         mapTypeControl: false,
         fullscreenControl: false,
+        styles: mapStyles,
       }}
     >
       {/* ✅ Marker with count */}
@@ -223,6 +230,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
                 {selectedMarker.count > 1 ? "s" : ""}
               </h6>
               <button
+                data-testid="users-cluster-map-close-button"
                 onClick={handleCloseClick}
                 title="Close"
                 style={{
@@ -274,6 +282,7 @@ const UsersClusterMapGoogle = ({ locations }) => {
         </InfoWindow>
       )}
     </GoogleMap>
+    </MapShell>
   );
 };
 

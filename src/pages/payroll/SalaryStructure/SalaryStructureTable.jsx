@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Card, CardBody, Button, Table, Input } from "reactstrap";
+import { Button, Input } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import RecurringModal from "../PayrollComponent/Modal/RecurringModal";
@@ -11,6 +11,8 @@ import {
 } from "../../../redux/reducers/ChildReducer/SalaryStructureReducer";
 import { setRecurring } from "../../../redux/reducers/ChildReducer/RecurringReducer";
 import { useDispatch, useSelector } from "react-redux";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import { TableSkeletonBlock } from "../../../component/common/skeleton/Skeleton";
 
 // ─── Stable per-row id (frontend only — never sent to backend) ────────────────
 let _uidCounter = 0;
@@ -138,71 +140,33 @@ function AddComponentDropdown({ label, options, onSelect }) {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <div
-        className="d-flex align-items-center justify-content-between px-2 py-2"
-        style={{
-          border: "1px solid #dee2e6",
-          cursor: "pointer",
-          background: "#fff",
-          fontSize: 13.5,
-          color: "#6b7280",
-        }}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span>{label}</span>
-        <span style={{ fontSize: 11 }}>{open ? "▲" : "▼"}</span>
+      <div className="ss-dd-trigger" onClick={() => setOpen((v) => !v)}>
+        <span>
+          <i className="ri-add-circle-line align-bottom me-1" />
+          {label}
+        </span>
+        <i className={open ? "ri-arrow-up-s-line" : "ri-arrow-down-s-line"} />
       </div>
 
       {open && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            zIndex: 999,
-            background: "#fff",
-            border: "1px solid #dee2e6",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            maxHeight: 240,
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{ padding: "6px 8px", borderBottom: "1px solid #f3f4f6" }}
-          >
+        <div className="ss-dd-menu">
+          <div className="ss-dd-search">
             <Input
+              data-testid="salary-structure-list-search-components-input"
               bsSize="sm"
-              placeholder="Search..."
+              placeholder="Search components..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               autoFocus
-              style={{
-                border: "none",
-                borderBottom: "2px solid #0d6efd",
-                borderRadius: 0,
-                boxShadow: "none",
-              }}
             />
           </div>
 
-          {filtered.length === 0 && (
-            <div
-              style={{ padding: "10px 12px", fontSize: 13, color: "#9ca3af" }}
-            >
-              No options found
-            </div>
-          )}
+          {filtered.length === 0 && <div className="ss-dd-empty">No options found</div>}
 
           {filtered.map((opt) => (
             <div
               key={opt.id}
-              className="d-flex align-items-center justify-content-between px-3 py-2"
-              style={{ cursor: "pointer", fontSize: 13.5 }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#f0f0f0")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              className="ss-dd-option"
               onClick={() => {
                 onSelect(opt);
                 setOpen(false);
@@ -210,9 +174,7 @@ function AddComponentDropdown({ label, options, onSelect }) {
               }}
             >
               <span>{opt.name}</span>
-              <span style={{ fontSize: 11, color: "#9ca3af" }}>
-                Press to select
-              </span>
+              <small>Select</small>
             </div>
           ))}
         </div>
@@ -237,64 +199,45 @@ function CreateNewComponentMenu({ onSelect }) {
   return (
     <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       <Button
+        data-testid="salary-structure-list-create-new-component-button"
         color="link"
-        className="p-0 text-primary fw-medium"
-        style={{ fontSize: 13.5, textDecoration: "none" }}
+        className="p-0 text-primary fw-medium text-decoration-none"
+        style={{ fontSize: 13.5 }}
         onClick={() => setOpen((v) => !v)}
       >
-        <span style={{ fontSize: 18, lineHeight: 1, marginRight: 4 }}>⊕</span>
+        <i className="ri-add-circle-line align-bottom me-1" />
         Create New Component
       </Button>
 
       {open && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "100%",
-            left: 0,
-            zIndex: 1050,
-            background: "#fff",
-            border: "1px solid #dee2e6",
-            borderRadius: 6,
-            boxShadow: "0 -4px 12px rgba(0,0,0,0.12)",
-            minWidth: 180,
-            marginBottom: 4,
-          }}
-        >
+        <div className="ss-dd-menu is-up">
           {[
             {
               value: "recurring",
-              label: "🔁 Recurring",
+              icon: "ri-repeat-line",
+              label: "Recurring",
               desc: "Monthly fixed/% component",
             },
             {
               value: "variable",
-              label: "📈 Variable",
+              icon: "ri-line-chart-line",
+              label: "Variable",
               desc: "Bonus, incentive, etc.",
             },
           ].map((opt) => (
             <div
               key={opt.value}
-              style={{
-                padding: "10px 14px",
-                cursor: "pointer",
-                borderBottom: "1px solid #f3f4f6",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#f0f7ff")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+              className="ss-dd-option justify-content-start"
               onClick={() => {
                 onSelect(opt.value);
                 setOpen(false);
               }}
             >
-              <div
-                style={{ fontSize: 13.5, fontWeight: 600, color: "#1f2937" }}
-              >
-                {opt.label}
+              <i className={opt.icon} style={{ fontSize: 16 }} />
+              <div>
+                <div className="fw-semibold">{opt.label}</div>
+                <small>{opt.desc}</small>
               </div>
-              <div style={{ fontSize: 11.5, color: "#6b7280" }}>{opt.desc}</div>
             </div>
           ))}
         </div>
@@ -317,6 +260,7 @@ export default function SalaryStructureTable() {
   const [draft, setDraft] = useState(null);
   const [recurringModalOpen, setRecurringModalOpen] = useState(false);
   const [variableModalOpen, setVariableModalOpen] = useState(false);
+  const [listSearch, setListSearch] = useState("");
 
   const fetchPayrollComponents = useCallback(() => {
     Api({ method: "GET", url: "payroll/component/" })
@@ -590,25 +534,41 @@ export default function SalaryStructureTable() {
     (p) => !usedComponentIds.includes(p.id),
   );
 
+  const filteredStructures = structures.filter((s) =>
+    (s.name || "").toLowerCase().includes(listSearch.trim().toLowerCase()),
+  );
+
+  const componentCountOf = (s) =>
+    (s?.salary_structure_components || []).filter(
+      (c) => c && !c._removed && c.is_active !== false,
+    ).length;
+
+  const initialsOf = (name = "") =>
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join("") || "S";
+
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        minHeight: 0,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        className="d-flex align-items-center justify-content-end px-4 py-2 bg-white border-bottom"
-        style={{ flexShrink: 0 }}
-      >
+    <div className="ss-wrap">
+      {loading && (
+        <div className="ss-loading">
+          <TableSkeletonBlock rows={6} cols={5} testId="salary-structure-loading-skeleton" label="Loading salary structures" />
+        </div>
+      )}
+
+      <div className="ss-topbar">
+        <div className="ss-topbar-info">
+          <span className="ss-count">{structures.length}</span>
+          <span>{structures.length === 1 ? "structure" : "structures"} configured</span>
+        </div>
         <button
+          data-testid="salary-structure-list-create-new-structure-button"
           type="button"
           className="btn btn-success add-btn"
           id="create-btn"
-          style={{ textTransform: "capitalize" }}
           onClick={handleCreate}
           disabled={editMode}
         >
@@ -617,216 +577,152 @@ export default function SalaryStructureTable() {
         </button>
       </div>
 
-      <div
-        className="d-flex"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflow: "hidden",
-        }}
-      >
-        {loading && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(255,255,255,0.65)",
-              zIndex: 9999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading…</span>
-            </div>
+      <div className="ss-body">
+        <aside className="ss-list">
+          <div className="ss-list-search">
+            <i className="ri-search-line" />
+            <input
+              data-testid="salary-structure-list-search-structures-input"
+              type="text"
+              placeholder="Search structures..."
+              value={listSearch}
+              onChange={(e) => setListSearch(e.target.value)}
+            />
           </div>
-        )}
 
-        <div
-          className="border-end bg-white"
-          style={{
-            width: 270,
-            minWidth: 270,
-            overflowY: "auto",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <div style={{ flex: 1, overflowY: "auto" }}>
-            {structures.length === 0 && !loading && (
-              <div
-                className="text-center text-muted py-4"
-                style={{ fontSize: 13 }}
-              >
-                No structures found
+          <div className="ss-list-items">
+            {filteredStructures.length === 0 && !loading && (
+              <div className="ss-list-empty">
+                <i className="ri-file-list-3-line" />
+                <span>{listSearch ? "No matching structures" : "No structures found"}</span>
               </div>
             )}
 
-            {structures.map((s) => {
-              const isActive = selected?.id === s.id;
+            {editMode && draft?.id === 0 && (
+              <div className="ss-item is-active">
+                <span className="ss-item-avatar">
+                  <i className="ri-add-line" />
+                </span>
+                <div className="ss-item-text">
+                  <div className="ss-item-name">{draft.name || "New structure"}</div>
+                  <div className="ss-item-meta">Draft</div>
+                </div>
+              </div>
+            )}
 
+            {filteredStructures.map((s) => {
+              const isActive = selected?.id === s.id && !(editMode && draft?.id === 0);
+              const count = componentCountOf(s);
               return (
                 <div
                   key={s.id}
                   onClick={() => selectStructure(s)}
-                  className="d-flex align-items-start justify-content-between px-3 py-2"
-                  style={{
-                    cursor: editMode ? "not-allowed" : "pointer",
-                    borderLeft: isActive
-                      ? "3px solid #0d6efd"
-                      : "3px solid transparent",
-                    background: isActive ? "#e8f0fe" : "transparent",
-                    opacity: editMode && !isActive ? 0.5 : 1,
-                  }}
+                  className={`ss-item${isActive ? " is-active" : ""}${editMode && !isActive ? " is-locked" : ""}`}
                 >
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      className="fw-medium"
-                      style={{
-                        fontSize: 13.5,
-                        color: isActive ? "#0d6efd" : "#1f2937",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        maxWidth: 220,
-                      }}
-                    >
+                  <span className="ss-item-avatar">{initialsOf(s.name)}</span>
+                  <div className="ss-item-text">
+                    <div className="ss-item-name" title={s.name}>
                       {s.name}
                     </div>
-                    <div className="text-muted" style={{ fontSize: 12 }}>
+                    <div className="ss-item-meta">
+                      <span className={`ss-dot ${s.is_active ? "on" : "off"}`} />
                       {s.is_active ? "Active" : "Inactive"}
+                      <span className="ss-sep">•</span>
+                      {count} {count === 1 ? "component" : "components"}
                     </div>
                   </div>
+                  <i className="ri-arrow-right-s-line ss-item-arrow" />
                 </div>
               );
             })}
           </div>
-        </div>
+        </aside>
 
-        <div
-          className="flex-grow-1 p-4"
-          style={{ overflowY: "auto", background: "#f4f5f7", minHeight: 0 }}
-        >
+        <section className="ss-detail">
           {current ? (
-            <Card className="border shadow-sm">
-              <CardBody className="p-4">
-                <div className="d-flex align-items-center justify-content-between mb-2">
-                  <h5 className="mb-0 fw-semibold">{current.name}</h5>
-                </div>
-
-                <div className="border-bottom mb-3">
-                  <span
-                    className="pb-2 d-inline-block fw-medium"
-                    style={{
-                      fontSize: 13.5,
-                      color: "#0d6efd",
-                      borderBottom: "2px solid #0d6efd",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Overview
+            <div className="ss-card">
+              <div className="ss-card-head">
+                <div className="d-flex align-items-center gap-3 min-w-0">
+                  <span className="ss-head-icon">
+                    <i className="ri-node-tree" />
                   </span>
-                </div>
-
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <div className="flex-grow-1 me-3">
-                    <div className="fw-semibold mb-1" style={{ fontSize: 13 }}>
-                      Name
+                  <div className="min-w-0">
+                    <h5 className="ss-title">
+                      {editMode && draft?.id === 0 ? "New Salary Structure" : current.name}
+                    </h5>
+                    <div className="ss-head-meta">
+                      <span className={`ss-chip ${current.is_active === false ? "is-off" : "is-on"}`}>
+                        {current.is_active === false ? "Inactive" : "Active"}
+                      </span>
+                      <span className="ss-chip is-muted">
+                        <i className="ri-stack-line" />
+                        {components.length} {components.length === 1 ? "component" : "components"}
+                      </span>
+                      {editMode && <span className="ss-chip is-warn">Editing</span>}
                     </div>
+                  </div>
+                </div>
+                {!editMode && (
+                  <button data-testid="salary-structure-list-edit-button" type="button" className="btn btn-soft-primary btn-sm" onClick={handleEdit}>
+                    <i className="ri-pencil-line align-bottom me-1" />
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              <div className="ss-card-body">
+                <div className="ss-fields">
+                  <div className="ss-field">
+                    <label className="ss-label">Structure Name</label>
                     {editMode ? (
                       <Input
+                        data-testid="salary-structure-list-structure-name-input"
                         value={draft.name}
                         onChange={(e) => setDraftField("name", e.target.value)}
                         placeholder="Structure name"
-                        style={{
-                          borderTop: "none",
-                          borderLeft: "none",
-                          borderRight: "none",
-                          borderRadius: 0,
-                          boxShadow: "none",
-                          maxWidth: 400,
-                        }}
                       />
                     ) : (
-                      <div
-                        style={{
-                          fontSize: 13.5,
-                          color: "#374151",
-                          borderBottom: "1px solid #e5e7eb",
-                          paddingBottom: 4,
-                          maxWidth: 400,
-                        }}
-                      >
-                        {current.name}
+                      <div className="ss-value">{current.name}</div>
+                    )}
+                  </div>
+                  <div className="ss-field">
+                    <label className="ss-label">Description</label>
+                    {editMode ? (
+                      <Input
+                        data-testid="salary-structure-list-description-textarea"
+                        type="textarea"
+                        rows={2}
+                        placeholder="Enter your description here"
+                        value={draft.description || ""}
+                        onChange={(e) => setDraftField("description", e.target.value)}
+                      />
+                    ) : (
+                      <div className={`ss-value${current.description ? "" : " is-empty"}`}>
+                        {current.description || "No description"}
                       </div>
                     )}
                   </div>
-                  {!editMode && (
-                    <Button
-                      color="link"
-                      size="sm"
-                      className="p-0 text-secondary"
-                      onClick={handleEdit}
-                      title="Edit"
-                    >
-                      <i className="ri-pencil-line" style={{ fontSize: 16 }} />
-                    </Button>
-                  )}
                 </div>
 
-                <div className="mb-3">
-                  <div className="fw-semibold mb-1" style={{ fontSize: 13 }}>
-                    Description
-                  </div>
-                  {editMode ? (
-                    <Input
-                      type="textarea"
-                      rows={3}
-                      placeholder="Enter your description here"
-                      value={draft.description || ""}
-                      onChange={(e) =>
-                        setDraftField("description", e.target.value)
-                      }
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        fontSize: 13.5,
-                        color: current.description ? "#374151" : "#9ca3af",
-                        fontStyle: current.description ? "normal" : "italic",
-                      }}
-                    >
-                      {current.description || "No description"}
-                    </div>
-                  )}
+                <div className="ss-section-title">
+                  <i className="ri-wallet-3-line" />
+                  Salary Components
                 </div>
 
-                <hr />
-                <div className="fw-semibold mb-3">Salary Structure</div>
-
-                <div style={{ maxWidth: 700 }}>
-                  <Table bordered size="sm" className="mb-1">
-                    <thead className="table-light">
+                <div className="ss-table-wrap">
+                  <table className="ss-table">
+                    <thead>
                       <tr>
-                        <th style={{ width: "32%" }}>Component</th>
+                        <th style={{ width: "36%" }}>Component</th>
                         <th>Calculation</th>
-                        {editMode && (
-                          <th style={{ width: 44, textAlign: "center" }}>
-                            Del
-                          </th>
-                        )}
+                        {editMode && <th style={{ width: 56, textAlign: "center" }}>Remove</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {components.length === 0 ? (
                         <tr>
-                          <td
-                            colSpan={editMode ? 3 : 2}
-                            className="text-center text-muted py-3"
-                            style={{ fontSize: 13 }}
-                          >
+                          <td colSpan={editMode ? 3 : 2} className="ss-table-empty">
+                            <i className="ri-inbox-line" />
                             {editMode
                               ? "Add components using the dropdown below"
                               : "No components defined"}
@@ -834,155 +730,98 @@ export default function SalaryStructureTable() {
                         </tr>
                       ) : (
                         components.map((c, visibleIdx) => {
-                          const isBasic = isBasicComponent(
-                            c,
-                            payrollComponents,
-                          );
-                          const isBalancing = isBalancingComponent(
-                            c,
-                            payrollComponents,
-                          );
+                          const isBasic = isBasicComponent(c, payrollComponents);
+                          const isBalancing = isBalancingComponent(c, payrollComponents);
 
                           return (
                             <tr key={c._uid}>
-                              <td
-                                style={{
-                                  fontSize: 13.5,
-                                  verticalAlign: "middle",
-                                }}
-                              >
-                                {compDisplayName(
-                                  c,
-                                  visibleIdx,
-                                  payrollComponents,
-                                )}
-                                {isBalancing && (
-                                  <span
-                                    className="badge bg-info-subtle text-info ms-2"
-                                    style={{ fontSize: 10 }}
-                                  >
-                                    Balancing
-                                  </span>
-                                )}
+                              <td>
+                                <div className="ss-comp-name">
+                                  <span className="ss-comp-dot" />
+                                  {compDisplayName(c, visibleIdx, payrollComponents)}
+                                  {isBasic && <span className="ss-tag is-basic">Basic</span>}
+                                  {isBalancing && <span className="ss-tag is-balancing">Balancing</span>}
+                                </div>
                               </td>
 
-                              <td style={{ verticalAlign: "middle" }}>
+                              <td>
                                 {isBalancing ? (
-                                  <span
-                                    style={{
-                                      fontSize: 12.5,
-                                      color: "#6b7280",
-                                      fontStyle: "italic",
-                                    }}
-                                  >
-                                    Auto-calculated — fills the remaining
-                                    CTC/Gross amount
+                                  <span className="ss-auto">
+                                    <i className="ri-magic-line" />
+                                    Auto-calculated — fills the remaining CTC/Gross amount
                                   </span>
                                 ) : editMode ? (
                                   <div className="d-flex align-items-center gap-2 flex-wrap">
                                     <Input
+                                      data-testid={testId("salary-structure-list-calculation-type", itemTestKey(c), "select")}
                                       type="select"
                                       bsSize="sm"
                                       value={c.calculation_type || "fixed"}
                                       onChange={(e) =>
-                                        setCompField(
-                                          c._uid,
-                                          "calculation_type",
-                                          e.target.value,
-                                        )
+                                        setCompField(c._uid, "calculation_type", e.target.value)
                                       }
-                                      style={{ fontSize: 12, width: "auto" }}
+                                      style={{ width: "auto" }}
                                     >
-                                      <option value="fixed">Fixed (Rs.)</option>
-                                      <option value="percentage">
-                                        Percentage (%)
-                                      </option>
+                                      <option data-testid={testId("salary-structure-list-calculation-type", itemTestKey(c), "option-fixed")} value="fixed">Fixed (Rs.)</option>
+                                      <option data-testid={testId("salary-structure-list-calculation-type", itemTestKey(c), "option-percentage")} value="percentage">Percentage (%)</option>
                                     </Input>
 
                                     <Input
+                                      data-testid={testId("salary-structure-list-value", itemTestKey(c), "input")}
                                       bsSize="sm"
                                       type="number"
                                       min="0"
                                       placeholder="Value"
                                       value={c.calculation_value || ""}
                                       onChange={(e) =>
-                                        setCompField(
-                                          c._uid,
-                                          "calculation_value",
-                                          e.target.value,
-                                        )
+                                        setCompField(c._uid, "calculation_value", e.target.value)
                                       }
-                                      style={{ fontSize: 12, width: 90 }}
+                                      style={{ width: 100 }}
                                     />
 
                                     {c.calculation_type === "percentage" &&
                                       (isBasic ? (
-                                        <span
-                                          style={{
-                                            fontSize: 12,
-                                            color: "#374151",
-                                            background: "#f3f4f6",
-                                            padding: "2px 8px",
-                                            borderRadius: 4,
-                                            border: "1px solid #dee2e6",
-                                          }}
-                                        >
-                                          of CTC
-                                        </span>
+                                        <span className="ss-calc">of CTC</span>
                                       ) : (
                                         <Input
+                                          data-testid={testId("salary-structure-list-calculation-based-on", itemTestKey(c), "select")}
                                           type="select"
                                           bsSize="sm"
-                                          value={
-                                            c.calculation_based_on || "ctc"
-                                          }
+                                          value={c.calculation_based_on || "ctc"}
                                           onChange={(e) =>
-                                            setCompField(
-                                              c._uid,
-                                              "calculation_based_on",
-                                              e.target.value,
-                                            )
+                                            setCompField(c._uid, "calculation_based_on", e.target.value)
                                           }
-                                          style={{
-                                            fontSize: 12,
-                                            width: "auto",
-                                          }}
+                                          style={{ width: "auto" }}
                                         >
-                                          <option value="ctc">of CTC</option>
-                                          <option value="basic">
-                                            of Basic
-                                          </option>
+                                          <option data-testid={testId("salary-structure-list-calculation-based-on", itemTestKey(c), "option-ctc")} value="ctc">of CTC</option>
+                                          <option data-testid={testId("salary-structure-list-calculation-based-on", itemTestKey(c), "option-basic")} value="basic">of Basic</option>
                                         </Input>
                                       ))}
                                   </div>
                                 ) : (
-                                  <span style={{ fontSize: 13 }}>
+                                  <span className={`ss-calc ${c.calculation_type === "percentage" ? "is-pct" : "is-fixed"}`}>
+                                    <i
+                                      className={
+                                        c.calculation_type === "percentage"
+                                          ? "ri-percent-line"
+                                          : "ri-money-dollar-circle-line"
+                                      }
+                                    />
                                     {formatCalc(c)}
                                   </span>
                                 )}
                               </td>
 
                               {editMode && (
-                                <td
-                                  style={{
-                                    textAlign: "center",
-                                    verticalAlign: "middle",
-                                  }}
-                                >
+                                <td style={{ textAlign: "center" }}>
                                   <button
+                                    data-testid={testId("salary-structure-list-remove", itemTestKey(c), "button")}
+                                    type="button"
+                                    className="ss-remove"
                                     onClick={() => removeComponent(c._uid)}
-                                    style={{
-                                      background: "none",
-                                      border: "none",
-                                      cursor: "pointer",
-                                      color: "#ef4444",
-                                      fontSize: 16,
-                                      lineHeight: 1,
-                                      padding: 0,
-                                    }}
                                     title="Remove"
                                   >
-                                    ✕
+                                    <i className="ri-delete-bin-6-line" />
                                   </button>
                                 </td>
                               )}
@@ -991,70 +830,229 @@ export default function SalaryStructureTable() {
                         })
                       )}
                     </tbody>
-                  </Table>
-
-                  {editMode && (
-                    <AddComponentDropdown
-                      label="+ Add Component"
-                      options={availableOptions}
-                      onSelect={addComponentFromDropdown}
-                    />
-                  )}
+                  </table>
                 </div>
 
                 {editMode && (
-                  <div className="d-flex align-items-center justify-content-between mt-3">
-                    <CreateNewComponentMenu
-                      onSelect={(type) => {
-                        if (type === "recurring") setRecurringModalOpen(true);
-                        else setVariableModalOpen(true);
-                      }}
+                  <div className="mt-2" style={{ maxWidth: 420 }}>
+                    <AddComponentDropdown
+                      label="Add Component"
+                      options={availableOptions}
+                      onSelect={addComponentFromDropdown}
                     />
-
-                    <div className="d-flex gap-2">
-                      <Button
-                        size="sm"
-                        className="btn btn-danger"
-                        onClick={handleCancel}
-                        disabled={loading}
-                      >
-                        ✕ CANCEL
-                      </Button>
-                      <Button
-                        className="btn-success"
-                        size="sm"
-                        onClick={handleSave}
-                        disabled={loading}
-                      >
-                        <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-                        {loading ? "Saving…" : "SAVE"}
-                      </Button>
-                    </div>
                   </div>
                 )}
-              </CardBody>
-            </Card>
+              </div>
+
+              {editMode && (
+                <div className="ss-card-foot">
+                  <CreateNewComponentMenu
+                    onSelect={(type) => {
+                      if (type === "recurring") setRecurringModalOpen(true);
+                      else setVariableModalOpen(true);
+                    }}
+                  />
+                  <div className="d-flex gap-2">
+                    <Button data-testid="salary-structure-list-cancel-button" color="light" size="sm" onClick={handleCancel} disabled={loading}>
+                      <i className="ri-close-line align-bottom me-1" />
+                      Cancel
+                    </Button>
+                    <Button data-testid="salary-structure-list-save-structure-button" color="success" size="sm" onClick={handleSave} disabled={loading}>
+                      <i className="ri-check-double-line align-bottom me-1" />
+                      {loading ? "Saving…" : "Save Structure"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="text-center text-muted mt-5">
-              {loading ? "Loading…" : "No structure selected."}
+            <div className="ss-empty">
+              <span className="ss-head-icon">
+                <i className="ri-node-tree" />
+              </span>
+              <div className="fw-semibold mt-2">{loading ? "Loading…" : "No structure selected"}</div>
+              <div className="ss-muted">Pick a structure on the left or create a new one.</div>
             </div>
           )}
-        </div>
-
-        <RecurringModal
-          isOpen={recurringModalOpen}
-          toggle={() => setRecurringModalOpen(false)}
-          component={null}
-          onSaved={handleNewComponentSaved}
-        />
-
-        <VariableModal
-          isOpen={variableModalOpen}
-          toggle={() => setVariableModalOpen(false)}
-          component={null}
-          onSaved={handleNewComponentSaved}
-        />
+        </section>
       </div>
+
+      <RecurringModal
+        isOpen={recurringModalOpen}
+        toggle={() => setRecurringModalOpen(false)}
+        component={null}
+        onSaved={handleNewComponentSaved}
+      />
+
+      <VariableModal
+        isOpen={variableModalOpen}
+        toggle={() => setVariableModalOpen(false)}
+        component={null}
+        onSaved={handleNewComponentSaved}
+      />
+
+      <style>{`
+        .ss-wrap { position:relative; display:flex; flex-direction:column; gap:14px; }
+        .ss-loading {
+          position:absolute; inset:0; z-index:20; padding:16px; overflow:hidden;
+          background:var(--vz-card-bg, #fff); border-radius:12px;
+        }
+        .ss-topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .ss-topbar-info { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--vz-secondary-color); }
+        .ss-count {
+          min-width:28px; height:28px; padding:0 8px; border-radius:8px; font-weight:700; font-size:13px;
+          display:inline-flex; align-items:center; justify-content:center;
+          background:rgba(var(--vz-primary-rgb), .1); color:var(--vz-primary);
+        }
+        .ss-body { display:grid; grid-template-columns:280px minmax(0,1fr); gap:16px; align-items:start; }
+        @media (max-width: 991.98px) { .ss-body { grid-template-columns:1fr; } }
+
+        .ss-list {
+          border:1px solid var(--vz-border-color); border-radius:12px; background:var(--vz-secondary-bg);
+          overflow:hidden; position:sticky; top:80px;
+        }
+        .ss-list-search {
+          display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--vz-border-color);
+          color:var(--vz-secondary-color);
+        }
+        .ss-list-search input {
+          flex:1; border:0; outline:0; background:transparent; font-size:13px; color:var(--vz-body-color);
+        }
+        .ss-list-search input::placeholder { color:var(--vz-secondary-color); }
+        .ss-list-items { max-height:520px; overflow-y:auto; padding:6px; }
+        .ss-list-empty {
+          display:flex; flex-direction:column; align-items:center; gap:6px; padding:28px 12px;
+          color:var(--vz-secondary-color); font-size:13px;
+        }
+        .ss-list-empty i { font-size:26px; opacity:.6; }
+        .ss-item {
+          display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; cursor:pointer;
+          transition:background .15s ease; margin-bottom:2px;
+        }
+        .ss-item:hover { background:var(--vz-tertiary-bg); }
+        .ss-item.is-active { background:rgba(var(--vz-primary-rgb), .1); }
+        .ss-item.is-locked { opacity:.5; cursor:not-allowed; }
+        .ss-item-avatar {
+          width:34px; height:34px; flex:0 0 34px; border-radius:9px; font-size:12px; font-weight:700;
+          display:inline-flex; align-items:center; justify-content:center;
+          background:var(--vz-tertiary-bg); color:var(--vz-secondary-color);
+        }
+        .ss-item.is-active .ss-item-avatar { background:var(--vz-primary); color:#fff; }
+        .ss-item-text { min-width:0; flex:1; }
+        .ss-item-name {
+          font-size:13.5px; font-weight:600; color:var(--vz-heading-color, var(--vz-body-color));
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .ss-item.is-active .ss-item-name { color:var(--vz-primary); }
+        .ss-item-meta { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--vz-secondary-color); }
+        .ss-sep { opacity:.5; }
+        .ss-dot { width:7px; height:7px; border-radius:50%; display:inline-block; }
+        .ss-dot.on { background:var(--vz-success); }
+        .ss-dot.off { background:var(--vz-secondary-color); }
+        .ss-item-arrow { color:var(--vz-secondary-color); opacity:0; transition:opacity .15s; }
+        .ss-item:hover .ss-item-arrow, .ss-item.is-active .ss-item-arrow { opacity:1; }
+
+        .ss-card {
+          border:1px solid var(--vz-border-color); border-radius:12px; background:var(--vz-secondary-bg);
+          box-shadow:0 2px 10px rgba(15,23,42,.04);
+        }
+        .ss-card-head {
+          display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+          padding:16px 20px; border-bottom:1px solid var(--vz-border-color);
+        }
+        .ss-head-icon {
+          width:44px; height:44px; flex:0 0 44px; border-radius:12px; font-size:20px;
+          display:inline-flex; align-items:center; justify-content:center;
+          background:rgba(var(--vz-primary-rgb), .1); color:var(--vz-primary);
+        }
+        .ss-title { margin:0 0 4px; font-size:16px; font-weight:700; color:var(--vz-heading-color, var(--vz-body-color)); }
+        .ss-head-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .ss-chip {
+          display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:999px;
+          font-size:11.5px; font-weight:600;
+        }
+        .ss-chip.is-on { background:rgba(var(--vz-success-rgb), .12); color:var(--vz-success); }
+        .ss-chip.is-off { background:var(--vz-tertiary-bg); color:var(--vz-secondary-color); }
+        .ss-chip.is-muted { background:var(--vz-tertiary-bg); color:var(--vz-secondary-color); }
+        .ss-chip.is-warn { background:rgba(var(--vz-warning-rgb), .14); color:var(--vz-warning); }
+        .ss-card-body { padding:18px 20px; }
+        .ss-fields { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; margin-bottom:20px; }
+        @media (max-width: 767.98px) { .ss-fields { grid-template-columns:1fr; } }
+        .ss-field {
+          padding:12px 14px; border-radius:10px; background:var(--vz-tertiary-bg);
+          border:1px solid var(--vz-border-color);
+        }
+        .ss-label {
+          display:block; margin-bottom:4px; font-size:11px; font-weight:700; letter-spacing:.5px;
+          text-transform:uppercase; color:var(--vz-secondary-color);
+        }
+        .ss-value { font-size:14px; font-weight:500; color:var(--vz-body-color); word-break:break-word; }
+        .ss-value.is-empty { font-style:italic; color:var(--vz-secondary-color); font-weight:400; }
+        .ss-section-title {
+          display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:14px; font-weight:700;
+          color:var(--vz-heading-color, var(--vz-body-color));
+        }
+        .ss-section-title i { color:var(--vz-primary); font-size:17px; }
+        .ss-table-wrap { border:1px solid var(--vz-border-color); border-radius:10px; overflow:auto; }
+        .ss-table { width:100%; border-collapse:collapse; font-size:13.5px; color:var(--vz-body-color); }
+        .ss-table thead th {
+          background:var(--vz-tertiary-bg); color:var(--vz-secondary-color); font-size:11.5px; font-weight:700;
+          text-transform:uppercase; letter-spacing:.4px; padding:10px 14px; border-bottom:1px solid var(--vz-border-color);
+        }
+        .ss-table tbody td { padding:11px 14px; border-bottom:1px solid var(--vz-border-color); vertical-align:middle; }
+        .ss-table tbody tr:last-child td { border-bottom:0; }
+        .ss-table tbody tr:hover td { background:rgba(var(--vz-primary-rgb), .03); }
+        .ss-table-empty { text-align:center; color:var(--vz-secondary-color); padding:22px 14px !important; }
+        .ss-table-empty i { display:block; font-size:24px; opacity:.6; margin-bottom:4px; }
+        .ss-comp-name { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-weight:500; }
+        .ss-comp-dot { width:6px; height:6px; border-radius:50%; background:var(--vz-primary); flex-shrink:0; }
+        .ss-tag { padding:1px 7px; border-radius:6px; font-size:10.5px; font-weight:600; }
+        .ss-tag.is-basic { background:rgba(var(--vz-primary-rgb), .12); color:var(--vz-primary); }
+        .ss-tag.is-balancing { background:rgba(var(--vz-info-rgb), .14); color:var(--vz-info); }
+        .ss-calc {
+          display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:8px;
+          font-size:12.5px; font-weight:600; background:var(--vz-tertiary-bg); color:var(--vz-body-color);
+        }
+        .ss-calc.is-pct { background:rgba(var(--vz-primary-rgb), .08); color:var(--vz-primary); }
+        .ss-calc.is-fixed { background:rgba(var(--vz-success-rgb), .1); color:var(--vz-success); }
+        .ss-auto { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-style:italic; color:var(--vz-secondary-color); }
+        .ss-remove {
+          width:30px; height:30px; border:0; border-radius:8px; background:rgba(var(--vz-danger-rgb), .1);
+          color:var(--vz-danger); display:inline-flex; align-items:center; justify-content:center; transition:all .15s;
+        }
+        .ss-remove:hover { background:var(--vz-danger); color:#fff; }
+        .ss-card-foot {
+          display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+          padding:12px 20px; border-top:1px solid var(--vz-border-color); background:var(--vz-tertiary-bg);
+          border-radius:0 0 12px 12px;
+        }
+        .ss-empty {
+          display:flex; flex-direction:column; align-items:center; justify-content:center; padding:48px 16px;
+          border:1px dashed var(--vz-border-color); border-radius:12px; color:var(--vz-body-color);
+        }
+        .ss-muted { font-size:13px; color:var(--vz-secondary-color); }
+
+        .ss-dd-trigger {
+          display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; cursor:pointer;
+          border:1px dashed var(--vz-border-color); border-radius:8px; background:var(--vz-secondary-bg);
+          font-size:13px; font-weight:500; color:var(--vz-primary); transition:all .15s;
+        }
+        .ss-dd-trigger:hover { border-color:var(--vz-primary); background:rgba(var(--vz-primary-rgb), .05); }
+        .ss-dd-menu {
+          position:absolute; left:0; right:0; z-index:1060; margin-top:4px; max-height:260px; overflow-y:auto;
+          background:var(--vz-secondary-bg); border:1px solid var(--vz-border-color); border-radius:10px;
+          box-shadow:0 10px 24px rgba(15,23,42,.14);
+        }
+        .ss-dd-menu.is-up { top:auto; bottom:100%; margin:0 0 4px; min-width:220px; right:auto; }
+        .ss-dd-search { padding:8px; border-bottom:1px solid var(--vz-border-color); position:sticky; top:0; background:var(--vz-secondary-bg); }
+        .ss-dd-option {
+          display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; cursor:pointer;
+          font-size:13px; color:var(--vz-body-color);
+        }
+        .ss-dd-option:hover { background:rgba(var(--vz-primary-rgb), .07); color:var(--vz-primary); }
+        .ss-dd-option small { color:var(--vz-secondary-color); font-size:11px; }
+        .ss-dd-empty { padding:12px; font-size:13px; color:var(--vz-secondary-color); }
+      `}</style>
     </div>
   );
 }

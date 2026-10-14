@@ -1,5 +1,18 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { CardGridSkeleton } from "../../../../component/common/skeleton/Skeleton";
 import Dropzone from "react-dropzone";
+import {
+  Box,
+  Chip,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import AppTable from "../../../../shared/ui/table/AppTable";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Card,
@@ -32,6 +45,8 @@ import {
 } from "../../../../redux/reducers/ChildReducer/FolderReducer";
 import { GetApi } from "../../../../common/api/GetApi";
 import { PostApi } from "../../../../common/api/PostApi";
+import { testId, itemTestKey } from "../../../../shared/testing/testId";
+import ModalCloseButton from "../../../../shared/ui/ModalCloseButton";
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -199,6 +214,7 @@ const FileViewerModal = ({ file, onClose }) => {
 
   return (
     <Modal
+      data-testid="project-files-file-dialog"
       isOpen={!!file}
       toggle={onClose}
       centered
@@ -207,6 +223,7 @@ const FileViewerModal = ({ file, onClose }) => {
     >
       {/* Header */}
       <ModalHeader
+        close={<ModalCloseButton onClick={onClose} testId="project-files-file-close-button" />}
         toggle={onClose}
         className="border-bottom"
         style={{ paddingBottom: 20 }}
@@ -274,6 +291,7 @@ const FileViewerModal = ({ file, onClose }) => {
             </p>
             {file.file_url && (
               <a
+                data-testid="project-files-file-download-file-link"
                 href={file.file_url}
                 target="_blank"
                 rel="noreferrer"
@@ -291,6 +309,7 @@ const FileViewerModal = ({ file, onClose }) => {
       <ModalFooter className="border-top gap-2" style={{ paddingTop: 20 }}>
         {file.file_url && (
           <a
+            data-testid="project-files-file-download-link"
             href={file.file_url}
             target="_blank"
             rel="noreferrer"
@@ -299,7 +318,7 @@ const FileViewerModal = ({ file, onClose }) => {
             <i className="ri-download-line me-1"></i>Download
           </a>
         )}
-        <Button color="light" size="sm" onClick={onClose}>
+        <Button data-testid="project-files-file-footer-close-button" color="light" size="sm" onClick={onClose}>
           Close
         </Button>
       </ModalFooter>
@@ -368,6 +387,7 @@ const ContextMenu = ({ x, y, item, onClose, onAction }) => {
           <div key={i} className="dropdown-divider" />
         ) : (
           <button
+            data-testid={testId("project-files", itemTestKey(m), "button")}
             key={i}
             className={`dropdown-item d-flex align-items-center gap-2${m.danger ? " text-danger" : ""}`}
             onClick={() => {
@@ -846,6 +866,100 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
   const selItems = getSelectedItems(items);
   const hasSelection = selected.size > 0;
 
+  const fileRowSelection = Object.fromEntries(
+    fileItems
+      .filter((f) => selected.has(itemKey(f)))
+      .map((f) => [itemKey(f), true]),
+  );
+
+  const handleFileRowSelectionChange = (updater) => {
+    const next =
+      typeof updater === "function" ? updater(fileRowSelection) : updater;
+    setSelected((prev) => {
+      const s = new Set(prev);
+      fileItems.forEach((f) =>
+        next[itemKey(f)] ? s.add(itemKey(f)) : s.delete(itemKey(f)),
+      );
+      return s;
+    });
+  };
+
+  const fileColumns = useMemo(
+    () => [
+      {
+        id: "icon",
+        header: "",
+        size: 50,
+        enableSorting: false,
+        enableColumnFilter: false,
+        enableColumnActions: false,
+        Cell: ({ row }) => {
+          const { icon, color } = getFileIcon(row.original.ext);
+          return (
+            <div
+              className={`avatar-xs d-flex align-items-center justify-content-center rounded bg-${color}-subtle`}
+            >
+              <i className={`${icon} text-${color} fs-18`}></i>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "name",
+        header: "Name",
+        size: 240,
+        Cell: ({ row }) => (
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="body2" fontWeight={500}>
+              {row.original.name}
+            </Typography>
+            {favorites.find((f) => f.id === row.original.id) && (
+              <i className="ri-star-fill text-warning fs-12"></i>
+            )}
+          </Stack>
+        ),
+      },
+      {
+        id: "type",
+        accessorFn: (r) => r.ext?.toUpperCase() ?? "",
+        header: "Type",
+        filterVariant: "select",
+        Cell: ({ row }) => (
+          <Chip
+            size="small"
+            variant="outlined"
+            color={
+              getFileIcon(row.original.ext).color === "danger"
+                ? "error"
+                : getFileIcon(row.original.ext).color
+            }
+            label={row.original.ext?.toUpperCase()}
+            sx={{ fontWeight: 600 }}
+          />
+        ),
+      },
+      {
+        accessorKey: "size",
+        header: "Size",
+        Cell: ({ cell }) => (
+          <Typography variant="body2" color="text.secondary">
+            {cell.getValue()}
+          </Typography>
+        ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Date",
+        Cell: ({ cell }) => (
+          <Typography variant="body2" color="text.secondary">
+            {cell.getValue()}
+          </Typography>
+        ),
+      },
+    ],
+    [favorites],
+  );
+
   return (
     <React.Fragment>
       <div className="file-manager-content w-100 p-3 py-0">
@@ -870,6 +984,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
               <div className="d-flex align-items-center gap-2">
                 <div className="flex-shrink-0 d-block d-lg-none">
                   <button
+                    data-testid="project-files-menu-button"
                     type="button"
                     className="btn btn-soft-success btn-icon btn-sm fs-16"
                   >
@@ -917,6 +1032,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
               <div className="d-flex gap-2 align-items-center">
                 <div className="search-box">
                   <Input
+                    data-testid="project-files-search-input"
                     type="text"
                     className="form-control search"
                     placeholder="Search..."
@@ -928,21 +1044,23 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                 </div>
 
                 <Input
+                  data-testid="project-files-filter-type-select"
                   type="select"
                   className="form-select"
                   style={{ width: "auto" }}
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
                 >
-                  <option>All</option>
-                  <option>Folders</option>
-                  <option>Video</option>
-                  <option>Images</option>
-                  <option>Music</option>
-                  <option>Documents</option>
+                  <option data-testid="project-files-filter-type-option-all">All</option>
+                  <option data-testid="project-files-filter-type-option-folders">Folders</option>
+                  <option data-testid="project-files-filter-type-option-video">Video</option>
+                  <option data-testid="project-files-filter-type-option-images">Images</option>
+                  <option data-testid="project-files-filter-type-option-music">Music</option>
+                  <option data-testid="project-files-filter-type-option-documents">Documents</option>
                 </Input>
 
                 <button
+                  data-testid="project-files-refresh-button"
                   className="btn btn-soft-secondary btn-icon"
                   title="Refresh"
                   disabled={loading}
@@ -958,6 +1076,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                         {canAddFiles && (
                   <>
                     <button
+                      data-testid="project-files-new-folder-button"
                       className="btn btn-soft-success text-nowrap flex-shrink-0"
                       onClick={() => setNewFolderModal(true)}
                     >
@@ -965,6 +1084,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                       New Folder
                     </button>
                     <button
+                      data-testid="project-files-add-files-button"
                       className="btn btn-success text-nowrap flex-shrink-0"
                       onClick={() => setNewFileModal(true)}
                     >
@@ -989,6 +1109,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
               </span>
               <div className="d-flex gap-2 ms-auto">
                 <button
+                  data-testid="project-files-move-selected-button"
                   className="btn btn-sm btn-soft-primary d-flex align-items-center gap-1"
                   onClick={() => {
                     setMoveTarget(null);
@@ -998,6 +1119,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                   <i className="ri-arrow-right-line"></i>Move Selected
                 </button>
                 <button
+                  data-testid="project-files-delete-selected-button"
                   className="btn btn-sm btn-soft-danger d-flex align-items-center gap-1"
                   onClick={() =>
                     setDeleteConfirm({ items: selItems, isBulk: true })
@@ -1006,6 +1128,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                   <i className="ri-delete-bin-line"></i>Delete Selected
                 </button>
                 <button
+                  data-testid="project-files-clear-selection-button"
                   className="btn btn-sm btn-ghost-secondary"
                   onClick={() => setSelected(new Set())}
                   title="Clear selection"
@@ -1018,10 +1141,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
           {/* ── Loading State ── */}
           {loading && (
-            <div className="text-center py-5">
-              <Spinner color="success" />
-              <p className="text-muted mt-2 mb-0">Loading files…</p>
-            </div>
+            <CardGridSkeleton count={8} min={180} testId="files-loading-skeleton" label="Loading files" />
           )}
 
           {/* ── Empty State ── */}
@@ -1041,6 +1161,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                 </h6>
                 <div className="form-check mb-0 ms-2">
                   <input
+                    data-testid="project-files-select-all-folders-checkbox"
                     type="checkbox"
                     className="form-check-input"
                     id="selectAllFolders"
@@ -1104,6 +1225,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                           onClick={(e) => toggleSelect(item, e)}
                         >
                           <input
+                            data-testid={testId("project-files-is-selected", itemTestKey(item), "checkbox")}
                             type="checkbox"
                             className="form-check-input"
                             checked={isSelected}
@@ -1121,6 +1243,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <DropdownToggle
+                                  data-testid={testId("project-files-more", itemTestKey(item), "trigger")}
                                   tag="button"
                                   className="btn btn-ghost-primary btn-icon btn-sm"
                                 >
@@ -1128,6 +1251,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                 </DropdownToggle>
                                 <DropdownMenu end>
                                   <DropdownItem
+                                    data-testid={testId("project-files-explore", itemTestKey(item), "option")}
                                     onClick={() => {
                                       setPathStack((p) => [...p, item.id]);
                                       setSelectedItem(null);
@@ -1137,6 +1261,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                     Explore
                                   </DropdownItem>
                                   <DropdownItem
+                                    data-testid={testId("project-files-unfavorite", itemTestKey(item), "option")}
                                     onClick={() =>
                                       setFavorites((p) =>
                                         p.find((f) => f.id === item.id)
@@ -1151,6 +1276,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                     {isFav ? "Unfavorite" : "Add to Favorites"}
                                   </DropdownItem>
                                   <DropdownItem
+                                    data-testid={testId("project-files-rename", itemTestKey(item), "option")}
                                     onClick={() => {
                                       setRenameName(item.name);
                                       setRenameModal(item);
@@ -1160,6 +1286,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                     Rename
                                   </DropdownItem>
                                   <DropdownItem
+                                    data-testid={testId("project-files-move", itemTestKey(item), "option")}
                                     onClick={() => {
                                       setMoveTarget(null);
                                       setMoveModal({
@@ -1173,6 +1300,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                   </DropdownItem>
                                   <DropdownItem divider />
                                   <DropdownItem
+                                    data-testid={testId("project-files-delete", itemTestKey(item), "option")}
                                     className="text-danger"
                                     onClick={() =>
                                       setDeleteConfirm({
@@ -1185,6 +1313,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                                     Delete
                                   </DropdownItem>
                                   <DropdownItem
+                                    data-testid={testId("project-files-info", itemTestKey(item), "option")}
                                     onClick={() => setInfoModal(item)}
                                   >
                                     <i className="ri-information-line me-2"></i>
@@ -1216,132 +1345,73 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
           {!loading && fileItems.length > 0 && (
             <div className="mb-4">
               <h6 className="text-muted text-uppercase fs-11 mb-3">Files</h6>
-              <div className="table-responsive">
-                <table className="table table-borderless align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: 40 }}>
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          checked={
-                            fileItems.length > 0 &&
-                            fileItems.every((f) => selected.has(itemKey(f)))
-                          }
-                          onChange={() => {
-                            const allSelected = fileItems.every((f) =>
-                              selected.has(itemKey(f)),
-                            );
-                            setSelected((prev) => {
-                              const next = new Set(prev);
-                              fileItems.forEach((f) =>
-                                allSelected
-                                  ? next.delete(itemKey(f))
-                                  : next.add(itemKey(f)),
-                              );
-                              return next;
-                            });
-                          }}
-                          title="Select all files"
-                        />
-                      </th>
-                      <th style={{ width: 40 }}></th>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Size</th>
-                      <th>Date</th>
-                      <th style={{ width: 100 }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fileItems.map((item) => {
-                      const { icon, color } = getFileIcon(item.ext);
-                      const isFav = favorites.find((f) => f.id === item.id);
-                      const isSelected = selected.has(itemKey(item));
-                      // Only images get the eye/preview button; others get download only
-                      const canPreview = isImageExt(item.ext);
-
-                      return (
-                        <tr
-                          key={item.id}
-                          className={
-                            isSelected || selectedItem?.id === item.id
-                              ? "table-success"
-                              : ""
-                          }
-                          style={{ cursor: "pointer" }}
-                          onClick={() => setSelectedItem(item)}
-                          onDoubleClick={() => setViewerFile(item)}
-                          onContextMenu={(e) => onRightClick(e, item)}
-                        >
-                          <td onClick={(e) => toggleSelect(item, e)}>
-                            <input
-                              type="checkbox"
-                              className="form-check-input"
-                              checked={isSelected}
-                              onChange={() => {}}
-                            />
-                          </td>
-                          <td>
-                            <div
-                              className={`avatar-xs d-flex align-items-center justify-content-center rounded bg-${color}-subtle`}
-                            >
-                              <i className={`${icon} text-${color} fs-18`}></i>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="d-flex align-items-center gap-2">
-                              <span className="fw-medium">{item.name}</span>
-                              {isFav && (
-                                <i className="ri-star-fill text-warning fs-12"></i>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={`badge bg-${color}-subtle text-${color}`}
-                            >
-                              {item.ext?.toUpperCase()}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="text-muted">{item.size}</span>
-                          </td>
-                          <td>
-                            <span className="text-muted">{item.createdAt}</span>
-                          </td>
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <div className="d-flex align-items-center gap-1">
-                              {/* Eye button only for images */}
-                              {canPreview && (
-                                <button
-                                  className="btn btn-ghost-success btn-icon btn-sm"
-                                  title="View image"
-                                  onClick={() => setViewerFile(item)}
-                                >
-                                  <i className="ri-eye-line fs-15"></i>
-                                </button>
-                              )}
-                              {/* Download button for all files */}
-                              {item.file_url && (
-                                <a
-                                  href={item.file_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="btn btn-ghost-primary btn-icon btn-sm"
-                                  title="Download"
-                                >
-                                  <i className="ri-download-line fs-15"></i>
-                                </a>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <AppTable
+                columns={fileColumns}
+                data={fileItems}
+                enableRowSelection
+                selectAllMode="all"
+                getRowId={itemKey}
+                state={{ rowSelection: fileRowSelection }}
+                onRowSelectionChange={handleFileRowSelectionChange}
+                enableRowActions
+                positionActionsColumn="last"
+                displayColumnDefOptions={{
+                  "mrt-row-actions": { header: "Actions", size: 100 },
+                }}
+                renderRowActions={({ row }) => {
+                  const item = row.original;
+                  return (
+                    <Box
+                      sx={{ display: "flex", gap: 0.5 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {isImageExt(item.ext) && (
+                        <Tooltip title="View image">
+                          <IconButton
+                            data-testid="project-files-view-button"
+                            size="small"
+                            color="success"
+                            onClick={() => setViewerFile(item)}
+                          >
+                            <VisibilityOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      {item.file_url && (
+                        <Tooltip title="Download">
+                          <IconButton
+                            data-testid="project-files-download-button"
+                            size="small"
+                            color="primary"
+                            component="a"
+                            href={item.file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <FileDownloadOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  );
+                }}
+                muiTableBodyRowProps={({ row }) => ({
+                  hover: true,
+                  onClick: () => setSelectedItem(row.original),
+                  onDoubleClick: () => setViewerFile(row.original),
+                  onContextMenu: (e) => onRightClick(e, row.original),
+                  sx: (theme) => ({
+                    cursor: "pointer",
+                    "&:last-of-type td": { borderBottom: 0 },
+                    ...(selectedItem?.id === row.original.id &&
+                      !row.getIsSelected() && {
+                        "& > td": {
+                          backgroundColor: alpha(theme.palette.success.main, 0.12),
+                        },
+                      }),
+                  }),
+                })}
+              />
             </div>
           )}
         </div>
@@ -1363,17 +1433,19 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
       {/* ── New Folder Modal ── */}
       <Modal
+        data-testid="project-files-new-folder-dialog"
         isOpen={newFolderModal}
         toggle={() => setNewFolderModal(false)}
         centered
       >
-        <ModalHeader toggle={() => setNewFolderModal(false)}>
+        <ModalHeader close={<ModalCloseButton onClick={() => setNewFolderModal(false)} testId="project-files-new-folder-close-button" />} toggle={() => setNewFolderModal(false)}>
           New Folder
         </ModalHeader>
         <ModalBody>
           <FormGroup>
             <Label>Folder Name</Label>
             <Input
+              data-testid="project-files-new-folder-enter-folder-name-input"
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateFolder()}
@@ -1390,10 +1462,11 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
           )}
         </ModalBody>
         <ModalFooter>
-          <Button color="light" onClick={() => setNewFolderModal(false)}>
+          <Button data-testid="project-files-new-folder-cancel-button" color="light" onClick={() => setNewFolderModal(false)}>
             Cancel
           </Button>
           <Button
+            data-testid="project-files-new-folder-add-button"
             color="success"
             onClick={handleCreateFolder}
             disabled={actionLoading}
@@ -1414,13 +1487,14 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
       {/* ── Add Files Modal ── */}
       <Modal
+        data-testid="project-files-add-files-dialog"
         isOpen={newFileModal}
         toggle={closeAddModal}
         centered
         size="md"
         className="zoomIn"
       >
-        <ModalHeader toggle={closeAddModal} className="p-3 bg-success-subtle">
+        <ModalHeader close={<ModalCloseButton onClick={closeAddModal} testId="project-files-add-files-close-button" />} toggle={closeAddModal} className="p-3 bg-success-subtle">
           Add Files
           {currentFolderId && (
             <span className="text-muted fs-12 ms-2 fw-normal">
@@ -1445,7 +1519,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                   }`}
                 >
                   <div className="dz-message needsclick" {...getRootProps()}>
-                    <input {...getInputProps()} />
+                    <input data-testid="project-files-add-files-upload-files-input" {...getInputProps()} />
                     <div className="mb-3">
                       <i className="display-4 text-muted ri-upload-cloud-2-fill" />
                     </div>
@@ -1485,6 +1559,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                         </span>
                       </div>
                       <button
+                        data-testid={testId("project-files-add-files-close", itemTestKey(f), "button")}
                         type="button"
                         className="btn btn-sm btn-ghost-danger p-0 px-1"
                         onClick={() => removeQueued(i)}
@@ -1521,6 +1596,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
           <div className="hstack gap-2 justify-content-end mt-1">
             <button
+              data-testid="project-files-add-files-footer-close-button"
               type="button"
               className="btn btn-ghost-success"
               onClick={closeAddModal}
@@ -1530,6 +1606,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
               Close
             </button>
             <button
+              data-testid="project-files-add-files-upload-button"
               type="button"
               className="btn btn-primary"
               onClick={handleAddFiles}
@@ -1553,17 +1630,19 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
       {/* ── Rename Folder Modal ── */}
       <Modal
+        data-testid="project-files-rename-folder-dialog"
         isOpen={!!renameModal}
         toggle={() => setRenameModal(null)}
         centered
       >
-        <ModalHeader toggle={() => setRenameModal(null)}>
+        <ModalHeader close={<ModalCloseButton onClick={() => setRenameModal(null)} testId="project-files-rename-folder-close-button" />} toggle={() => setRenameModal(null)}>
           Rename Folder
         </ModalHeader>
         <ModalBody>
           <FormGroup>
             <Label>New Folder Name</Label>
             <Input
+              data-testid="project-files-rename-folder-new-folder-name-input"
               value={renameName}
               onChange={(e) => setRenameName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
@@ -1572,10 +1651,11 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
           </FormGroup>
         </ModalBody>
         <ModalFooter>
-          <Button color="light" onClick={() => setRenameModal(null)}>
+          <Button data-testid="project-files-rename-folder-cancel-button" color="light" onClick={() => setRenameModal(null)}>
             Cancel
           </Button>
           <Button
+            data-testid="project-files-rename-folder-edit-button"
             color="success"
             onClick={handleRename}
             disabled={actionLoading}
@@ -1596,6 +1676,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
       {/* ── Move Modal ── */}
       <Modal
+        data-testid="project-files-move-dialog"
         isOpen={!!moveModal}
         toggle={() => {
           setMoveModal(null);
@@ -1604,6 +1685,10 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
         centered
       >
         <ModalHeader
+          close={<ModalCloseButton onClick={() => {
+            setMoveModal(null);
+            setMoveTarget(null);
+          }} testId="project-files-move-close-button" />}
           toggle={() => {
             setMoveModal(null);
             setMoveTarget(null);
@@ -1697,6 +1782,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
         </ModalBody>
         <ModalFooter>
           <Button
+            data-testid="project-files-move-cancel-button"
             color="light"
             onClick={() => {
               setMoveModal(null);
@@ -1705,7 +1791,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
           >
             Cancel
           </Button>
-          <Button color="success" onClick={handleMove} disabled={actionLoading}>
+          <Button data-testid="project-files-move-next-button" color="success" onClick={handleMove} disabled={actionLoading}>
             {actionLoading ? (
               <>
                 <Spinner size="sm" className="me-1" />
@@ -1722,12 +1808,13 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
 
       {/* ── Delete Confirm Modal ── */}
       <Modal
+        data-testid="project-files-confirm-delete-dialog"
         isOpen={!!deleteConfirm}
         toggle={() => setDeleteConfirm(null)}
         centered
         size={deleteConfirm?.isBulk ? "md" : "sm"}
       >
-        <ModalHeader toggle={() => setDeleteConfirm(null)}>
+        <ModalHeader close={<ModalCloseButton onClick={() => setDeleteConfirm(null)} testId="project-files-confirm-delete-close-button" />} toggle={() => setDeleteConfirm(null)}>
           <i className="ri-delete-bin-line me-2 text-danger"></i>Confirm Delete
         </ModalHeader>
         <ModalBody>
@@ -1777,10 +1864,11 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
           )}
         </ModalBody>
         <ModalFooter>
-          <Button color="light" onClick={() => setDeleteConfirm(null)}>
+          <Button data-testid="project-files-confirm-delete-cancel-button" color="light" onClick={() => setDeleteConfirm(null)}>
             Cancel
           </Button>
           <Button
+            data-testid="project-files-confirm-delete-confirm-button"
             color="danger"
             onClick={handleDelete}
             disabled={actionLoading}
@@ -1800,8 +1888,8 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
       </Modal>
 
       {/* ── Info Modal ── */}
-      <Modal isOpen={!!infoModal} toggle={() => setInfoModal(null)} centered>
-        <ModalHeader toggle={() => setInfoModal(null)}>
+      <Modal data-testid="project-files-info-dialog" isOpen={!!infoModal} toggle={() => setInfoModal(null)} centered>
+        <ModalHeader close={<ModalCloseButton onClick={() => setInfoModal(null)} testId="project-files-info-close-button" />} toggle={() => setInfoModal(null)}>
           <i className="ri-information-line me-2 text-success"></i>
           {infoModal?.type === "folder" ? "Folder" : "File"} Info
         </ModalHeader>
@@ -1834,6 +1922,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
                     <th className="text-muted fw-normal">URL</th>
                     <td>
                       <a
+                        data-testid="project-files-info-file-url-link"
                         href={infoModal.file_url}
                         target="_blank"
                         rel="noreferrer"
@@ -1862,7 +1951,7 @@ const Folders = ({ projectId, canAddFiles = true  }) => {
           )}
         </ModalBody>
         <ModalFooter>
-          <Button color="light" onClick={() => setInfoModal(null)}>
+          <Button data-testid="project-files-info-footer-close-button" color="light" onClick={() => setInfoModal(null)}>
             Close
           </Button>
         </ModalFooter>

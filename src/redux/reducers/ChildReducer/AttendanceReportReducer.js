@@ -16,10 +16,16 @@ const initialState = {
     leaveHours: 0,
     balanceHours: 0,
   },
+  attendanceSummary: null,
+  attendanceMonth: null,
+  // Bumped by the table's refresh button; the page that owns the filters refetches.
+  attendanceRefreshTick: 0,
+  // Attendance overview data is being (re)loaded; the page shows skeletons below the filter.
+  attendanceLoading: false,
   attendance_pagination: {
     count: 0,
     page: 1,
-    page_size: 20,
+    page_size: 10,
     total_pages: 0,
   },
 };
@@ -89,6 +95,19 @@ const AttendanceReportReducer = createSlice({
         },
       };
     },
+    setAttendanceSummary: (state, { type, payload }) => {
+      return {
+        ...state,
+        attendanceSummary: payload || null,
+      };
+    },
+    // "YYYY-MM" selected in the attendance filter
+    setAttendanceMonth: (state, { type, payload }) => {
+      return {
+        ...state,
+        attendanceMonth: payload || null,
+      };
+    },
     // Merge-update: pass any of { count, page, page_size, total_pages }
     setAttendancePagination: (state, { type, payload }) => {
       return {
@@ -99,10 +118,23 @@ const AttendanceReportReducer = createSlice({
         },
       };
     },
+    setAttendanceLoading: (state, { payload }) => {
+      return {
+        ...state,
+        attendanceLoading: !!payload,
+      };
+    },
+    requestAttendanceRefresh: (state) => {
+      return {
+        ...state,
+        attendanceRefreshTick: (state.attendanceRefreshTick || 0) + 1,
+      };
+    },
   },
 });
 
 export const {
+  requestAttendanceRefresh,
   setIndividualAttendanceReportData,
   updateIndividualAttendanceReportData,
   setTeamAttendanceReportData,
@@ -110,7 +142,10 @@ export const {
   setAttendanceReportChartData,
   setAttendanceReportChartInfo,
   resetAttendanceReportChart,
+  setAttendanceSummary,
+  setAttendanceMonth,
   setAttendancePagination,
+  setAttendanceLoading,
 } = AttendanceReportReducer.actions;
 
 export default AttendanceReportReducer.reducer;

@@ -1,0 +1,49 @@
+---
+description: Every testable UI element needs a stable data-testid (module-field-type)
+globs: src/**/*.{js,jsx}
+alwaysApply: false
+---
+
+# data-testid on every testable element
+
+Any new or edited input, textarea, button, link, dropdown trigger / option / selected value,
+error or success message, table row, row action button, modal or toast must have a `data-testid`.
+Do not add it to plain wrapper divs. Never change an existing `data-testid`.
+
+Pattern: `module-field-type`, lowercase, hyphen-separated — e.g. `employee-emp-id-input`,
+`employee-gender-select`, `employee-gender-option-male`, `employee-email-error`, `employee-save-button`.
+
+- Values are fixed and readable: never random, never from state or list index.
+- Database options use the option text or id: `employee-department-option-it-team`.
+- Table rows use the record's business id: `employee-row-lc005`; actions in a row:
+  `employee-row-lc005-edit-button`.
+
+Helpers in `src/shared/testing/testId.jsx`: `testId(...parts)`, `rowTestId(module, record, ...parts)`,
+`itemTestKey(item)` (business key of a list item: emp_id / code / name / label / value / id),
+`<TestIdModule name="...">`, `useTestIdModule()`.
+
+Inside `.map()` build the id from the item, never the index:
+`testId("pay-type-frequency", v, "button")`, `testId("sidebar-menu", itemTestKey(item), "link")`.
+In HTML strings (Swal `html:`) write the attribute directly: `data-testid="${testId(module, "reset-password", label, "input")}"`.
+
+Shared components already emit ids — set the module, don't hand-write them:
+- `FormTextField` / `FormAutocomplete` / `FormDatePicker` / `FormTimePicker` / `FormSwitch` /
+  `FormCheckbox` / `FormToggleGroup` → `<module>-<name>-input|select|switch|checkbox|option-*|error`
+  (pass `testId` to override the `<module>-<name>` base).
+- `SidebarFormLayout` / `FormDrawer` (`testIdModule` prop) → `-form`, `-save-button`, `-cancel-button`.
+- `AppTable` (`testIdModule`, `getRowTestId`) → `-table`, `-search-input`, `-row-<id>`.
+- `useConfirm(module)`, `Swal.fire({ testId })`, and all `toast.*` (`toast-success-message`) are covered.
+- react-select (`shared/ui/TestableSelect`), `DateTimePicker`, `PropertySelect`, `EditCell`, `LocationTag`,
+  payroll `Switch` take a `testId` base prop → `-trigger|select`, `-option-<text>`, `-clear-button`, …
+- reactstrap `ModalHeader` close button: `close={<ModalCloseButton onClick={toggle} testId="x-close-button" />}`.
+- Sidebar forms opened through `DisplayForms` get their module from `src/shared/testing/testIdModules.js`;
+  add new component names there.
+
+```jsx
+// ❌
+<Button onClick={save}>Save</Button>
+<button onClick={() => remove(row.original)}>…</button>
+// ✅
+<Button onClick={save} data-testid="holiday-save-button">Save</Button>
+<IconButton data-testid={rowTestId("holiday", row.original, "delete-button")} …>
+```

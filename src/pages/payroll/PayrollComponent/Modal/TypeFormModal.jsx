@@ -1,13 +1,12 @@
 // TypeFormModal.jsx — create/edit a reimbursement type
 import React, { useState, useEffect } from "react";
-import {
-  Modal, ModalHeader, ModalBody, ModalFooter,
-  Button, FormGroup, Label, Input, FormFeedback, FormText, Row, Col,
-} from "reactstrap";
+import { Modal } from "reactstrap";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../../../common/api/PostApi";
+import "./componentModal.scss";
+import { testId } from "../../../../shared/testing/testId";
 
 const FREQUENCY_LABELS = {
   monthly:     "Monthly",
@@ -97,149 +96,213 @@ const TypeFormModal = ({ isOpen, toggle, initial, policyId, onSaved }) => {
     }
   };
 
+  const isRate = form.calculation_mode === "rate_x_units";
+  const unit = form.meta?.unit_label || "";
+  const rate = form.meta?.rate || "";
+  const periodLabel = FREQUENCY_LABELS[form.frequency];
+  const inr = (v) => `₹${Number(v || 0).toLocaleString("en-IN")}`;
+  const claimCap = parseFloat(form.max_amount_per_claim) || 0;
+  const periodCap = parseFloat(form.max_amount_per_period) || 0;
+
+  const toggles = [
+    ["receipt_required", "Receipt required", "Employee must attach a bill", "ri-file-shield-2-line"],
+    ["is_taxable", "Taxable", "Added to taxable income", "ri-percent-line"],
+    ["is_active", "Active", "Available for new claims", "ri-checkbox-circle-line"],
+  ];
+
   return (
-    <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
-      <ModalHeader toggle={toggle}>
-        {isEdit ? `Edit — ${initial.name}` : "New Reimbursement Type"}
-      </ModalHeader>
-      <ModalBody>
-        <Row>
-          <Col md={8}>
-            <FormGroup>
-              <Label>Name <span className="text-danger">*</span></Label>
-              <Input
+    <Modal data-testid="pay-type-dialog" isOpen={isOpen} toggle={toggle} size="lg" centered className="cmp-modal" contentClassName="cmp-content">
+      <div className="cmp-hero is-info">
+        <span className="cmp-hero-icon"><i className="ri-hand-coin-line"></i></span>
+        <div className="cmp-hero-text">
+          <h5>{isEdit ? `Edit — ${initial.name}` : "New Reimbursement Type"}</h5>
+          <p>Define how employees claim and get reimbursed for expenses</p>
+        </div>
+        <button data-testid="pay-type-close-button" type="button" className="cmp-close" onClick={toggle} aria-label="Close">
+          <i className="ri-close-line"></i>
+        </button>
+      </div>
+
+      <div className="cmp-body">
+        <div className="cmp-row">
+          <div className="cmp-field cmp-grow">
+            <label className="cmp-label" htmlFor="rt-name">Name <span className="cmp-req">*</span></label>
+            <div className={`cmp-input ${errors.name ? "is-invalid" : ""}`}>
+              <i className="ri-price-tag-3-line"></i>
+              <input
+                data-testid="pay-type-name-input"
+                id="rt-name"
                 value={form.name}
                 onChange={(e) => set("name", stripNumbers(e.target.value))}
-                invalid={!!errors.name}
                 placeholder="e.g. Travel Reimbursement"
+                autoComplete="off"
               />
-              <FormFeedback>{errors.name}</FormFeedback>
-            </FormGroup>
-          </Col>
-          <Col md={4}>
-            <FormGroup>
-              <Label>Frequency</Label>
-              <Input type="select" value={form.frequency} onChange={(e) => set("frequency", e.target.value)}>
-                {Object.entries(FREQUENCY_LABELS).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
-                ))}
-              </Input>
-            </FormGroup>
-          </Col>
-        </Row>
+            </div>
+            {errors.name && <div className="cmp-error"><i className="ri-error-warning-line"></i>{errors.name}</div>}
+          </div>
+          <div className="cmp-field">
+            <label className="cmp-label">Frequency</label>
+            <div className="cmp-seg">
+              {Object.entries(FREQUENCY_LABELS).map(([v, l]) => (
+                <button key={v} data-testid={testId("pay-type-frequency", v, "button")} type="button" className={form.frequency === v ? "is-active" : ""} onClick={() => set("frequency", v)}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
-        <FormGroup>
-          <Label>Description</Label>
-          <Input type="textarea" rows={2} value={form.description}
+        <div className="cmp-field">
+          <label className="cmp-label" htmlFor="rt-desc">Description <em>optional</em></label>
+          <textarea
+            data-testid="pay-type-desc-textarea"
+            id="rt-desc"
+            className="cmp-textarea"
+            rows={2}
+            value={form.description}
             onChange={(e) => set("description", e.target.value)}
-            placeholder="Shown to HR when submitting a claim" />
-        </FormGroup>
+            placeholder="Shown to HR when submitting a claim"
+          />
+        </div>
 
-        {/* Mode selector */}
-        <FormGroup>
-          <Label>Calculation mode <span className="text-danger">*</span></Label>
-          <Row className="g-2 mt-1">
+        <div className="cmp-field">
+          <label className="cmp-label">Calculation mode <span className="cmp-req">*</span></label>
+          <div className="cmp-types" role="radiogroup">
             {[
-              { value: "flat",         label: "Flat Amount",  hint: "HR enters a fixed rupee amount (hotel bills, receipts)" },
-              { value: "rate_x_units", label: "Rate × Units", hint: "Amount = rate per unit × units (km, days, nights)" },
+              { value: "flat", label: "Flat Amount", hint: "Fixed rupee amount from bills & receipts", icon: "ri-bill-line", tone: "allowance" },
+              { value: "rate_x_units", label: "Rate × Units", hint: "Rate per unit × units (km, days, nights)", icon: "ri-calculator-line", tone: "info" },
             ].map((m) => {
               const active = form.calculation_mode === m.value;
               return (
-                <Col md={6} key={m.value}>
-                  <div
-                    onClick={() => set("calculation_mode", m.value)}
-                    className={`border rounded p-3 h-100 ${active ? "border-success bg-success-subtle" : "border-light"}`}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="d-flex align-items-center gap-2 mb-1">
-                      <Input type="radio" className="m-0" checked={active}
-                        onChange={() => set("calculation_mode", m.value)} />
-                      <span className={`fw-medium ${active ? "text-success" : ""}`}>{m.label}</span>
-                    </div>
-                    <small className="text-muted">{m.hint}</small>
-                  </div>
-                </Col>
+                <button
+                  data-testid={testId("pay-type-calculation-mode", m.value, "button")}
+                  key={m.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  className={`cmp-type is-${m.tone} ${active ? "is-active" : ""}`}
+                  onClick={() => set("calculation_mode", m.value)}
+                >
+                  <span className="cmp-type-icon"><i className={m.icon}></i></span>
+                  <span className="cmp-type-text">
+                    <b>{m.label}</b>
+                    <small>{m.hint}</small>
+                  </span>
+                  <i className="ri-checkbox-circle-fill cmp-type-check"></i>
+                </button>
               );
             })}
-          </Row>
-        </FormGroup>
+          </div>
+        </div>
 
-        {form.calculation_mode === "rate_x_units" && (
-          <Row className="mt-2">
-            <Col md={5}>
-              <FormGroup>
-                <Label>Unit label <span className="text-danger">*</span></Label>
-                <Input type="select" value={form.meta?.unit_label || ""}
-                  onChange={(e) => setMeta("unit_label", e.target.value)}
-                  invalid={!!errors.unit_label}>
-                  <option value="">— select —</option>
-                  {COMMON_UNIT_LABELS.map((u) => <option key={u} value={u}>{u}</option>)}
-                </Input>
-                <FormFeedback>{errors.unit_label}</FormFeedback>
-              </FormGroup>
-            </Col>
-            <Col md={4}>
-              <FormGroup>
-                <Label>Rate per {form.meta?.unit_label || "unit"} (₹) <span className="text-danger">*</span></Label>
-                <Input type="number" min="0"
-                  value={form.meta?.rate || ""}
-                  onChange={(e) => setMeta("rate", e.target.value)}
-                  invalid={!!errors.rate} placeholder="e.g. 5" />
-                <FormFeedback>{errors.rate}</FormFeedback>
-              </FormGroup>
-            </Col>
-            <Col md={3}>
-              <FormGroup>
-                <Label>Preview</Label>
-                <Input disabled value={
-                  form.meta?.rate && form.meta?.unit_label
-                    ? `₹${form.meta.rate} / ${form.meta.unit_label}` : "—"
-                } />
-              </FormGroup>
-            </Col>
-          </Row>
+        {isRate && (
+          <div className="cmp-section cmp-reveal">
+            <div className="cmp-section-head">
+              <span><i className="ri-ruler-line"></i>Rate setup</span>
+            </div>
+            <div className="cmp-field">
+              <label className="cmp-label">Unit <span className="cmp-req">*</span></label>
+              <div className="cmp-chips">
+                {COMMON_UNIT_LABELS.map((u) => (
+                  <button data-testid={testId("pay-type-unit", u, "button")} key={u} type="button" className={`cmp-chip ${unit === u ? "is-active" : ""}`} onClick={() => setMeta("unit_label", u)}>
+                    {unit === u && <i className="ri-check-line"></i>}{u}
+                  </button>
+                ))}
+              </div>
+              {errors.unit_label && <div className="cmp-error"><i className="ri-error-warning-line"></i>{errors.unit_label}</div>}
+            </div>
+            <div className="cmp-row mt-3">
+              <div className="cmp-field cmp-grow">
+                <label className="cmp-label" htmlFor="rt-rate">Rate per {unit || "unit"} <span className="cmp-req">*</span></label>
+                <div className={`cmp-input ${errors.rate ? "is-invalid" : ""}`}>
+                  <span className="cmp-affix">₹</span>
+                  <input
+                    data-testid="pay-type-rate-input"
+                    id="rt-rate"
+                    type="number"
+                    min="0"
+                    value={rate}
+                    onChange={(e) => setMeta("rate", e.target.value)}
+                    placeholder="e.g. 5"
+                  />
+                  <span className="cmp-suffix">/ {unit || "unit"}</span>
+                </div>
+                {errors.rate && <div className="cmp-error"><i className="ri-error-warning-line"></i>{errors.rate}</div>}
+              </div>
+            </div>
+            <div className={`cmp-preview ${rate && unit ? "is-ready" : ""}`}>
+              <i className="ri-eye-line"></i>
+              {rate && unit ? (
+                <span>Claim of <b>10 {unit}</b> pays <b>{inr(parseFloat(rate) * 10)}</b> at <b>₹{rate} / {unit}</b></span>
+              ) : (
+                <span>Pick a unit and rate to preview the payout</span>
+              )}
+            </div>
+          </div>
         )}
 
-        <Row>
-          <Col md={6}>
-            <FormGroup>
-              <Label>Max per claim (₹)</Label>
-              <Input type="number" min="0" value={form.max_amount_per_claim}
-                onChange={(e) => set("max_amount_per_claim", e.target.value)}
-                placeholder="0 = no cap" />
-            </FormGroup>
-          </Col>
-          <Col md={6}>
-            <FormGroup>
-              <Label>Max per period (₹)</Label>
-              <Input type="number" min="0" value={form.max_amount_per_period}
-                onChange={(e) => set("max_amount_per_period", e.target.value)}
-                placeholder="0 = no cap" />
-              <FormText>Period = {FREQUENCY_LABELS[form.frequency]}</FormText>
-            </FormGroup>
-          </Col>
-        </Row>
+        <div className="cmp-section">
+          <div className="cmp-section-head">
+            <span><i className="ri-shield-check-line"></i>Limits</span>
+            <em>0 = no cap</em>
+          </div>
+          <div className="cmp-row">
+            <div className="cmp-field cmp-grow">
+              <label className="cmp-label" htmlFor="rt-claim">Max per claim</label>
+              <div className="cmp-input">
+                <span className="cmp-affix">₹</span>
+                <input
+                  data-testid="pay-type-claim-input" id="rt-claim" type="number" min="0" value={form.max_amount_per_claim}
+                  onChange={(e) => set("max_amount_per_claim", e.target.value)} placeholder="No cap" />
+              </div>
+              <div className="cmp-hint">{claimCap ? `Up to ${inr(claimCap)} per claim` : "Unlimited per claim"}</div>
+            </div>
+            <div className="cmp-field cmp-grow">
+              <label className="cmp-label" htmlFor="rt-period">Max per period</label>
+              <div className="cmp-input">
+                <span className="cmp-affix">₹</span>
+                <input
+                  data-testid="pay-type-period-input" id="rt-period" type="number" min="0" value={form.max_amount_per_period}
+                  onChange={(e) => set("max_amount_per_period", e.target.value)} placeholder="No cap" />
+                <span className="cmp-suffix">/ {periodLabel.toLowerCase()}</span>
+              </div>
+              <div className="cmp-hint">{periodCap ? `Up to ${inr(periodCap)} every ${periodLabel.toLowerCase()} period` : `Unlimited per ${periodLabel.toLowerCase()} period`}</div>
+            </div>
+          </div>
+        </div>
 
-        <Row className="g-2">
-          {[["receipt_required", "Receipt required"], ["is_taxable", "Taxable"], ["is_active", "Active"]].map(([key, label]) => (
-            <Col md={4} key={key}>
-              <FormGroup check className="d-flex align-items-center gap-2">
-                <Input type="checkbox" className="form-check-input"
-                  checked={form[key]}
-                  onChange={(e) => set(key, e.target.checked)} />
-                <Label check className="mb-0">{label}</Label>
-              </FormGroup>
-            </Col>
-          ))}
-        </Row>
-      </ModalBody>
-      <ModalFooter>
-        <Button className="btn btn-danger" onClick={toggle}>Cancel</Button>
-        <Button className="btn-label btn btn-success" onClick={handleSave}>
-          <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
+        <div className="cmp-toggles is-3">
+          {toggles.map(([key, label, hint, icon]) => {
+            const on = !!form[key];
+            return (
+              <button
+                key={key}
+                data-testid={testId("pay-type", key, "switch")}
+                type="button"
+                role="switch"
+                aria-checked={on}
+                className={`cmp-toggle ${on ? "is-on" : ""}`}
+                onClick={() => set(key, !on)}
+              >
+                <span className="cmp-toggle-icon"><i className={icon}></i></span>
+                <span className="cmp-toggle-text">
+                  <b>{label}</b>
+                  <small>{hint}</small>
+                </span>
+                <span className="cmp-switch"><span></span></span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="cmp-footer">
+        <button data-testid="pay-type-cancel-button" type="button" className="it-btn is-soft" onClick={toggle}>Cancel</button>
+        <button data-testid="pay-type-update-button" type="button" className="it-btn is-primary" onClick={handleSave}>
+          <i className="ri-check-double-line"></i>
           {isEdit ? "Update" : "Create"}
-        </Button>
-      </ModalFooter>
+        </button>
+      </div>
     </Modal>
   );
 };

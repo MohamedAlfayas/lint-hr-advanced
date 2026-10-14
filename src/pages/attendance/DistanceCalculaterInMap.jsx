@@ -7,9 +7,11 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 import React, { useEffect, useRef, useState } from "react";
+import { MapShell, MapSkeleton } from "../../component/common/skeleton/Skeleton";
 import { Col } from "reactstrap";
 import { map_radius_options } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { useMapThemeStyles } from "../../shared/theme/mapStyles";
 
 const mapIconOffice = require("../../assets/images/icons/office.png");
 const mapIconEmployee = require("../../assets/images/icons/location.png");
@@ -27,6 +29,7 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
   );
 
   const [mapZoom, setMapZoom] = useState(21);
+  const mapStyles = useMapThemeStyles();
 
   const [mapCenter, setMapCenter] = useState({
     lat: 8.3865046,
@@ -98,6 +101,7 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
   });
 
   const [map, setMap] = React.useState(null);
+  const [tilesReady, setTilesReady] = useState(false);
 
   const onUnmount = React.useCallback(function callback(map) {
     setMap(null);
@@ -196,14 +200,15 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
   return isLoaded ? (
     <React.Fragment>
       <Col lg={12}>
-        {" "}
+        <MapShell ready={tilesReady} style={{ height: containerStyle.height }}>
         <GoogleMap
+          onTilesLoaded={() => setTilesReady(true)}
           mapContainerStyle={containerStyle}
           zoom={mapZoom}
           ref={mapRefCenter}
           onLoad={(map) => (mapRef.current = map)}
           onUnmount={onUnmount}
-          options={{ gestureHandling: "greedy" }}
+          options={{ gestureHandling: "greedy", styles: mapStyles }}
         >
           {/* Markers for the two points */}
           {/* {locations.map((location, index) => (
@@ -309,10 +314,11 @@ const DistanceCalculaterInMap = ({ locationData, locationType }) => {
           {/* Child components, such as markers, info windows, etc. */}
           <></>
         </GoogleMap>
+        </MapShell>
       </Col>
     </React.Fragment>
   ) : (
-    <></>
+    <MapSkeleton style={{ height: containerStyle.height }} />
   );
 };
 

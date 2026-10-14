@@ -39,6 +39,7 @@ const TaskTab = () => {
                 <Col sm={4}>
                   <div className="search-box">
                     <Input
+                      data-testid="task-tab-search-member-list-input"
                       type="text"
                       className="form-control"
                       id="searchMemberList"
@@ -64,6 +65,7 @@ const TaskTab = () => {
                       viewType === "list" ? "active" : ""
                     }`}
                     onClick={() => setViewType("list")}
+                    data-testid="task-tab-list-view-button"
                   >
                     <i className="ri-list-unordered"></i>
                   </Button>
@@ -74,6 +76,7 @@ const TaskTab = () => {
                       viewType === "grid" ? "active" : ""
                     }`}
                     onClick={() => setViewType("grid")}
+                    data-testid="task-tab-grid-view-button"
                   >
                     <i className="ri-grid-fill"></i>
                   </Button>

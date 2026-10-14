@@ -1,19 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import * as XLSX from "xlsx";
-import {
-  Col,
-  Form,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
-  TabContent,
-  TabPane,
-} from "reactstrap";
 import { Api } from "../../common/api/Api";
-
-import classnames from "classnames";
+import "./ImportForm.scss";
 
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
@@ -25,6 +14,7 @@ import { ExportSampleData } from "../../common/js/ExportSampleData";
 import { employee_component_name } from "../../common/constant/Constants";
 import { employeeCSVHeaders } from "../../common/js/employeeSampleData";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 
 defineElement(loadAnimation);
 
@@ -475,210 +465,380 @@ const ImportForm = () => {
   const previewHeaders = rows[0] || [];
   const previewBody = rows.slice(1, 6);
 
+  const isReview = activeArrowTab === 5;
+  const fileSize = file
+    ? file.size >= 1024 * 1024
+      ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(file.size / 1024))} KB`
+    : "";
+  const columnsOk = columnCheck.checked && columnCheck.valid;
+  const hasProblems = (columnCheck.checked && !columnCheck.valid) || rowIssues.length > 0;
+
+  const removeFile = (e) => {
+    e.stopPropagation();
+    resetAll();
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const steps = [
+    { id: 4, label: "Upload", sub: "Select & validate file", icon: "ri-upload-cloud-2-line" },
+    { id: 5, label: "Review & Import", sub: "Confirm and create", icon: "ri-shield-check-line" },
+  ];
+
   return (
-    <React.Fragment>
-      <Row>
-        <Col xl={40}>
-          <Form onSubmit={(e) => e.preventDefault()} className="form-steps">
-            <div className="step-arrow-nav mb-4">
-              <Nav
-                className="nav-pills custom-nav nav-justified"
-                role="tablist"
+    <div className="imp">
+      <div className="imp-steps">
+        {steps.map((s, i) => {
+          const state =
+            activeArrowTab === s.id ? "is-active" : activeArrowTab > s.id ? "is-done" : "";
+          return (
+            <React.Fragment key={s.id}>
+              {i > 0 && (
+                <span className={`imp-step-line ${activeArrowTab > steps[i - 1].id ? "is-done" : ""}`} />
+              )}
+              <button
+                data-testid={testId("import-step", itemTestKey(s), "button")}
+                type="button"
+                className={`imp-step ${state}`}
+                disabled={s.id > activeArrowTab}
+                onClick={() => toggleArrowTab(s.id)}
               >
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeArrowTab === 4,
-                      done: activeArrowTab <= 6 && activeArrowTab > 3,
-                    })}
-                    onClick={() => toggleArrowTab(4)}
-                  >
-                    1) Upload
-                  </NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink
-                    href="#"
-                    className={classnames({
-                      active: activeArrowTab === 5,
-                      done: activeArrowTab <= 6 && activeArrowTab > 4,
-                    })}
-                    onClick={() => toggleArrowTab(5)}
-                  >
-                    2) Review &amp; Import
-                  </NavLink>
-                </NavItem>
-              </Nav>
+                <span className="imp-step-num">
+                  {state === "is-done" ? <i className="ri-check-line" /> : <i className={s.icon} />}
+                </span>
+                <span className="imp-step-text">
+                  <small>Step {i + 1}</small>
+                  <b>{s.label}</b>
+                  <span>{s.sub}</span>
+                </span>
+              </button>
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {!isReview && (
+        <div className="imp-pane" key="upload">
+          {!file && (
+            <div className="imp-guide">
+              <div className="imp-guide-item">
+                <span className="imp-guide-icon tone-primary">
+                  <i className="ri-download-2-line" />
+                </span>
+                <div>
+                  <b>Download template</b>
+                  <span>Use the sample file format</span>
+                </div>
+              </div>
+              <div className="imp-guide-item">
+                <span className="imp-guide-icon tone-warning">
+                  <i className="ri-edit-2-line" />
+                </span>
+                <div>
+                  <b>Fill in employees</b>
+                  <span>One employee per row</span>
+                </div>
+              </div>
+              <div className="imp-guide-item">
+                <span className="imp-guide-icon tone-success">
+                  <i className="ri-upload-cloud-2-line" />
+                </span>
+                <div>
+                  <b>Upload &amp; validate</b>
+                  <span>We check every row for you</span>
+                </div>
+              </div>
             </div>
+          )}
 
-            <TabContent activeTab={activeArrowTab}>
-              {/* ── STEP 1: upload + preview ── */}
-              <TabPane tabId={4}>
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                  style={{
-                    border: `2px dashed ${dragOver ? "#0ab39c" : "#ccc"}`,
-                    borderRadius: 8,
-                    padding: "40px 20px",
-                    textAlign: "center",
-                    cursor: "pointer",
-                    background: dragOver ? "#f0fdfa" : "transparent",
-                  }}
+          <div
+            role="button"
+            tabIndex={0}
+            className={`imp-drop ${dragOver ? "is-over" : ""} ${file ? "has-file" : ""}`}
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            {file ? (
+              <div className="imp-file">
+                <span className="imp-file-icon">
+                  <i className="ri-file-excel-2-fill" />
+                </span>
+                <div className="imp-file-text">
+                  <b title={file.name}>{file.name}</b>
+                  <span>
+                    {fileSize} · {rowCount} {rowCount === 1 ? "row" : "rows"} detected
+                  </span>
+                </div>
+                <span className="imp-file-replace">
+                  <i className="ri-refresh-line" />
+                  Replace
+                </span>
+                <button
+                  data-testid="import-remove-file-button"
+                  type="button"
+                  className="imp-file-remove"
+                  onClick={removeFile}
+                  title="Remove file"
                 >
-                  <i
-                    className="ri-upload-cloud-2-line"
-                    style={{ fontSize: 48, color: "#0ab39c" }}
-                  ></i>
-                  <h5 className="mt-2">Drop or upload your file here</h5>
-                  <p className="text-muted mb-0">
-                    (.XLSX, .XLS, and .CSV formats supported; max file size 5MB)
-                  </p>
-                  {file?.name && (
-                    <p className="text-success mt-2 mb-0">
-                      <i className="ri-file-excel-2-line me-1"></i>
-                      {file.name} — {rowCount} row(s)
-                    </p>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    style={{ display: "none" }}
-                    onChange={handleInputChange}
-                  />
+                  <i className="ri-delete-bin-6-line" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className="imp-drop-icon">
+                  <span className="imp-drop-ring" />
+                  <i className="ri-upload-cloud-2-line" />
+                </span>
+                <h5 className="imp-drop-title">
+                  {dragOver ? "Release to upload" : "Drop your file here or "}
+                  {!dragOver && <span>browse</span>}
+                </h5>
+                <p className="imp-drop-sub">Maximum file size 5 MB</p>
+                <div className="imp-drop-formats">
+                  <span>.XLSX</span>
+                  <span>.XLS</span>
+                  <span>.CSV</span>
                 </div>
+              </>
+            )}
+            <input
+              ref={fileInputRef}
+              data-testid="import-file-input"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              style={{ display: "none" }}
+              onChange={handleInputChange}
+            />
+          </div>
 
-                {previewHeaders.length > 0 && (
-                  <div
-                    className="table-responsive mt-3"
-                    style={{ maxHeight: 260, overflow: "auto" }}
-                  >
-                    <table className="table table-bordered table-sm align-middle mb-0">
-                      <thead className="table-light">
-                        <tr>
-                          {previewHeaders.map((h, i) => (
-                            <th key={i} className="text-nowrap">
-                              {String(h)}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {previewBody.map((r, ri) => (
-                          <tr key={ri}>
-                            {previewHeaders.map((_, ci) => (
-                              <td key={ci} className="text-nowrap">
-                                {r[ci] != null ? String(r[ci]) : ""}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {columnCheck.checked && !columnCheck.valid && (
-                  <div className="alert alert-danger mt-3 mb-0">
-                    <strong>Columns don't match the sample template.</strong>
-                    {columnCheck.missing.length > 0 && (
-                      <div>Missing: {columnCheck.missing.join(", ")}</div>
-                    )}
-                    {columnCheck.extra.length > 0 && (
-                      <div>Unexpected: {columnCheck.extra.join(", ")}</div>
-                    )}
-                  </div>
-                )}
-
-                {rowIssues.length > 0 && (
-                  <div className="alert alert-warning mt-3 mb-0">
-                    <strong>
-                      {rowIssues.length} data issue(s) — fix these and
-                      re-upload:
-                    </strong>
-                    <ul className="mb-0 mt-1">
-                      {rowIssues.slice(0, MAX_ISSUES_SHOWN).map((msg, i) => (
-                        <li key={i}>{msg}</li>
+          {previewHeaders.length > 0 && (
+            <div className="imp-preview">
+              <div className="imp-section-head">
+                <span>
+                  <i className="ri-eye-line" />
+                  Preview
+                </span>
+                <small>
+                  First {previewBody.length} of {rowCount} rows · {previewHeaders.length} columns
+                </small>
+              </div>
+              <div className="imp-preview-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="imp-rownum">#</th>
+                      {previewHeaders.map((h, i) => (
+                        <th
+                          key={i}
+                          className={
+                            columnCheck.checked && columnCheck.extra.includes(String(h).trim())
+                              ? "is-extra"
+                              : ""
+                          }
+                        >
+                          {String(h)}
+                        </th>
                       ))}
-                    </ul>
-                    {rowIssues.length > MAX_ISSUES_SHOWN && (
-                      <div className="mt-1">
-                        …and {rowIssues.length - MAX_ISSUES_SHOWN} more.
-                      </div>
-                    )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewBody.map((r, ri) => (
+                      <tr key={ri}>
+                        <td className="imp-rownum">{ri + 2}</td>
+                        {previewHeaders.map((_, ci) => (
+                          <td key={ci}>{r[ci] != null ? String(r[ci]) : ""}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {columnCheck.checked && !columnCheck.valid && (
+            <div className="imp-alert is-danger">
+              <span className="imp-alert-icon">
+                <i className="ri-close-circle-line" />
+              </span>
+              <div>
+                <b>Columns don&apos;t match the sample template</b>
+                {columnCheck.missing.length > 0 && (
+                  <div className="imp-chips">
+                    <small>Missing</small>
+                    {columnCheck.missing.map((c) => (
+                      <span key={c} className="imp-chip is-danger">
+                        {c}
+                      </span>
+                    ))}
                   </div>
                 )}
-
-                <div className="d-flex align-items-start gap-3 mt-4">
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={() => ExportSampleData(component_to_show)}
-                  >
-                    <i className="ri-file-download-line align-bottom me-1"></i>{" "}
-                    Sample Export
-                  </button>{" "}
-                  <button
-                    type="button"
-                    className="btn btn-success btn-label right ms-auto nexttab"
-                    onClick={validateAndNext}
-                  >
-                    <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
-                    NEXT STEP
-                  </button>
-                </div>
-              </TabPane>
-
-              {/* ── STEP 2: review + import ── */}
-              <TabPane tabId={5}>
-                <div className="alert alert-success mt-2">
-                  <i className="ri-checkbox-circle-line align-bottom me-1"></i>
-                  {rowCount} employee row(s) validated from
-                  {file?.name ? ` "${file.name}"` : " your file"}. Click Import
-                  to create them.
-                </div>
-
-                {importResult && (
-                  <div
-                    className={`alert ${
-                      importResult.ok ? "alert-success" : "alert-danger"
-                    }`}
-                  >
-                    {importResult.message}
+                {columnCheck.extra.length > 0 && (
+                  <div className="imp-chips">
+                    <small>Unexpected</small>
+                    {columnCheck.extra.map((c) => (
+                      <span key={c} className="imp-chip is-warning">
+                        {c}
+                      </span>
+                    ))}
                   </div>
                 )}
+              </div>
+            </div>
+          )}
 
-                <div className="d-flex align-items-start gap-3 mt-4">
-                  <button
-                    type="button"
-                    className="btn btn-info btn-label previestab"
-                    onClick={() => toggleArrowTab(activeArrowTab - 1)}
-                  >
-                    <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>{" "}
-                    Previous
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-success btn-label right ms-auto nexttab"
-                    onClick={handleBulkImport}
-                  >
-                    <i className="ri-check-line label-icon align-middle fs-16 ms-2"></i>
-                    Import {rowCount > 0 ? `${rowCount} ` : ""}Employees
-                  </button>
-                </div>
-              </TabPane>
-            </TabContent>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+          {rowIssues.length > 0 && (
+            <div className="imp-alert is-warning">
+              <span className="imp-alert-icon">
+                <i className="ri-error-warning-line" />
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <b>
+                  {rowIssues.length} data {rowIssues.length === 1 ? "issue" : "issues"} found — fix
+                  and re-upload
+                </b>
+                <ul className="imp-issues">
+                  {rowIssues.slice(0, MAX_ISSUES_SHOWN).map((msg, i) => {
+                    const m = msg.match(/^Row (\d+):\s*(.*)$/);
+                    return (
+                      <li key={i}>
+                        {m ? (
+                          <>
+                            <span className="imp-issue-row">Row {m[1]}</span>
+                            {m[2]}
+                          </>
+                        ) : (
+                          msg
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {rowIssues.length > MAX_ISSUES_SHOWN && (
+                  <small className="imp-more">
+                    …and {rowIssues.length - MAX_ISSUES_SHOWN} more
+                  </small>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="imp-actions">
+            <button
+              data-testid="import-download-template-button"
+              type="button"
+              className="imp-btn is-ghost"
+              onClick={() => ExportSampleData(component_to_show)}
+            >
+              <i className="ri-download-2-line" />
+              Download Template
+            </button>
+            <button
+              data-testid="import-next-button"
+              type="button"
+              className="imp-btn is-primary"
+              onClick={validateAndNext}
+              disabled={!file && component_to_show === employee_component_name}
+            >
+              {hasProblems ? "Re-validate" : "Validate & Continue"}
+              <i className="ri-arrow-right-line" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isReview && (
+        <div className="imp-pane" key="review">
+          <div className="imp-ready">
+            <span className="imp-ready-badge">
+              <i className={importResult && !importResult.ok ? "ri-close-line" : "ri-check-line"} />
+            </span>
+            <h5>
+              {importResult?.ok
+                ? "Import complete"
+                : importResult
+                  ? "Import failed"
+                  : "Ready to import"}
+            </h5>
+            <p>
+              {importResult
+                ? importResult.message
+                : `All rows passed validation. Click import to create ${rowCount} ${
+                    rowCount === 1 ? "employee" : "employees"
+                  }.`}
+            </p>
+          </div>
+
+          <div className="imp-summary">
+            <div className="imp-summary-item tone-primary">
+              <i className="ri-file-excel-2-line" />
+              <div>
+                <small>File</small>
+                <b title={file?.name}>{file?.name || "—"}</b>
+              </div>
+            </div>
+            <div className="imp-summary-item tone-success">
+              <i className="ri-team-line" />
+              <div>
+                <small>Employees</small>
+                <b>{rowCount}</b>
+              </div>
+            </div>
+            <div className="imp-summary-item tone-info">
+              <i className="ri-table-2" />
+              <div>
+                <small>Columns</small>
+                <b>
+                  {columnsOk ? "Matched" : "—"}
+                  {columnCheck.extra.length > 0 && ` · ${columnCheck.extra.length} ignored`}
+                </b>
+              </div>
+            </div>
+            <div className="imp-summary-item tone-warning">
+              <i className="ri-shield-check-line" />
+              <div>
+                <small>Issues</small>
+                <b>{rowIssues.length}</b>
+              </div>
+            </div>
+          </div>
+
+          <div className="imp-actions">
+            <button
+              data-testid="import-back-button"
+              type="button"
+              className="imp-btn is-ghost"
+              onClick={() => toggleArrowTab(activeArrowTab - 1)}
+            >
+              <i className="ri-arrow-left-line" />
+              Back
+            </button>
+            <button
+              data-testid="import-submit-button"
+              type="button"
+              className="imp-btn is-primary"
+              onClick={handleBulkImport}
+              disabled={!!importResult?.ok}
+            >
+              <i className="ri-upload-cloud-2-line" />
+              Import {rowCount > 0 ? `${rowCount} ` : ""}
+              {rowCount === 1 ? "Employee" : "Employees"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

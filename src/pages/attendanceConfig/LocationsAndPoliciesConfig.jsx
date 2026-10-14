@@ -14,12 +14,13 @@ import {
     TabPane,
 } from "reactstrap";
 import { Link } from "react-router-dom";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import classnames from "classnames";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import {
     location_edit_form_component_name,
  } from "../../common/constant/Constants";
+import { testId, itemTestKey } from "../../shared/testing/testId";
  import { useDispatch, useSelector } from "react-redux";
  import {
     setDepartmentData,
@@ -105,7 +106,7 @@ const LocationsAndPoliciesConfig = () => {
                                       <div className="d-flex align-items-center">
                                         <div className="flex-grow-1">
                                           <h5 className="mb-0 fs-14">
-                                            <Link to="#" className="text-body">
+                                            <Link data-testid={testId("attendance-locations", itemTestKey(item), "link")} to="#" className="text-body">
                                               {item.company}
                                               <span className="badge border border-dark text-body ms-2">
                                                 {item.tag}
@@ -117,6 +118,7 @@ const LocationsAndPoliciesConfig = () => {
                                         <div className="flex-shrink-0">
                                           <div className="d-flex gap-1 align-items-center my-n2">
                                             <a
+                                              data-testid={testId("attendance-locations-more", itemTestKey(item), "link")}
                                               onClick={() =>
                                                 handlelocationEdit()
                                               }
@@ -199,6 +201,7 @@ const LocationsAndPoliciesConfig = () => {
                                           <Col>
                                             <div className="form-check form-switch form-switch-success">
                                               <Input
+                                                data-testid={testId("attendance-locations-enablegeofencing", itemTestKey(item), "checkbox")}
                                                 className="form-check-input"
                                                 type="checkbox"
                                                 role="switch"

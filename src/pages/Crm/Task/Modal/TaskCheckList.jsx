@@ -11,7 +11,8 @@ import {
   addChecklist,
   editChecklist,
   deleteChecklist,
-} from "../../../../redux/reducers/ChildReducer/CheckListReducer"; // ✅ adjust path as needed
+} from "../../../../redux/reducers/ChildReducer/CheckListReducer";
+import { testId, itemTestKey } from "../../../../shared/testing/testId"; // ✅ adjust path as needed
 
 const TaskChecklist = ({
   taskId,
@@ -199,13 +200,13 @@ const TaskChecklist = ({
             fontSize: "0.8rem",
             textTransform: "uppercase",
             letterSpacing: ".6px",
-            color: "#6c757d",
+            color: "var(--vz-secondary-color)",
           }}
         >
           <i className="ri-checkbox-multiple-line text-primary" />
           Checklist
           <span
-            className="badge bg-light text-secondary border"
+            className="badge badge-surface text-secondary border"
             style={{
               fontSize: "0.7rem",
               fontWeight: 500,
@@ -226,7 +227,7 @@ const TaskChecklist = ({
               width: 36,
               height: 20,
               borderRadius: 10,
-              background: sortable ? "#3b82f6" : "#dee2e6",
+              background: sortable ? "var(--vz-primary)" : "rgba(var(--vz-secondary-rgb), .3)",
               cursor: "pointer",
               position: "relative",
               transition: "background 0.2s",
@@ -256,7 +257,7 @@ const TaskChecklist = ({
           className="mb-3"
           style={{
             height: 4,
-            background: "#e9ecef",
+            background: "var(--vz-border-color)",
             borderRadius: 2,
             overflow: "hidden",
           }}
@@ -269,7 +270,7 @@ const TaskChecklist = ({
                   ? (completedCount / reduxItems.length) * 100
                   : 0
               }%`,
-              background: "#22c55e",
+              background: "var(--vz-success)",
               borderRadius: 2,
               transition: "width 0.3s ease",
             }}
@@ -283,7 +284,7 @@ const TaskChecklist = ({
           className="text-center py-3 text-muted"
           style={{
             fontSize: "0.82rem",
-            border: "1px dashed #dee2e6",
+            border: "1px dashed var(--vz-border-color)",
             borderRadius: 6,
           }}
         >
@@ -297,7 +298,7 @@ const TaskChecklist = ({
         <div
           className="mb-2"
           style={{
-            border: "1px solid #e9ecef",
+            border: "1px solid var(--vz-border-color)",
             borderRadius: 6,
             overflow: "hidden",
           }}
@@ -314,13 +315,13 @@ const TaskChecklist = ({
               style={{
                 padding: "9px 12px",
                 borderBottom:
-                  index < reduxItems.length - 1 ? "1px solid #f1f3f5" : "none",
+                  index < reduxItems.length - 1 ? "1px solid var(--vz-border-color)" : "none",
                 background:
                   dragOverIndex === index
-                    ? "#eff6ff"
+                    ? "rgba(var(--vz-primary-rgb), .08)"
                     : item.checked
-                      ? "#f8fdf9"
-                      : "#fff",
+                      ? "rgba(var(--vz-success-rgb), .06)"
+                      : "var(--vz-secondary-bg)",
                 cursor: sortable ? "grab" : "default",
                 transition: "background 0.15s",
               }}
@@ -336,6 +337,7 @@ const TaskChecklist = ({
               )}
 
               <input
+                data-testid={testId("task-checklist-checked", itemTestKey(item), "checkbox")}
                 type="checkbox"
                 checked={item.checked}
                 onChange={() => handleToggle(item.id)}
@@ -344,7 +346,7 @@ const TaskChecklist = ({
                   height: 16,
                   flexShrink: 0,
                   cursor: "pointer",
-                  accentColor: "#3b82f6",
+                  accentColor: "var(--vz-primary)",
                 }}
               />
 
@@ -353,13 +355,14 @@ const TaskChecklist = ({
                 style={{
                   fontSize: "0.85rem",
                   textDecoration: item.checked ? "line-through" : "none",
-                  color: item.checked ? "#adb5bd" : "#212529",
+                  color: item.checked ? "var(--vz-secondary-color)" : "var(--vz-body-color)",
                 }}
               >
                 {item.text}
               </span>
 
               <button
+                data-testid={testId("task-checklist-close", itemTestKey(item), "button")}
                 type="button"
                 className="btn btn-link p-0 text-muted"
                 onClick={() => handleRemove(item.id)}
@@ -380,10 +383,10 @@ const TaskChecklist = ({
         <div
           className="mt-2"
           style={{
-            border: "1px solid #e2e8f0",
+            border: "1px solid var(--vz-border-color)",
             borderRadius: 6,
             overflow: "hidden",
-            background: "#f8fafc",
+            background: "var(--vz-tertiary-bg)",
           }}
         >
           <div className="p-2">
@@ -422,6 +425,7 @@ const TaskChecklist = ({
 
           <div className="d-flex gap-2 px-2 pb-2">
             <button
+              data-testid="task-checklist-add-button"
               type="button"
               className="btn btn-primary btn-sm"
               onClick={handleAddItem}
@@ -431,6 +435,7 @@ const TaskChecklist = ({
             </button>
 
             <button
+              data-testid="task-checklist-cancel-button"
               type="button"
               className="btn btn-outline-secondary btn-sm"
               onClick={() => {
@@ -447,6 +452,7 @@ const TaskChecklist = ({
       {/* Add Button */}
       {!showAddForm && (
         <button
+          data-testid="task-checklist-add-item-button"
           type="button"
           className="btn btn-outline-primary btn-sm mt-2 d-flex align-items-center gap-1"
           onClick={() => setShowAddForm(true)}

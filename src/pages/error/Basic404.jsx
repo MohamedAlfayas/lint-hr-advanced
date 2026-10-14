@@ -24,7 +24,7 @@ const Basic404 = () => {
                   <p className="text-muted mb-4">
                     The page you are looking for not available!
                   </p>
-                  <Link to="/" className="btn btn-success">
+                  <Link data-testid="not-found-back-to-home-link" to="/" className="btn btn-success">
                     <i className="mdi mdi-home me-1"></i>Back to home
                   </Link>
                 </div>

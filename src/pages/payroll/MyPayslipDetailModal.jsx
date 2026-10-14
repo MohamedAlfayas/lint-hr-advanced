@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { DetailSkeleton } from "../../component/common/skeleton/Skeleton";
 import {
   Modal,
   ModalHeader,
@@ -18,9 +19,11 @@ import {
   View,
   StyleSheet,
   pdf,
+  Image,
 } from "@react-pdf/renderer";
 import { toast } from "react-toastify";
 import { Api } from "../../common/api/Api";
+import ModalCloseButton from "../../shared/ui/ModalCloseButton";
 
 // ─── Helpers (same as EmployeePayslip.jsx) ────────────────────────────────────
 const fmtDays = (val) => {
@@ -170,6 +173,7 @@ const S = StyleSheet.create({
     marginBottom: 10,
   },
   companyName: { fontSize: 17, fontFamily: "Helvetica-Bold", color: "#299cdb" },
+  companyLogo: { maxWidth: 140, maxHeight: 45, objectFit: "contain" },
   headerRight: { alignItems: "flex-end" },
   payslipLabel: { fontSize: 8, color: "#888888" },
   payPeriod: { fontSize: 12, fontFamily: "Helvetica-Bold", color: "#1a1a1a" },
@@ -380,7 +384,7 @@ const S = StyleSheet.create({
 });
 
 // ─── PDF Component (same as EmployeePayslip.jsx) ──────────────────────────────
-const PayslipPDF = ({ slip, companyName, allowDecimal }) => {
+const PayslipPDF = ({ slip, companyName, companyLogo, allowDecimal }) => {
   if (!slip) return null;
   const ad = allowDecimal ?? true;
   const netPayNum = parseFloat(slip.net_pay || 0);
@@ -411,7 +415,11 @@ const PayslipPDF = ({ slip, companyName, allowDecimal }) => {
       <Page size="A4" style={S.page}>
         <View style={S.headerRow}>
           <View>
-            <Text style={S.companyName}>{companyName || "Company"}</Text>
+            {companyLogo ? (
+              <Image src={companyLogo} style={S.companyLogo} />
+            ) : (
+              <Text style={S.companyName}>{companyName || "Company"}</Text>
+            )}
           </View>
           <View style={S.headerRight}>
             <Text style={S.payslipLabel}>Payslip For the Month</Text>
@@ -637,6 +645,35 @@ const MyPayslipDetailModal = ({
   const [loading, setLoading] = useState(false);
   const [slip, setSlip] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [profileCompanyName, setProfileCompanyName] = useState("");
+
+  // Logo from Configuration > Company Info, embedded as base64 so react-pdf can render it
+  useEffect(() => {
+    if (!isOpen || companyLogo) return;
+    Api({ method: "GET", url: "branch/get-company-profile/" })
+      .then(async (res) => {
+        const profile = res?.data?.data || {};
+        if (profile.full_name) setProfileCompanyName(profile.full_name);
+        const logoUrl = profile.light_logo_image || profile.dark_logo_image;
+        if (!logoUrl) return;
+        try {
+          const response = await fetch(logoUrl);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          setCompanyLogo(base64);
+        } catch (err) {
+          console.error("Failed to load company logo for payslip PDF:", err);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch company profile:", err));
+  }, [isOpen, companyLogo]);
 
   useEffect(() => {
     if (!isOpen || !payslipId) {
@@ -671,7 +708,8 @@ const MyPayslipDetailModal = ({
       const blob = await pdf(
         <PayslipPDF
           slip={slip}
-          companyName={companyName}
+          companyName={profileCompanyName || companyName}
+          companyLogo={companyLogo}
           allowDecimal={allowDecimal}
         />,
       ).toBlob();
@@ -693,8 +731,8 @@ const MyPayslipDetailModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} toggle={onClose} size="xl" centered>
-      <ModalHeader toggle={onClose} className="bg-light p-3">
+    <Modal data-testid="my-payslip-detail-dialog" isOpen={isOpen} toggle={onClose} size="xl" centered>
+      <ModalHeader close={<ModalCloseButton onClick={onClose} testId="my-payslip-detail-close-button" />} toggle={onClose} className="bg-light p-3">
         {loading || !slip ? (
           "Payslip"
         ) : (
@@ -718,12 +756,7 @@ const MyPayslipDetailModal = ({
         style={{ maxHeight: "78vh", overflowY: "auto", overflowX: "auto" }}
       >
         {loading || !slip ? (
-          <div className="text-center py-5">
-            <Spinner color="success" />
-            <p className="text-muted mt-2" style={{ fontSize: 13 }}>
-              Loading payslip...
-            </p>
-          </div>
+          <DetailSkeleton sections={3} testId="my-payslip-loading-skeleton" label="Loading payslip" />
         ) : (
           <div
             className="p-3 border rounded bg-white"
@@ -988,10 +1021,11 @@ const MyPayslipDetailModal = ({
 
       <ModalFooter className="bg-light border-top">
         <div className="d-flex justify-content-between w-100 align-items-center">
-          <Button color="secondary" outline size="sm" onClick={onClose}>
+          <Button data-testid="my-payslip-detail-footer-close-button" color="secondary" outline size="sm" onClick={onClose}>
             Close
           </Button>
           <Button
+            data-testid="my-payslip-detail-download-button"
             color="success"
             size="sm"
             onClick={handleDownloadPDF}

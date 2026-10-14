@@ -6,9 +6,6 @@ import { MetaTitle } from "../../common/data/MetaTitle";
 import {
   Badge,
   Button,
-  Card,
-  CardBody,
-  Col,
   Container,
   DropdownItem,
   DropdownMenu,
@@ -18,17 +15,12 @@ import {
   Modal,
   ModalBody,
   ModalHeader,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
   TabContent,
   TabPane,
   Table,
   UncontrolledDropdown,
 } from "reactstrap";
-import classnames from "classnames";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import Flatpickr from "react-flatpickr";
 import { Link } from "react-router-dom";
@@ -61,8 +53,15 @@ import { location_edit_form_component_name } from "../../common/constant/Constan
 import CustomFormTable from "../CustomForms/CustomFormTable";
 import AsignCustomFormTable from "../CustomForms/AsignCustomFormTable";
 
+import SettingsLayout from "../../shared/ui/SettingsLayout";
+
 // register lottie and define custom element
 defineElement(loadAnimation);
+
+const CUSTOM_FORM_TABS = [
+  { id: "1", label: "Custom Form", hint: "Create & manage form templates", icon: "ri-draft-line", tone: "primary" },
+  { id: "2", label: "Assign Custom Form", hint: "Share forms with employees", icon: "ri-user-shared-line", tone: "success" },
+];
 
 const CustomFormConfig = () => {
   // Vertical Nav Tabs
@@ -83,65 +82,28 @@ const CustomFormConfig = () => {
 
   return (
     <React.Fragment>
-      <Card>
-        <CardBody>
-          <h5 className="mb-3">Customform Configuration</h5>
+      <SettingsLayout
+        icon="ri-file-settings-line"
+        title="Custom Form Configuration"
+        subtitle="Build forms & assign them to people"
+        tabs={CUSTOM_FORM_TABS}
+        active={verticalTab}
+        onChange={toggleVertical}
+      >
+        <TabContent
+          activeTab={verticalTab}
+          className="text-muted mt-4 mt-md-0"
+          id="v-pills-tabContent"
+        >
+          <TabPane tabId="1" id="v-pills-home">
+            <CustomFormTable />
+          </TabPane>
 
-          <Row>
-            <Col md={2} className="border-end">
-              <Nav pills className="flex-column text-left" id="v-pills-tab">
-                <NavItem>
-                  <NavLink
-                    style={{ cursor: "pointer" }}
-                    className={classnames({
-                      "mb-2": true,
-                      active: verticalTab === "1",
-                    })}
-                    onClick={() => {
-                      toggleVertical("1");
-                    }}
-                    id="v-pills-home-tab"
-                  >
-                    Custom Form
-                  </NavLink>
-                </NavItem>
-
-                <NavItem>
-                  <NavLink
-                    style={{ cursor: "pointer" }}
-                    className={classnames({
-                      "mb-2": true,
-                      active: verticalTab === "2",
-                    })}
-                    onClick={() => {
-                      toggleVertical("2");
-                    }}
-                    id="v-pills-messages-tab"
-                  >
-                    Assign Custom Form
-                  </NavLink>
-                </NavItem>
-              </Nav>
-            </Col>
-            <Col md={10}>
-              <TabContent
-                activeTab={verticalTab}
-                className="text-muted mt-4 mt-md-0"
-                id="v-pills-tabContent"
-              >
-                {/* General Tab Start */}
-                <TabPane tabId="1" id="v-pills-home">
-                  <CustomFormTable />
-                </TabPane>
-
-                <TabPane tabId="2" id="v-pills-profile">
-                  <AsignCustomFormTable />
-                </TabPane>
-              </TabContent>
-            </Col>
-          </Row>
-        </CardBody>
-      </Card>
+          <TabPane tabId="2" id="v-pills-profile">
+            <AsignCustomFormTable />
+          </TabPane>
+        </TabContent>
+      </SettingsLayout>
     </React.Fragment>
   );
 };

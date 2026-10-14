@@ -9,6 +9,7 @@ import {
 } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
 
 const REGIMES = [{ v: "new", l: "New Regime" }, { v: "old", l: "Old Regime" }];
 
@@ -26,7 +27,7 @@ const SettingRow = ({ label, children, last = false }) => (
 );
 const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
-    <span style={{ display: "inline-block", width: 36, height: 20, borderRadius: 12, background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0 }}>
+    <span style={{ display: "inline-block", width: 36, height: 20, borderRadius: 12, background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0 }}>
       <span style={{ position: "absolute", top: 3, left: checked ? 18 : 3, width: 14, height: 14, borderRadius: "50%", background: "#fff", transition: "left .2s" }} />
     </span>{label && <span style={{ fontSize: 13 }}>{label}</span>}
   </div>
@@ -166,7 +167,7 @@ const IncomeTaxPolicySettings = () => {
   const RegimeTabs = () => (
     <div className="d-flex gap-2 mb-3">
       {REGIMES.map((r) => (
-        <Button key={r.v} size="sm" color={regime === r.v ? "primary" : "light"}
+        <Button key={r.v} data-testid={testId("income-tax-policy-regime-tab", r.v)} size="sm" color={regime === r.v ? "primary" : "light"}
           className={regime === r.v ? "" : "border"} onClick={() => setRegime(r.v)}>{r.l}</Button>
       ))}
     </div>
@@ -181,7 +182,7 @@ const IncomeTaxPolicySettings = () => {
             <div className="avatar-md mx-auto mb-4"><div className="avatar-title bg-light rounded-circle text-muted fs-28"><i className="ri-percent-line"></i></div></div>
             <h6 className="mb-1">No Income Tax Policy Configured</h6>
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>Set slabs, rebate, surcharge & cess for both regimes.</p>
-            <Button color="primary" onClick={startNew}><i className="ri-add-line align-bottom me-1"></i> Configure Policy</Button>
+            <Button data-testid="income-tax-policy-configure-policy-button" color="primary" onClick={startNew}><i className="ri-add-line align-bottom me-1"></i> Configure Policy</Button>
           </div>
         </CardBody>
       </Card>
@@ -197,8 +198,8 @@ const IncomeTaxPolicySettings = () => {
         </div>
         {!isEditing && (
           <div className="d-flex gap-2">
-            <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}><i className="ri-edit-line fs-14"></i> Edit</Button>
-            <Button size="sm" color="success" outline onClick={startNew}><i className="ri-add-line fs-14"></i> New Version</Button>
+            <Button data-testid="income-tax-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}><i className="ri-edit-line fs-14"></i> Edit</Button>
+            <Button data-testid="income-tax-policy-new-version-button" size="sm" color="success" outline onClick={startNew}><i className="ri-add-line fs-14"></i> New Version</Button>
           </div>
         )}
       </CardHeader>
@@ -207,7 +208,7 @@ const IncomeTaxPolicySettings = () => {
         {!isEditing && records.length > 1 && (
           <div className="d-flex gap-2 flex-wrap mb-4">
             {records.map((r, i) => (
-              <Badge key={r.id} color={form?.id === r.id ? "primary" : "light"} className={form?.id === r.id ? "" : "text-dark border"}
+              <Badge key={r.id} data-testid={testId("income-tax-policy-record", r.financial_year, "button")} color={form?.id === r.id ? "primary" : "light"} className={form?.id === r.id ? "" : "text-dark border"}
                 style={{ cursor: "pointer", fontSize: 12, padding: "5px 12px" }} onClick={() => setForm({ ...r })}>
                 FY {r.financial_year}{i === 0 && <span className="ms-1">· Latest</span>}
               </Badge>
@@ -225,14 +226,14 @@ const IncomeTaxPolicySettings = () => {
 
         <SectionLabel>General</SectionLabel>
         <div className="border rounded mb-4">
-          <SettingRow label="Financial Year">{isEditing ? <Input value={form.financial_year || ""} placeholder="2025-26" style={{ width: 160 }} onChange={(e) => set("financial_year", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.financial_year || "—"}</span>}</SettingRow>
-          <SettingRow label="Effective Date">{isEditing ? <Input type="date" value={form.effective_date || ""} style={{ width: 180 }} onChange={(e) => set("effective_date", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>}</SettingRow>
+          <SettingRow label="Financial Year">{isEditing ? <Input data-testid="income-tax-policy-2025-26-input" value={form.financial_year || ""} placeholder="2025-26" style={{ width: 160 }} onChange={(e) => set("financial_year", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.financial_year || "—"}</span>}</SettingRow>
+          <SettingRow label="Effective Date">{isEditing ? <Input data-testid="income-tax-policy-effective-date-input" type="date" value={form.effective_date || ""} style={{ width: 180 }} onChange={(e) => set("effective_date", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>}</SettingRow>
           <SettingRow label="Default Regime">{isEditing ? (
-            <div className="d-flex gap-2">{REGIMES.map((r) => <Button key={r.v} size="sm" color={form.default_regime === r.v ? "primary" : "light"} className={form.default_regime === r.v ? "" : "border"} onClick={() => set("default_regime", r.v)}>{r.l}</Button>)}</div>
+            <div className="d-flex gap-2">{REGIMES.map((r) => <Button key={r.v} data-testid={testId("income-tax-policy-default-regime-option", r.v)} size="sm" color={form.default_regime === r.v ? "primary" : "light"} className={form.default_regime === r.v ? "" : "border"} onClick={() => set("default_regime", r.v)}>{r.l}</Button>)}</div>
           ) : <Badge color="primary" pill style={{ fontSize: 12 }}>{data.default_regime}</Badge>}</SettingRow>
-          <SettingRow label="Cess (%)">{isEditing ? <Input type="number" value={form.cess_percent} style={{ width: 100 }} onChange={(e) => set("cess_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.cess_percent}%</span>}</SettingRow>
-          <SettingRow label="Round TDS to ₹10">{isEditing ? <div className="form-check form-switch mb-0"><Input className="form-check-input" type="checkbox" checked={!!form.round_tds_to_nearest_10} onChange={() => tog("round_tds_to_nearest_10")} /></div> : <ViewToggle checked={!!data.round_tds_to_nearest_10} />}</SettingRow>
-          <SettingRow label="Status" last>{isEditing ? <div className="form-check form-switch mb-0"><Input className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => tog("is_active")} /></div> : <ViewToggle checked={!!data.is_active} label={data.is_active ? "Active" : "Inactive"} />}</SettingRow>
+          <SettingRow label="Cess (%)">{isEditing ? <Input data-testid="income-tax-policy-cess-percent-input" type="number" value={form.cess_percent} style={{ width: 100 }} onChange={(e) => set("cess_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.cess_percent}%</span>}</SettingRow>
+          <SettingRow label="Round TDS to ₹10">{isEditing ? <div className="form-check form-switch mb-0"><Input data-testid="income-tax-policy-round-tds-to-nearest-checkbox" className="form-check-input" type="checkbox" checked={!!form.round_tds_to_nearest_10} onChange={() => tog("round_tds_to_nearest_10")} /></div> : <ViewToggle checked={!!data.round_tds_to_nearest_10} />}</SettingRow>
+          <SettingRow label="Status" last>{isEditing ? <div className="form-check form-switch mb-0"><Input data-testid="income-tax-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => tog("is_active")} /></div> : <ViewToggle checked={!!data.is_active} label={data.is_active ? "Active" : "Inactive"} />}</SettingRow>
         </div>
 
         {/* ── regime-scoped section ── */}
@@ -240,10 +241,10 @@ const IncomeTaxPolicySettings = () => {
 
         <SectionLabel>{regime === "new" ? "New" : "Old"} Regime — Deductions & Rebate</SectionLabel>
         <div className="border rounded mb-4">
-          <SettingRow label="Standard Deduction">{isEditing ? <Input type="number" value={form[stdKey]} style={{ width: 140 }} onChange={(e) => set(stdKey, e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[stdKey])}</span>}</SettingRow>
-          <SettingRow label="87A Rebate — Income Limit">{isEditing ? <Input type="number" value={form[regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old"]} style={{ width: 160 }} onChange={(e) => set(regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old", e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old"])}</span>}</SettingRow>
-          <SettingRow label="87A Rebate — Max Amount" last={regime === "old"}>{isEditing ? <Input type="number" value={form[regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old"]} style={{ width: 140 }} onChange={(e) => set(regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old", e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old"])}</span>}</SettingRow>
-          {regime === "new" && <SettingRow label="Marginal Relief" last>{isEditing ? <div className="form-check form-switch mb-0"><Input className="form-check-input" type="checkbox" checked={!!form.apply_marginal_relief_new} onChange={() => tog("apply_marginal_relief_new")} /></div> : <ViewToggle checked={!!data.apply_marginal_relief_new} />}</SettingRow>}
+          <SettingRow label="Standard Deduction">{isEditing ? <Input data-testid={testId("income-tax-policy", stdKey, "input")} type="number" value={form[stdKey]} style={{ width: 140 }} onChange={(e) => set(stdKey, e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[stdKey])}</span>}</SettingRow>
+          <SettingRow label="87A Rebate — Income Limit">{isEditing ? <Input data-testid={testId("income-tax-policy", regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old", "input")} type="number" value={form[regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old"]} style={{ width: 160 }} onChange={(e) => set(regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old", e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[regime === "new" ? "rebate_87a_income_limit_new" : "rebate_87a_income_limit_old"])}</span>}</SettingRow>
+          <SettingRow label="87A Rebate — Max Amount" last={regime === "old"}>{isEditing ? <Input data-testid={testId("income-tax-policy", regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old", "input")} type="number" value={form[regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old"]} style={{ width: 140 }} onChange={(e) => set(regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old", e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[regime === "new" ? "rebate_87a_max_amount_new" : "rebate_87a_max_amount_old"])}</span>}</SettingRow>
+          {regime === "new" && <SettingRow label="Marginal Relief" last>{isEditing ? <div className="form-check form-switch mb-0"><Input data-testid="income-tax-policy-apply-marginal-relief-new-checkbox" className="form-check-input" type="checkbox" checked={!!form.apply_marginal_relief_new} onChange={() => tog("apply_marginal_relief_new")} /></div> : <ViewToggle checked={!!data.apply_marginal_relief_new} />}</SettingRow>}
         </div>
 
         {regime === "old" && (
@@ -251,38 +252,38 @@ const IncomeTaxPolicySettings = () => {
             <SectionLabel>Old Regime — Chapter VI-A Caps & HRA</SectionLabel>
             <div className="border rounded mb-4">
               {[["cap_80c", "80C cap"], ["cap_80ccd_1b", "80CCD(1B) cap"], ["cap_80d", "80D cap"], ["cap_80tta", "80TTA cap"], ["cap_section24", "Sec 24 (home-loan int.) cap"]].map(([k, lbl]) => (
-                <SettingRow key={k} label={lbl}>{isEditing ? <Input type="number" value={form[k]} style={{ width: 140 }} onChange={(e) => set(k, e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[k])}</span>}</SettingRow>
+                <SettingRow key={k} label={lbl}>{isEditing ? <Input data-testid={testId("income-tax-policy", k, "input")} type="number" value={form[k]} style={{ width: 140 }} onChange={(e) => set(k, e.target.value)} /> : <span style={{ fontSize: 13 }}>{inr(data[k])}</span>}</SettingRow>
               ))}
-              <SettingRow label="HRA — Metro %">{isEditing ? <Input type="number" value={form.hra_metro_percent} style={{ width: 100 }} onChange={(e) => set("hra_metro_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.hra_metro_percent}%</span>}</SettingRow>
-              <SettingRow label="HRA — Non-metro %">{isEditing ? <Input type="number" value={form.hra_nonmetro_percent} style={{ width: 100 }} onChange={(e) => set("hra_nonmetro_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.hra_nonmetro_percent}%</span>}</SettingRow>
-              <SettingRow label="HRA — Rent minus % of Basic" last>{isEditing ? <Input type="number" value={form.hra_rent_minus_basic_percent} style={{ width: 100 }} onChange={(e) => set("hra_rent_minus_basic_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.hra_rent_minus_basic_percent}%</span>}</SettingRow>
+              <SettingRow label="HRA — Metro %">{isEditing ? <Input data-testid="income-tax-policy-hra-metro-percent-input" type="number" value={form.hra_metro_percent} style={{ width: 100 }} onChange={(e) => set("hra_metro_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.hra_metro_percent}%</span>}</SettingRow>
+              <SettingRow label="HRA — Non-metro %">{isEditing ? <Input data-testid="income-tax-policy-hra-nonmetro-percent-input" type="number" value={form.hra_nonmetro_percent} style={{ width: 100 }} onChange={(e) => set("hra_nonmetro_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.hra_nonmetro_percent}%</span>}</SettingRow>
+              <SettingRow label="HRA — Rent minus % of Basic" last>{isEditing ? <Input data-testid="income-tax-policy-hra-rent-minus-basic-input" type="number" value={form.hra_rent_minus_basic_percent} style={{ width: 100 }} onChange={(e) => set("hra_rent_minus_basic_percent", e.target.value)} /> : <span style={{ fontSize: 13 }}>{data.hra_rent_minus_basic_percent}%</span>}</SettingRow>
             </div>
           </>
         )}
 
-        <SectionLabel right={isEditing && <Button size="sm" color="success" outline onClick={addSlab}><i className="ri-add-line fs-14"></i> Add Slab</Button>}>{regime === "new" ? "New" : "Old"} Regime — Tax Slabs</SectionLabel>
+        <SectionLabel right={isEditing && <Button data-testid="income-tax-policy-add-slab-button" size="sm" color="success" outline onClick={addSlab}><i className="ri-add-line fs-14"></i> Add Slab</Button>}>{regime === "new" ? "New" : "Old"} Regime — Tax Slabs</SectionLabel>
         <Table bordered responsive className="mb-4" style={{ fontSize: 13 }}>
           <thead className="table-light"><tr><th>From (₹)</th><th>To (₹)</th><th>Rate (%)</th>{isEditing && <th style={{ width: 40 }}></th>}</tr></thead>
           <tbody>
             {slabsOf(regime).map((s) => (
               <tr key={s._i}>
-                <td>{isEditing ? <Input bsSize="sm" type="number" value={s.lower_limit} onChange={(e) => setSlab(s._i, "lower_limit", e.target.value)} /> : inr(s.lower_limit)}</td>
-                <td>{isEditing ? <Input bsSize="sm" type="number" value={s.upper_limit ?? ""} placeholder="∞ (blank = top)" onChange={(e) => setSlab(s._i, "upper_limit", e.target.value)} /> : (s.upper_limit ? inr(s.upper_limit) : "and above")}</td>
-                <td>{isEditing ? <Input bsSize="sm" type="number" value={s.rate_percent} onChange={(e) => setSlab(s._i, "rate_percent", e.target.value)} /> : `${s.rate_percent}%`}</td>
+                <td>{isEditing ? <Input data-testid={testId("income-tax-policy-lower-limit", itemTestKey(s), "input")} bsSize="sm" type="number" value={s.lower_limit} onChange={(e) => setSlab(s._i, "lower_limit", e.target.value)} /> : inr(s.lower_limit)}</td>
+                <td>{isEditing ? <Input data-testid={testId("income-tax-policy-blank-top", itemTestKey(s), "input")} bsSize="sm" type="number" value={s.upper_limit ?? ""} placeholder="∞ (blank = top)" onChange={(e) => setSlab(s._i, "upper_limit", e.target.value)} /> : (s.upper_limit ? inr(s.upper_limit) : "and above")}</td>
+                <td>{isEditing ? <Input data-testid={testId("income-tax-policy-rate-percent", itemTestKey(s), "input")} bsSize="sm" type="number" value={s.rate_percent} onChange={(e) => setSlab(s._i, "rate_percent", e.target.value)} /> : `${s.rate_percent}%`}</td>
                 {isEditing && <td className="text-center"><i className="ri-delete-bin-line text-danger" style={{ cursor: "pointer" }} onClick={() => delSlab(s._i)}></i></td>}
               </tr>
             ))}
           </tbody>
         </Table>
 
-        <SectionLabel right={isEditing && <Button size="sm" color="success" outline onClick={addBand}><i className="ri-add-line fs-14"></i> Add Band</Button>}>{regime === "new" ? "New" : "Old"} Regime — Surcharge Bands</SectionLabel>
+        <SectionLabel right={isEditing && <Button data-testid="income-tax-policy-add-band-button" size="sm" color="success" outline onClick={addBand}><i className="ri-add-line fs-14"></i> Add Band</Button>}>{regime === "new" ? "New" : "Old"} Regime — Surcharge Bands</SectionLabel>
         <Table bordered responsive className="mb-4" style={{ fontSize: 13 }}>
           <thead className="table-light"><tr><th>Income above (₹)</th><th>Surcharge (%)</th>{isEditing && <th style={{ width: 40 }}></th>}</tr></thead>
           <tbody>
             {bandsOf(regime).map((b) => (
               <tr key={b._i}>
-                <td>{isEditing ? <Input bsSize="sm" type="number" value={b.income_threshold} onChange={(e) => setBand(b._i, "income_threshold", e.target.value)} /> : inr(b.income_threshold)}</td>
-                <td>{isEditing ? <Input bsSize="sm" type="number" value={b.rate_percent} onChange={(e) => setBand(b._i, "rate_percent", e.target.value)} /> : `${b.rate_percent}%`}</td>
+                <td>{isEditing ? <Input data-testid={testId("income-tax-policy-income-threshold", itemTestKey(b), "input")} bsSize="sm" type="number" value={b.income_threshold} onChange={(e) => setBand(b._i, "income_threshold", e.target.value)} /> : inr(b.income_threshold)}</td>
+                <td>{isEditing ? <Input data-testid={testId("income-tax-policy-rate-percent", itemTestKey(b), "input")} bsSize="sm" type="number" value={b.rate_percent} onChange={(e) => setBand(b._i, "rate_percent", e.target.value)} /> : `${b.rate_percent}%`}</td>
                 {isEditing && <td className="text-center"><i className="ri-delete-bin-line text-danger" style={{ cursor: "pointer" }} onClick={() => delBand(b._i)}></i></td>}
               </tr>
             ))}
@@ -293,7 +294,7 @@ const IncomeTaxPolicySettings = () => {
         <div className="border rounded p-3 mb-4 bg-light">
           <Row className="align-items-center g-2 mb-3">
             <Col xs="auto"><Label className="mb-0" style={{ fontSize: 13 }}>Annual taxable gross</Label></Col>
-            <Col xs="auto"><Input type="number" value={previewIncome} style={{ width: 180 }} onChange={(e) => setPreviewIncome(e.target.value)} /></Col>
+            <Col xs="auto"><Input data-testid="income-tax-policy-annual-taxable-gross-input" type="number" value={previewIncome} style={{ width: 180 }} onChange={(e) => setPreviewIncome(e.target.value)} /></Col>
             <Col xs="auto" className="text-muted" style={{ fontSize: 12 }}>− std {inr(data[stdKey])} = taxable {inr(preview?.taxable)} {regime === "old" && "(before HRA/80C — set per employee)"}</Col>
           </Row>
           {preview && (
@@ -308,8 +309,8 @@ const IncomeTaxPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={cancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={save} disabled={loading}><i className="ri-check-double-line align-middle me-1"></i>{loading ? "Saving…" : "Save Changes"}</Button>
+            <Button data-testid="income-tax-policy-cancel-button" color="light" className="border" onClick={cancel} disabled={loading}>Cancel</Button>
+            <Button data-testid="income-tax-policy-save-changes-button" color="success" onClick={save} disabled={loading}><i className="ri-check-double-line align-middle me-1"></i>{loading ? "Saving…" : "Save Changes"}</Button>
           </div>
         )}
       </CardBody>

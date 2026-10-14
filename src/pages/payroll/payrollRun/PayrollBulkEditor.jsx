@@ -1,15 +1,20 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { TableSkeletonBlock } from "../../../component/common/skeleton/Skeleton";
 import {
   Card, CardHeader, CardBody, CardTitle,
-  Button, Spinner, Badge, Input,
+  Button, Spinner, Badge,
   Modal, ModalHeader, ModalBody, ModalFooter,
-  Row, Col, Label,
 } from "reactstrap";
 import Swal from "sweetalert2";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import EmployeeRegularization from "./EmployeeRegularization";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { setSalaryStructures } from "../../../redux/reducers/ChildReducer/SalaryStructureReducer";
+import FilterSelect from "../../../shared/ui/FilterSelect";
+import "./adjustmentColumnModal.scss";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -53,7 +58,7 @@ const isDirty = (orig, val) => String(orig ?? "0") !== String(val ?? "0");
 
 // ─── SweetAlert confirm helper for destructive actions ─────────────────────────
 
-const confirmAction = ({ title, text, confirmText = "Yes, remove it", confirmColor = "#dc3545" }) =>
+const confirmAction = ({ title, text, confirmText = "Yes, remove it", confirmColor = "var(--vz-danger)" }) =>
   Swal.fire({
     icon: "warning",
     title,
@@ -72,8 +77,8 @@ const cellSt = {
   fontSize: 12,
   whiteSpace: "nowrap",
   verticalAlign: "middle",
-  borderRight: "1px solid #e9ecef",
-  borderBottom: "1px solid #e9ecef",
+  borderRight: "1px solid var(--vz-border-color)",
+  borderBottom: "1px solid var(--vz-border-color)",
 };
 
 // NOTE: whiteSpace changed from "nowrap" to "normal" (+ wordBreak) so that
@@ -93,29 +98,29 @@ const thSt = (extra = {}) => ({
   position: "sticky",
   top: 0,
   zIndex: 3,
-  background: "#f8f9fa",
-  borderRight: "1px solid #dee2e6",
-  borderBottom: "2px solid #dee2e6",
+  background: "var(--vz-tertiary-bg)",
+  borderRight: "1px solid var(--vz-border-color)",
+  borderBottom: "2px solid var(--vz-border-color)",
   ...extra,
 });
 
 const GROUP_COLORS = {
-  employee:   { bg: "#f0f4f8", text: "#334155", border: "#cbd5e1" },
-  attendance: { bg: "#fffbeb", text: "#92400e", border: "#fcd34d" },
-  lop:        { bg: "#fff1f2", text: "#be123c", border: "#fda4af" },
-  earning:    { bg: "#f0fdf4", text: "#166534", border: "#86efac" },
-  addEarning: { bg: "#ecfdf5", text: "#065f46", border: "#6ee7b7" },
-  deduction:  { bg: "#fff5f5", text: "#c53030", border: "#fca5a5" },
-  addDeduct:  { bg: "#fff0f0", text: "#9b1c1c", border: "#f87171" },
-  statutory:  { bg: "#eff6ff", text: "#1d4ed8", border: "#93c5fd" },
-  gross:      { bg: "#f0fdf4", text: "#166534", border: "#86efac" },
-  totalDed:   { bg: "#fff5f5", text: "#c53030", border: "#fca5a5" },
-  netpay:     { bg: "#ecfdf5", text: "#065f46", border: "#34d399" },
+  employee:   { bg: "var(--vz-tertiary-bg)", text: "var(--vz-body-color)", border: "var(--vz-border-color)" },
+  attendance: { bg: "rgba(var(--vz-warning-rgb), .1)", text: "var(--vz-warning)", border: "rgba(var(--vz-warning-rgb), .45)" },
+  lop:        { bg: "rgba(var(--vz-danger-rgb), .08)", text: "var(--vz-danger)", border: "rgba(var(--vz-danger-rgb), .4)" },
+  earning:    { bg: "rgba(var(--vz-success-rgb), .1)", text: "var(--vz-success)", border: "rgba(var(--vz-success-rgb), .4)" },
+  addEarning: { bg: "rgba(var(--vz-success-rgb), .1)", text: "var(--vz-success)", border: "rgba(var(--vz-success-rgb), .4)" },
+  deduction:  { bg: "rgba(var(--vz-danger-rgb), .08)", text: "var(--vz-danger)", border: "rgba(var(--vz-danger-rgb), .4)" },
+  addDeduct:  { bg: "rgba(var(--vz-danger-rgb), .08)", text: "var(--vz-danger)", border: "rgba(var(--vz-danger-rgb), .6)" },
+  statutory:  { bg: "rgba(var(--vz-primary-rgb), .08)", text: "var(--vz-primary)", border: "rgba(var(--vz-primary-rgb), .4)" },
+  gross:      { bg: "rgba(var(--vz-success-rgb), .1)", text: "var(--vz-success)", border: "rgba(var(--vz-success-rgb), .4)" },
+  totalDed:   { bg: "rgba(var(--vz-danger-rgb), .08)", text: "var(--vz-danger)", border: "rgba(var(--vz-danger-rgb), .4)" },
+  netpay:     { bg: "rgba(var(--vz-success-rgb), .1)", text: "var(--vz-success)", border: "rgba(var(--vz-success-rgb), .55)" },
 };
 
 // ─── Editable cell ────────────────────────────────────────────────────────────
 
-const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false }) => {
+const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false, testId: cellTestId }) => {
   const [editing, setEditing] = useState(false);
   const [local, setLocal]     = useState("");
   const ref = useRef(null);
@@ -143,14 +148,15 @@ const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false
   const bg = readOnly
     ? "transparent"
     : dirty
-    ? "#fffbeb"
+    ? "rgba(var(--vz-warning-rgb), .1)"
     : editing
-    ? "#f0f9ff"
+    ? "rgba(var(--vz-primary-rgb), .07)"
     : "transparent";
 
   return (
     <td
       onClick={open}
+      data-testid={testId(cellTestId, "cell")}
       style={{
         ...cellSt,
         background: bg,
@@ -160,6 +166,7 @@ const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false
     >
       {editing ? (
         <input
+          data-testid={testId(cellTestId, "input")}
           ref={ref}
           type="number"
           min="0"
@@ -175,12 +182,12 @@ const EditCell = ({ value, origValue, onChange, readOnly = false, danger = false
           }}
         />
       ) : (
-        <span style={{ color: danger ? "#c53030" : "inherit", fontSize: 12 }}>
+        <span style={{ color: danger ? "var(--vz-danger)" : "inherit", fontSize: 12 }}>
           {fmt(value)}
           {dirty && (
             <span style={{
               display: "inline-block", width: 5, height: 5, borderRadius: "50%",
-              background: "#f59e0b", marginLeft: 4, verticalAlign: "middle",
+              background: "var(--vz-warning)", marginLeft: 4, verticalAlign: "middle",
             }} />
           )}
         </span>
@@ -237,6 +244,7 @@ const SubTh = ({ label, colorKey, borderLeft = false, right = true }) => {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const PayrollBulkEditor = () => {
+  const dispatch = useDispatch();
   // ── Filters
   const [month, setMonth] = useState(CURRENT_MONTH);
   const [year,  setYear]  = useState(CURRENT_YEAR);
@@ -282,7 +290,14 @@ const PayrollBulkEditor = () => {
         setComponentLookup(lookup);
       })
       .catch(() => {});
-  }, []);
+
+    Api({ method: "GET", url: "payroll/salary-structure/" })
+      .then((r) => {
+        const data = r?.data?.data || r?.data || [];
+        if (Array.isArray(data)) dispatch(setSalaryStructures(data));
+      })
+      .catch(() => {});
+  }, [dispatch]);
 
   // ─── Derive component columns from selected structure ────────────────────────
   useEffect(() => {
@@ -678,7 +693,7 @@ const PayrollBulkEditor = () => {
         fullscreen
           ? {
               position: "fixed", inset: 0, zIndex: 1050,
-              background: "#fff", padding: "16px 20px",
+              background: "var(--vz-secondary-bg)", padding: "16px 20px",
               overflowY: "auto",
             }
           : undefined
@@ -687,12 +702,12 @@ const PayrollBulkEditor = () => {
       {fullscreen && (
         <div
           className="d-flex align-items-center justify-content-between mb-2 pb-2"
-          style={{ borderBottom: "1px solid #e5e7eb" }}
+          style={{ borderBottom: "1px solid var(--vz-border-color)" }}
         >
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--vz-body-color)" }}>
             <i className="ri-fullscreen-line me-2"></i>Full Screen Edit Mode
           </span>
-          <Button color="light" size="sm" className="border" onClick={() => setFullscreen(false)}>
+          <Button data-testid="payroll-bulk-edit-exit-full-screen-esc-button" color="light" size="sm" className="border" onClick={() => setFullscreen(false)}>
             <i className="ri-fullscreen-exit-line me-1"></i>Exit Full Screen (Esc)
           </Button>
         </div>
@@ -705,73 +720,39 @@ const PayrollBulkEditor = () => {
       <Card className="shadow-none border mb-3">
         <CardBody className="py-3 px-3">
           <div className="d-flex flex-wrap align-items-stretch gap-2" style={{ minHeight: CONTROL_HEIGHT }}>
-            {/* Month */}
-            <div style={{ position: "relative", minWidth: 170, height: CONTROL_HEIGHT }}>
-              <i className="ri-calendar-line" style={{
-                position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", fontSize: 15, pointerEvents: "none", zIndex: 1,
-              }}></i>
-              <Input
-                type="select" value={month} onChange={(e) => setMonth(Number(e.target.value))}
-                style={{
-                  height: CONTROL_HEIGHT, fontSize: 13.5, color: "#475569", fontWeight: 500,
-                  borderRadius: 8, border: "1px solid #e2e8f0", paddingLeft: 38, paddingRight: 32,
-                  boxShadow: "none", background: "#fff", appearance: "none", WebkitAppearance: "none",
-                }}
-              >
-                {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </Input>
-              <i className="ri-arrow-down-s-line" style={{
-                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", fontSize: 16, pointerEvents: "none",
-              }}></i>
-            </div>
-
-            {/* Year */}
-            <div style={{ position: "relative", minWidth: 130, height: CONTROL_HEIGHT }}>
-              <i className="ri-calendar-2-line" style={{
-                position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", fontSize: 15, pointerEvents: "none", zIndex: 1,
-              }}></i>
-              <Input
-                type="select" value={year} onChange={(e) => setYear(Number(e.target.value))}
-                style={{
-                  height: CONTROL_HEIGHT, fontSize: 13.5, color: "#475569", fontWeight: 500,
-                  borderRadius: 8, border: "1px solid #e2e8f0", paddingLeft: 38, paddingRight: 32,
-                  boxShadow: "none", background: "#fff", appearance: "none", WebkitAppearance: "none",
-                }}
-              >
-                {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-              </Input>
-              <i className="ri-arrow-down-s-line" style={{
-                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", fontSize: 16, pointerEvents: "none",
-              }}></i>
-            </div>
-
-            {/* Salary Structure */}
-            <div style={{ position: "relative", minWidth: 240, flex: "1 1 240px", maxWidth: 320, height: CONTROL_HEIGHT }}>
-              <i className="ri-stack-line" style={{
-                position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", fontSize: 15, pointerEvents: "none", zIndex: 1,
-              }}></i>
-              <Input
-                type="select" value={selectedStructId}
-                onChange={(e) => setSelectedStructId(e.target.value)}
-                style={{
-                  height: CONTROL_HEIGHT, fontSize: 13.5, color: "#475569", fontWeight: 500,
-                  borderRadius: 8, border: "1px solid #e2e8f0", paddingLeft: 38, paddingRight: 32,
-                  boxShadow: "none", background: "#fff", appearance: "none", WebkitAppearance: "none",
-                }}
-              >
-                <option value="all">Select Salary Structure</option>
-                {structures.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </Input>
-              <i className="ri-arrow-down-s-line" style={{
-                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                color: "#94a3b8", fontSize: 16, pointerEvents: "none",
-              }}></i>
-            </div>
+            <FilterSelect
+              icon="ri-calendar-line"
+              caption="Month"
+              value={month}
+              onChange={(v) => setMonth(Number(v))}
+              options={MONTHS}
+              columns={3}
+              markValue={year === CURRENT_YEAR ? CURRENT_MONTH : null}
+              style={{ minWidth: 170, height: CONTROL_HEIGHT }}
+            />
+            <FilterSelect
+              icon="ri-calendar-2-line"
+              caption="Year"
+              value={year}
+              onChange={(v) => setYear(Number(v))}
+              options={YEARS.map((y) => ({ value: y, label: String(y) }))}
+              columns={YEARS.length > 3 ? 3 : YEARS.length}
+              markValue={CURRENT_YEAR}
+              style={{ minWidth: 130, height: CONTROL_HEIGHT }}
+            />
+            <FilterSelect
+              icon="ri-stack-line"
+              caption="Salary structure"
+              value={selectedStructId}
+              onChange={(v) => setSelectedStructId(String(v))}
+              options={[
+                { value: "all", label: "All structures", icon: "ri-apps-2-line" },
+                ...structures.map((s) => ({ value: String(s.id), label: s.name, icon: "ri-file-list-3-line" })),
+              ]}
+              searchable={structures.length > 6}
+              placeholder="Select salary structure"
+              style={{ minWidth: 240, flex: "1 1 240px", maxWidth: 320, height: CONTROL_HEIGHT }}
+            />
 
             <div className="ms-auto d-flex align-items-stretch gap-3" style={{ height: CONTROL_HEIGHT }}>
               {payrollRun ? (
@@ -788,24 +769,27 @@ const PayrollBulkEditor = () => {
                 </Badge>
               )}
               {dirtyEmpIds.length > 0 && (
-                <span className="d-flex align-items-center" style={{ fontSize: 12, color: "#d97706", fontWeight: 700, height: CONTROL_HEIGHT }}>
-                  <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "#f59e0b", marginRight: 5 }} />
+                <span className="d-flex align-items-center" style={{ fontSize: 12, color: "var(--vz-warning)", fontWeight: 700, height: CONTROL_HEIGHT }}>
+                  <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "var(--vz-warning)", marginRight: 5 }} />
                   {dirtyEmpIds.length} unsaved
                 </span>
               )}
               <Button
+                data-testid="payroll-bulk-edit-save-button"
                 color="success" onClick={handleSave} disabled={saving || !dirtyEmpIds.length}
                 style={{ minWidth: 140, height: CONTROL_HEIGHT, fontSize: 13.5 }}
               >
                 {saving ? <><Spinner size="sm" className="me-1" />Saving...</> : <><i className="ri-save-line me-1"></i>Save All Changes</>}
               </Button>
               <Button
+                data-testid="payroll-bulk-edit-refresh-button"
                 color="light" className="border" onClick={load} disabled={loading} title="Refresh"
                 style={{ height: CONTROL_HEIGHT, width: CONTROL_HEIGHT, padding: 0 }}
               >
                 <i className="ri-refresh-line"></i>
               </Button>
               <Button
+                data-testid="payroll-bulk-edit-fullscreen-button"
                 color="light" className="border"
                 onClick={() => setFullscreen((f) => !f)}
                 title={fullscreen ? "Exit full screen" : "Full screen view"}
@@ -822,7 +806,7 @@ const PayrollBulkEditor = () => {
           chips (removable inline) plus a button that opens the add-adjustment
           modal. Replaces the old always-expandable panel so the grid below
           doesn't get pushed down while the form is in use. ── */}
-      <Card className="shadow-none border mb-3" style={{ borderLeft: "3px solid #6366f1" }}>
+      <Card className="shadow-none border mb-3" style={{ borderLeft: "3px solid var(--vz-primary)" }}>
         <CardBody
           className="d-flex align-items-center justify-content-between flex-wrap gap-3"
           style={{ padding: "12px 18px" }}
@@ -831,8 +815,8 @@ const PayrollBulkEditor = () => {
             <div className="d-flex align-items-center gap-2">
               
               <div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "#3730a3", lineHeight: 1.2 }}>Adjustment Columns</div>
-                <div style={{ fontSize: 10.5, color: "#818cf8" }}>One-off earnings / deductions for this run</div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "var(--vz-primary)", lineHeight: 1.2 }}>Adjustment Columns</div>
+                <div style={{ fontSize: 10.5, color: "rgba(var(--vz-primary-rgb), .6)" }}>One-off earnings / deductions for this run</div>
               </div>
             </div>
 
@@ -845,17 +829,18 @@ const PayrollBulkEditor = () => {
                     <div key={col.key} style={{
                       display: "flex", alignItems: "center", gap: 6,
                       padding: "4px 6px 4px 10px", borderRadius: 8,
-                      background: "#fff",
+                      background: "var(--vz-secondary-bg)",
                       border: `1px solid ${palette.border}`,
                     }}>
                       <i className={`ri-arrow-${isEarn ? "up" : "down"}-line`} style={{ fontSize: 11, color: palette.text }}></i>
-                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "#334155" }}>{col.label}</span>
+                      <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--vz-body-color)" }}>{col.label}</span>
                       <button
+                        data-testid={testId("payroll-bulk-edit-chip", itemTestKey(col), "remove-button")}
                         onClick={() => handleRemoveAdjCol(col)}
                         style={{
-                          background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 5,
+                          background: "var(--vz-tertiary-bg)", border: "1px solid var(--vz-border-color)", borderRadius: 5,
                           cursor: "pointer", width: 17, height: 17, display: "flex",
-                          alignItems: "center", justifyContent: "center", color: "#94a3b8",
+                          alignItems: "center", justifyContent: "center", color: "var(--vz-secondary-color)",
                           fontSize: 11, lineHeight: 1, flexShrink: 0,
                         }}
                         title="Remove column"
@@ -868,6 +853,7 @@ const PayrollBulkEditor = () => {
           </div>
 
           <Button
+            data-testid="payroll-bulk-edit-add-adjustment-button"
             color="primary" size="sm"
             onClick={() => setAdjModalOpen(true)}
             style={{ borderRadius: 7, fontWeight: 600, padding: "7px 16px", boxShadow: "0 2px 6px rgba(99,102,241,0.25)", flexShrink: 0 }}
@@ -878,95 +864,179 @@ const PayrollBulkEditor = () => {
       </Card>
 
       {/* ── Add Adjustment modal ── */}
-      <Modal isOpen={adjModalOpen} toggle={() => setAdjModalOpen(false)} centered size="lg">
-        <ModalHeader toggle={() => setAdjModalOpen(false)} className="bg-light">
-          Add Adjustment Column
-        </ModalHeader>
-        <ModalBody>
-          <p className="mb-3 d-flex align-items-start gap-2" style={{ fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
-            <i className="ri-information-line mt-1" style={{ color: "#a5b4fc", fontSize: 14, flexShrink: 0 }}></i>
-            <span>
-              Creates a new <strong style={{ color: "#166534" }}>Earnings</strong> or{" "}
-              <strong style={{ color: "#c53030" }}>Deductions</strong> column visible for every employee in the grid.
-              Enter the amount per employee there — only non-zero cells are saved.
-            </span>
-          </p>
+      <Modal data-testid="payroll-bulk-edit-add-adjustment-column-dialog" isOpen={adjModalOpen} toggle={() => setAdjModalOpen(false)} centered size="lg" className="adm-modal" contentClassName="adm-content">
+        <div className={`adm-hero is-${adjForm.type}`}>
+          <span className="adm-hero-icon"><i className="ri-layout-column-line"></i></span>
+          <div className="adm-hero-text">
+            <h5>Add Adjustment Column</h5>
+            <p>
+              Adds an <b className="t-earning">Earnings</b> or <b className="t-deduction">Deductions</b> column for every employee in the grid. Only non-zero cells are saved.
+            </p>
+          </div>
+          <button data-testid="payroll-bulk-edit-add-adjustment-column-close-button" type="button" className="adm-close" onClick={() => setAdjModalOpen(false)} aria-label="Close">
+            <i className="ri-close-line"></i>
+          </button>
+        </div>
 
-          <Row className="g-3">
-            <Col md={6}>
-              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Column Label</Label>
-              <Input bsSize="sm" value={adjForm.label}
-                onChange={(e) => setAdjForm({ ...adjForm, label: e.target.value })}
-                placeholder="e.g. Festival Bonus"
-                style={{ borderRadius: 7 }} />
-            </Col>
-            <Col md={6}>
-              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Type</Label>
-              <Input type="select" bsSize="sm" value={adjForm.type}
-                onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}
-                style={{ borderRadius: 7 }}>
-                <option value="earning">▲ Earning</option>
-                <option value="deduction">▼ Deduction</option>
-              </Input>
-            </Col>
-
-            <Col md={6}>
-              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Default Amount</Label>
-              <Input type="number" min="0" bsSize="sm" value={adjForm.defaultAmount}
-                onChange={(e) => setAdjForm({ ...adjForm, defaultAmount: e.target.value })}
-                placeholder="0" style={{ borderRadius: 7 }} />
-            </Col>
-            <Col md={6}>
-              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Apply To</Label>
-              <Input type="select" bsSize="sm" value={adjForm.applyTo}
-                onChange={(e) => setAdjForm({ ...adjForm, applyTo: e.target.value, selectedStructures: [] })}
-                style={{ borderRadius: 7 }}>
-                <option value="all">All Structures</option>
-                <option value="specific">Specific</option>
-              </Input>
-            </Col>
-
-            {adjForm.applyTo === "specific" && (
-              <Col md={12}>
-                <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Select Structures</Label>
-                <Input type="select" multiple bsSize="sm"
-                  value={adjForm.selectedStructures || []}
-                  onChange={(e) => setAdjForm({
-                    ...adjForm,
-                    selectedStructures: Array.from(e.target.selectedOptions, (o) => o.value),
-                  })}
-                  style={{ height: 90, borderRadius: 7 }}
+        <div className="adm-body">
+          <div className="adm-field">
+            <label className="adm-label">Column type</label>
+            <div className="adm-types" role="radiogroup">
+              {[
+                { value: "earning", icon: "ri-arrow-up-circle-line", title: "Earning", sub: "Adds to gross pay" },
+                { value: "deduction", icon: "ri-arrow-down-circle-line", title: "Deduction", sub: "Reduces net pay" },
+              ].map((t) => (
+                <button
+                  data-testid={testId("payroll-bulk-edit-add-adjustment-column-confirm", itemTestKey(t), "button")}
+                  key={t.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={adjForm.type === t.value}
+                  className={`adm-type is-${t.value} ${adjForm.type === t.value ? "is-active" : ""}`}
+                  onClick={() => setAdjForm({ ...adjForm, type: t.value })}
                 >
-                  {structures.map((s) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
-                </Input>
-              </Col>
-            )}
+                  <span className="adm-type-icon"><i className={t.icon}></i></span>
+                  <span className="adm-type-text">
+                    <b>{t.title}</b>
+                    <small>{t.sub}</small>
+                  </span>
+                  <i className="ri-checkbox-circle-fill adm-type-check"></i>
+                </button>
+              ))}
+            </div>
+          </div>
 
-            <Col md={12}>
-              <Label style={{ fontSize: 11.5, fontWeight: 600, color: "#475569" }}>Reason (optional)</Label>
-              <Input bsSize="sm" value={adjForm.reason}
+          <div className="adm-grid">
+            <div className="adm-field">
+              <label className="adm-label" htmlFor="adm-label-input">Column label <span className="adm-req">*</span></label>
+              <div className="adm-input">
+                <i className="ri-text"></i>
+                <input
+                  data-testid="payroll-bulk-edit-add-adjustment-column-label-input"
+                  id="adm-label-input"
+                  value={adjForm.label}
+                  onChange={(e) => setAdjForm({ ...adjForm, label: e.target.value })}
+                  placeholder="e.g. Festival Bonus"
+                  maxLength={40}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="adm-field">
+              <label className="adm-label" htmlFor="adm-amount-input">Default amount</label>
+              <div className="adm-input">
+                <span className="adm-prefix">₹</span>
+                <input
+                  data-testid="payroll-bulk-edit-add-adjustment-column-amount-input"
+                  id="adm-amount-input"
+                  type="number"
+                  min="0"
+                  value={adjForm.defaultAmount}
+                  onChange={(e) => setAdjForm({ ...adjForm, defaultAmount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="adm-field">
+            <div className="adm-label-row">
+              <label className="adm-label">Apply to</label>
+              <div className="adm-seg">
+                {[
+                  { value: "all", icon: "ri-apps-2-line", label: "All structures" },
+                  { value: "specific", icon: "ri-filter-3-line", label: "Specific" },
+                ].map((o) => (
+                  <button
+                    data-testid={testId("payroll-bulk-edit-add-adjustment-column", itemTestKey(o), "button")}
+                    key={o.value}
+                    type="button"
+                    className={adjForm.applyTo === o.value ? "is-active" : ""}
+                    onClick={() => setAdjForm({ ...adjForm, applyTo: o.value, selectedStructures: [] })}
+                  >
+                    <i className={o.icon}></i>{o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {adjForm.applyTo === "specific" && (
+              <div className="adm-structs">
+                {structures.length === 0 && <span className="adm-empty">No salary structures found</span>}
+                {structures.map((s) => {
+                  const id = String(s.id);
+                  const on = (adjForm.selectedStructures || []).includes(id);
+                  return (
+                    <button
+                      data-testid={testId("payroll-bulk-edit-add-adjustment-column-confirm", itemTestKey(s), "button")}
+                      key={s.id}
+                      type="button"
+                      className={`adm-struct ${on ? "is-active" : ""}`}
+                      onClick={() => setAdjForm({
+                        ...adjForm,
+                        selectedStructures: on
+                          ? adjForm.selectedStructures.filter((x) => x !== id)
+                          : [...(adjForm.selectedStructures || []), id],
+                      })}
+                    >
+                      <i className={on ? "ri-checkbox-circle-fill" : "ri-checkbox-blank-circle-line"}></i>
+                      {s.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="adm-field">
+            <label className="adm-label" htmlFor="adm-reason-input">Reason <em>optional</em></label>
+            <div className="adm-input">
+              <i className="ri-history-line"></i>
+              <input
+                data-testid="payroll-bulk-edit-add-adjustment-column-reason-input"
+                id="adm-reason-input"
+                value={adjForm.reason}
                 onChange={(e) => setAdjForm({ ...adjForm, reason: e.target.value })}
                 placeholder="Shown on the audit trail"
-                style={{ borderRadius: 7 }} />
-            </Col>
-          </Row>
-        </ModalBody>
-        <ModalFooter className="bg-light">
-          <Button color="secondary" outline size="sm" onClick={() => setAdjModalOpen(false)}>Cancel</Button>
-          <Button
-            color="primary" size="sm"
+              />
+            </div>
+          </div>
+
+          <div className={`adm-preview is-${adjForm.type}`}>
+            <span className="adm-preview-tag">Preview</span>
+            <div className="adm-preview-col">
+              <span className="adm-preview-head">
+                <i className={adjForm.type === "earning" ? "ri-arrow-up-line" : "ri-arrow-down-line"}></i>
+                {adjForm.label.trim() || "Column label"}
+              </span>
+              <span className="adm-preview-cell">
+                {adjForm.type === "deduction" ? "− " : "+ "}₹{Number(adjForm.defaultAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <span className="adm-preview-meta">
+              {adjForm.applyTo === "all"
+                ? "Applies to all salary structures"
+                : `Applies to ${(adjForm.selectedStructures || []).length} selected structure${(adjForm.selectedStructures || []).length === 1 ? "" : "s"}`}
+            </span>
+          </div>
+        </div>
+
+        <div className="adm-footer">
+          <button data-testid="payroll-bulk-edit-add-adjustment-column-cancel-button" type="button" className="it-btn is-soft" onClick={() => setAdjModalOpen(false)}>Cancel</button>
+          <button
+            data-testid="payroll-bulk-edit-add-adjustment-column-add-column-button"
+            type="button"
+            className="it-btn is-primary"
             onClick={handleAddAdjColAndClose}
-            disabled={!adjForm.label.trim()}
-            style={{ fontWeight: 600 }}
+            disabled={!adjForm.label.trim() || (adjForm.applyTo === "specific" && !(adjForm.selectedStructures || []).length)}
           >
-            <i className="ri-add-line me-1"></i>Add Column
-          </Button>
-        </ModalFooter>
+            <i className="ri-add-line"></i>Add Column
+          </button>
+        </div>
       </Modal>
 
       {/* ── Grid ── */}
       <Card className="shadow-none border">
-        <CardHeader className="bg-light py-2 px-3 d-flex align-items-center justify-content-between">
+        <CardHeader className="surface-muted py-2 px-3 d-flex align-items-center justify-content-between">
           <CardTitle tag="h6" className="mb-0" style={{ fontSize: 14 }}>
             {MONTH_NAMES[month]} {year} — Payroll Edit Sheet
             {selectedStructId !== "all" && (
@@ -980,18 +1050,17 @@ const PayrollBulkEditor = () => {
 
         <CardBody className="p-0">
           {loading ? (
-            <div className="text-center py-5">
-              <Spinner color="success" />
-              <p className="text-muted mt-2 mb-0" style={{ fontSize: 13 }}>Loading payroll data...</p>
+            <div className="p-3">
+              <TableSkeletonBlock rows={8} cols={7} testId="payroll-bulk-editor-loading-skeleton" label="Loading payroll data" />
             </div>
           ) : selectedStructId === "all" ? (
             <div className="text-center py-5">
-              <i className="ri-filter-line" style={{ fontSize: 36, color: "#ccc" }}></i>
+              <i className="ri-filter-line" style={{ fontSize: 36, color: "var(--vz-secondary-color)" }}></i>
               <p className="text-muted mt-3 mb-0" style={{ fontSize: 13 }}>Select a salary structure to load the edit sheet.</p>
             </div>
           ) : rows.length === 0 ? (
             <div className="text-center py-5">
-              <i className="ri-file-list-3-line" style={{ fontSize: 36, color: "#ccc" }}></i>
+              <i className="ri-file-list-3-line" style={{ fontSize: 36, color: "var(--vz-secondary-color)" }}></i>
               <p className="text-muted mt-3 mb-0" style={{ fontSize: 13 }}>
                 No employees found for this structure in {MONTH_NAMES[month]} {year}.
                 {!payrollRun && " Run payroll first to see computed values."}
@@ -1080,8 +1149,8 @@ const PayrollBulkEditor = () => {
                       })}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {col.label}
-                          <button onClick={() => handleRemoveAdjCol(col)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
+                          <button data-testid={testId("payroll-bulk-edit-earning-column", itemTestKey(col), "remove-button")} onClick={() => handleRemoveAdjCol(col)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--vz-secondary-color)", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
                             title="Remove column">×</button>
                         </div>
                       </th>
@@ -1102,8 +1171,8 @@ const PayrollBulkEditor = () => {
                       })}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4 }}>
                           {col.label}
-                          <button onClick={() => handleRemoveAdjCol(col)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
+                          <button data-testid={testId("payroll-bulk-edit-deduction-column", itemTestKey(col), "remove-button")} onClick={() => handleRemoveAdjCol(col)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--vz-secondary-color)", fontSize: 12, padding: 0, lineHeight: 1, flexShrink: 0 }}
                             title="Remove column">×</button>
                         </div>
                       </th>
@@ -1131,10 +1200,10 @@ const PayrollBulkEditor = () => {
                     const e = edits[eid]    || {};
                     const o = origEdits[eid] || {};
                     const rowDirty = Object.keys(e).some((k) => isDirty(o[k], e[k]));
-                    const rowBg = rowDirty ? "#fffef5" : ri % 2 === 0 ? "#fff" : "#fafafa";
+                    const rowBg = rowDirty ? "rgba(var(--vz-warning-rgb), .06)" : ri % 2 === 0 ? "var(--vz-secondary-bg)" : "var(--vz-tertiary-bg)";
 
                     return (
-                      <tr key={eid} style={{ background: rowBg, borderBottom: "1px solid #f0f0f0" }}>
+                      <tr key={eid} style={{ background: rowBg, borderBottom: "1px solid var(--vz-tertiary-bg)" }}>
                         {/* Frozen employee col */}
                         <td style={{
                           ...cellSt,
@@ -1145,19 +1214,19 @@ const PayrollBulkEditor = () => {
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div style={{
                               width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-                              background: "#e8f5e9", display: "flex", alignItems: "center",
-                              justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#2e7d32",
+                              background: "rgba(var(--vz-success-rgb), .1)", display: "flex", alignItems: "center",
+                              justifyContent: "center", fontSize: 12, fontWeight: 800, color: "var(--vz-success)",
                             }}>
                               {(empName[0] || "?").toUpperCase()}
                             </div>
                             <div>
                               <div style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.3 }}>{empName}</div>
-                              <div style={{ fontSize: 10, color: "#999" }}>{empCode || "—"}</div>
+                              <div style={{ fontSize: 10, color: "var(--vz-secondary-color)" }}>{empCode || "—"}</div>
                             </div>
                             {rowDirty && (
                               <span style={{
-                                marginLeft: "auto", fontSize: 9, fontWeight: 800, color: "#d97706",
-                                background: "#fffbeb", border: "1px solid #fde68a",
+                                marginLeft: "auto", fontSize: 9, fontWeight: 800, color: "var(--vz-warning)",
+                                background: "rgba(var(--vz-warning-rgb), .1)", border: "1px solid rgba(var(--vz-warning-rgb), .4)",
                                 borderRadius: 3, padding: "1px 5px", textTransform: "uppercase",
                               }}>edited</span>
                             )}
@@ -1171,7 +1240,7 @@ const PayrollBulkEditor = () => {
                           row._isPayslip ? row.present_days         : "—",
                           row._isPayslip ? row.approved_leave_days  : "—",
                         ].map((val, i) => (
-                          <td key={i} style={{ ...cellSt, textAlign: "right", background: "#fffdf5", color: "#92400e" }}>
+                          <td key={i} style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-warning-rgb), .07)", color: "var(--vz-warning)" }}>
                             {val}
                           </td>
                         ))}
@@ -1186,8 +1255,8 @@ const PayrollBulkEditor = () => {
                             employeeName: empName,
                           })}
                           style={{
-                            ...cellSt, textAlign: "right", color: "#be123c",
-                            background: "#fff1f2", cursor: "pointer",
+                            ...cellSt, textAlign: "right", color: "var(--vz-danger)",
+                            background: "rgba(var(--vz-danger-rgb), .08)", cursor: "pointer",
                           }}
                           title="Click to edit attendance / LOP for this employee"
                         >
@@ -1199,6 +1268,7 @@ const PayrollBulkEditor = () => {
                         {earnCols.map((col) => (
                           <EditCell
                             key={col.id}
+                            testId={testId("payroll-bulk-edit-row", itemTestKey(row), col.name)}
                             value={e[`name_${col.name}`] ?? 0}
                             origValue={o[`name_${col.name}`] ?? 0}
                             onChange={(v) => setCell(eid, `name_${col.name}`, v)}
@@ -1209,6 +1279,7 @@ const PayrollBulkEditor = () => {
                         {addEarnCols.map((col) => (
                           <EditCell
                             key={col.key}
+                            testId={testId("payroll-bulk-edit-row", itemTestKey(row), col.key)}
                             value={e[col.key] ?? 0}
                             origValue={o[col.key] ?? 0}
                             onChange={(v) => setCell(eid, col.key, v)}
@@ -1219,6 +1290,7 @@ const PayrollBulkEditor = () => {
                         {dedCols.map((col) => (
                           <EditCell
                             key={col.id}
+                            testId={testId("payroll-bulk-edit-row", itemTestKey(row), col.name)}
                             value={e[`name_${col.name}`] ?? 0}
                             origValue={o[`name_${col.name}`] ?? 0}
                             onChange={(v) => setCell(eid, `name_${col.name}`, v)}
@@ -1230,6 +1302,7 @@ const PayrollBulkEditor = () => {
                         {addDedCols.map((col) => (
                           <EditCell
                             key={col.key}
+                            testId={testId("payroll-bulk-edit-row", itemTestKey(row), col.key)}
                             value={e[col.key] ?? 0}
                             origValue={o[col.key] ?? 0}
                             onChange={(v) => setCell(eid, col.key, v)}
@@ -1243,21 +1316,21 @@ const PayrollBulkEditor = () => {
                           row._isPayslip ? row.esi_employee : 0,
                           row._isPayslip ? row.pt_amount    : 0,
                         ].map((val, i) => (
-                          <td key={i} style={{ ...cellSt, textAlign: "right", color: "#1d4ed8", background: "#f0f6ff" }}>
+                          <td key={i} style={{ ...cellSt, textAlign: "right", color: "var(--vz-primary)", background: "rgba(var(--vz-primary-rgb), .07)" }}>
                             ₹{fmt(val)}
                           </td>
                         ))}
 
                         {/* Summary */}
-                        <td style={{ ...cellSt, textAlign: "right", fontWeight: 700, color: "#166534", background: "#f8fdf8" }}>
+                        <td style={{ ...cellSt, textAlign: "right", fontWeight: 700, color: "var(--vz-success)", background: "rgba(var(--vz-success-rgb), .06)" }}>
                           ₹{fmt(row._isPayslip ? row.gross_earnings   : 0)}
                         </td>
-                        <td style={{ ...cellSt, textAlign: "right", fontWeight: 700, color: "#c53030", background: "#fff8f8" }}>
+                        <td style={{ ...cellSt, textAlign: "right", fontWeight: 700, color: "var(--vz-danger)", background: "rgba(var(--vz-danger-rgb), .06)" }}>
                           ₹{fmt(row._isPayslip ? row.total_deductions : 0)}
                         </td>
                         <td style={{ ...cellSt, textAlign: "right", fontWeight: 800, fontSize: 13,
-                          color: safeNum(row._isPayslip ? row.net_pay : 0) < 0 ? "#c53030" : "#065f46",
-                          background: "#f0fdf8" }}>
+                          color: safeNum(row._isPayslip ? row.net_pay : 0) < 0 ? "var(--vz-danger)" : "var(--vz-success)",
+                          background: "rgba(var(--vz-success-rgb), .08)" }}>
                           ₹{fmt(row._isPayslip ? row.net_pay          : 0)}
                         </td>
                       </tr>
@@ -1266,8 +1339,8 @@ const PayrollBulkEditor = () => {
 
                   {/* ── TOTALS ROW ── */}
                   {rows.length > 1 && (
-                    <tr style={{ background: "#e8ecf0", borderTop: "2px solid #c1c9d2", fontWeight: 700 }}>
-                      <td style={{ ...cellSt, position: "sticky", left: 0, zIndex: 2, background: "#dde3ea", fontSize: 11, fontWeight: 800, color: "#334155", boxShadow: "2px 0 4px -2px rgba(0,0,0,0.08)" }}>
+                    <tr style={{ background: "var(--vz-tertiary-bg)", borderTop: "2px solid var(--vz-border-color)", fontWeight: 700 }}>
+                      <td style={{ ...cellSt, position: "sticky", left: 0, zIndex: 2, background: "var(--vz-border-color)", fontSize: 11, fontWeight: 800, color: "var(--vz-body-color)", boxShadow: "2px 0 4px -2px rgba(0,0,0,0.08)" }}>
                         TOTALS ({rows.length})
                       </td>
                       {/* Attendance totals */}
@@ -1277,28 +1350,28 @@ const PayrollBulkEditor = () => {
                         rows.reduce((a, r) => a + safeNum(r._isPayslip ? r.present_days         : 0), 0),
                         rows.reduce((a, r) => a + safeNum(r._isPayslip ? r.approved_leave_days  : 0), 0),
                       ].map((v, i) => (
-                        <td key={i} style={{ ...cellSt, textAlign: "right", background: "#fffbeb", color: "#92400e" }}>{fmt(v)}</td>
+                        <td key={i} style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-warning-rgb), .1)", color: "var(--vz-warning)" }}>{fmt(v)}</td>
                       ))}
-                      <td style={{ ...cellSt, textAlign: "right", background: "#fff0f2", color: "#be123c" }}>{fmt(totals.lop_days || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-danger-rgb), .08)", color: "var(--vz-danger)" }}>{fmt(totals.lop_days || 0)}</td>
 
                       {earnCols.map((col) => (
-                        <td key={col.id} style={{ ...cellSt, textAlign: "right", background: "#f0fdf4", color: "#166534" }}>₹{fmt(totals[`name_${col.name}`] || 0)}</td>
+                        <td key={col.id} style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-success-rgb), .1)", color: "var(--vz-success)" }}>₹{fmt(totals[`name_${col.name}`] || 0)}</td>
                       ))}
                       {addEarnCols.map((col) => (
-                        <td key={col.key} style={{ ...cellSt, textAlign: "right", background: "#ecfdf5", color: "#065f46", fontWeight: 800 }}>₹{fmt(totals[col.key] || 0)}</td>
+                        <td key={col.key} style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-success-rgb), .1)", color: "var(--vz-success)", fontWeight: 800 }}>₹{fmt(totals[col.key] || 0)}</td>
                       ))}
                       {dedCols.map((col) => (
-                        <td key={col.id} style={{ ...cellSt, textAlign: "right", background: "#fff5f5", color: "#c53030" }}>₹{fmt(totals[`name_${col.name}`] || 0)}</td>
+                        <td key={col.id} style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-danger-rgb), .08)", color: "var(--vz-danger)" }}>₹{fmt(totals[`name_${col.name}`] || 0)}</td>
                       ))}
                       {addDedCols.map((col) => (
-                        <td key={col.key} style={{ ...cellSt, textAlign: "right", background: "#fff0f0", color: "#9b1c1c", fontWeight: 800 }}>₹{fmt(totals[col.key] || 0)}</td>
+                        <td key={col.key} style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-danger-rgb), .08)", color: "var(--vz-danger)", fontWeight: 800 }}>₹{fmt(totals[col.key] || 0)}</td>
                       ))}
-                      <td style={{ ...cellSt, textAlign: "right", background: "#eff6ff", color: "#1d4ed8" }}>₹{fmt(totals.pf_emp  || 0)}</td>
-                      <td style={{ ...cellSt, textAlign: "right", background: "#eff6ff", color: "#1d4ed8" }}>₹{fmt(totals.esi_emp || 0)}</td>
-                      <td style={{ ...cellSt, textAlign: "right", background: "#eff6ff", color: "#1d4ed8" }}>₹{fmt(totals.pt     || 0)}</td>
-                      <td style={{ ...cellSt, textAlign: "right", background: "#f0fdf4", color: "#166534", fontWeight: 800 }}>₹{fmt(totals.gross        || 0)}</td>
-                      <td style={{ ...cellSt, textAlign: "right", background: "#fff5f5", color: "#c53030", fontWeight: 800 }}>₹{fmt(totals.total_deduct || 0)}</td>
-                      <td style={{ ...cellSt, textAlign: "right", background: "#ecfdf5", color: "#065f46", fontWeight: 800, fontSize: 13 }}>₹{fmt(totals.net_pay      || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-primary-rgb), .08)", color: "var(--vz-primary)" }}>₹{fmt(totals.pf_emp  || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-primary-rgb), .08)", color: "var(--vz-primary)" }}>₹{fmt(totals.esi_emp || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-primary-rgb), .08)", color: "var(--vz-primary)" }}>₹{fmt(totals.pt     || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-success-rgb), .1)", color: "var(--vz-success)", fontWeight: 800 }}>₹{fmt(totals.gross        || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-danger-rgb), .08)", color: "var(--vz-danger)", fontWeight: 800 }}>₹{fmt(totals.total_deduct || 0)}</td>
+                      <td style={{ ...cellSt, textAlign: "right", background: "rgba(var(--vz-success-rgb), .1)", color: "var(--vz-success)", fontWeight: 800, fontSize: 13 }}>₹{fmt(totals.net_pay      || 0)}</td>
                     </tr>
                   )}
                 </tbody>
@@ -1309,22 +1382,22 @@ const PayrollBulkEditor = () => {
       </Card>
 
       {/* ── Legend (moved below the grid) ── */}
-      <div className="d-flex flex-wrap align-items-center gap-4 mt-2 mb-2 px-1" style={{ fontSize: 11, color: "#888" }}>
+      <div className="d-flex flex-wrap align-items-center gap-4 mt-2 mb-2 px-1" style={{ fontSize: 11, color: "var(--vz-secondary-color)" }}>
         {[
-          { bg: "#fffbeb", border: "#fcd34d", label: "Attendance" },
-          { bg: "#f0fdf4", border: "#86efac", label: "Earnings" },
-          { bg: "#ecfdf5", border: "#6ee7b7", label: "Add. Earnings" },
-          { bg: "#fff5f5", border: "#fca5a5", label: "Deductions" },
-          { bg: "#fff0f0", border: "#f87171", label: "Add. Deductions" },
-          { bg: "#eff6ff", border: "#93c5fd", label: "Statutory (read-only)" },
+          { bg: "rgba(var(--vz-warning-rgb), .1)", border: "rgba(var(--vz-warning-rgb), .45)", label: "Attendance" },
+          { bg: "rgba(var(--vz-success-rgb), .1)", border: "rgba(var(--vz-success-rgb), .4)", label: "Earnings" },
+          { bg: "rgba(var(--vz-success-rgb), .1)", border: "rgba(var(--vz-success-rgb), .4)", label: "Add. Earnings" },
+          { bg: "rgba(var(--vz-danger-rgb), .08)", border: "rgba(var(--vz-danger-rgb), .4)", label: "Deductions" },
+          { bg: "rgba(var(--vz-danger-rgb), .08)", border: "rgba(var(--vz-danger-rgb), .6)", label: "Add. Deductions" },
+          { bg: "rgba(var(--vz-primary-rgb), .08)", border: "rgba(var(--vz-primary-rgb), .4)", label: "Statutory (read-only)" },
         ].map((l) => (
           <span key={l.label} className="d-flex align-items-center gap-1">
             <span style={{ display: "inline-block", width: 10, height: 10, background: l.bg, border: `1px solid ${l.border}`, borderRadius: 2 }} />
             {l.label}
           </span>
         ))}
-        <span className="ms-auto" style={{ color: "#aaa" }}>
-          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "#f59e0b", marginRight: 4 }} />
+        <span className="ms-auto" style={{ color: "var(--vz-secondary-color)" }}>
+          <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--vz-warning)", marginRight: 4 }} />
           Amber dot = unsaved edit · Click salary/adjustment cells to edit · Click LOP to open Attendance &amp; Regularization
         </span>
       </div>
@@ -1334,8 +1407,8 @@ const PayrollBulkEditor = () => {
           API calls), so closing this modal and reloading the grid picks up
           the new lop_days / net_pay automatically. ── */}
       {regModal && (
-        <Modal isOpen toggle={() => setRegModal(null)} size="xl" centered scrollable>
-          <ModalHeader toggle={() => setRegModal(null)} className="bg-light p-3">
+        <Modal data-testid="payroll-bulk-edit-attendance-lop-dialog" isOpen toggle={() => setRegModal(null)} size="xl" centered scrollable>
+          <ModalHeader close={<ModalCloseButton onClick={() => setRegModal(null)} testId="payroll-bulk-edit-attendance-lop-close-button" />} toggle={() => setRegModal(null)} className="surface-muted p-3">
             Attendance &amp; LOP — {regModal.employeeName}
             <span className="text-muted ms-2" style={{ fontSize: 12, fontWeight: 400 }}>
               {MONTH_NAMES[month]} {year}
@@ -1351,8 +1424,8 @@ const PayrollBulkEditor = () => {
               onSaved={() => load()}
             />
           </ModalBody>
-          <ModalFooter className="bg-light p-3">
-            <Button color="secondary" outline size="sm" onClick={() => setRegModal(null)}>Close</Button>
+          <ModalFooter className="surface-muted p-3">
+            <Button data-testid="payroll-bulk-edit-attendance-lop-footer-close-button" color="secondary" outline size="sm" onClick={() => setRegModal(null)}>Close</Button>
           </ModalFooter>
         </Modal>
       )}

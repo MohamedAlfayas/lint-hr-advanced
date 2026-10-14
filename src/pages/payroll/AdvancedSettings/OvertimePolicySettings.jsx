@@ -3,7 +3,7 @@ import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
   Col, Row, Label, Button, Input, Badge, FormFeedback,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, range, min, runChecks } from "./validators";
@@ -56,7 +56,7 @@ const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span style={{
       display: "inline-block", width: 36, height: 20, borderRadius: 12,
-      background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0,
+      background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0,
     }}>
       <span style={{
         position: "absolute", top: 3, left: checked ? 18 : 3,
@@ -290,7 +290,7 @@ const OvertimePolicySettings = () => {
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
               Set up overtime calculation rules and compensation types.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="overtime-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
             </Button>
           </div>
@@ -311,10 +311,10 @@ const OvertimePolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); setErrors({}); }}>
+              <Button data-testid="overtime-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); setErrors({}); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}>
+              <Button data-testid="overtime-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
                 <i className="ri-add-line fs-14"></i> New Version
               </Button>
             </>
@@ -355,6 +355,7 @@ const OvertimePolicySettings = () => {
             {isEditing ? (
               <div>
                 <Input
+                  data-testid="overtime-policy-effective-date-input"
                   type="date"
                   invalid={!!errors.effective_date}
                   value={form.effective_date || ""}
@@ -362,7 +363,7 @@ const OvertimePolicySettings = () => {
                   onBlur={() => handleBlur("effective_date")}
                   style={{ width: 180 }}
                 />
-                {errors.effective_date && <FormFeedback style={{ display: "block" }}>{errors.effective_date}</FormFeedback>}
+                {errors.effective_date && <FormFeedback data-testid="overtime-policy-effective-date-error" style={{ display: "block" }}>{errors.effective_date}</FormFeedback>}
               </div>
             ) : (
               <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>
@@ -371,7 +372,7 @@ const OvertimePolicySettings = () => {
           <SettingRow label="Status">
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
+                <Input data-testid="overtime-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
                 <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{form.is_active ? "Active" : "Inactive"}</Label>
               </div>
             ) : (
@@ -381,7 +382,7 @@ const OvertimePolicySettings = () => {
           <SettingRow label="Enable Overtime" last>
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.is_ot_enabled} onChange={() => handleToggle("is_ot_enabled")} />
+                <Input data-testid="overtime-policy-active-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_ot_enabled} onChange={() => handleToggle("is_ot_enabled")} />
                 <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{form.is_ot_enabled ? "Enabled" : "Disabled"}</Label>
               </div>
             ) : (
@@ -397,6 +398,7 @@ const OvertimePolicySettings = () => {
               <SettingRow label="Calculation Method">
                 {isEditing ? (
                   <Select
+                    testId="overtime-policy-enabled"
                     options={OT_METHOD_OPTIONS}
                     value={OT_METHOD_OPTIONS.find(o => o.value === form.ot_calculation_method)}
                     onChange={(e) => handleChange("ot_calculation_method", e.value)}
@@ -411,6 +413,7 @@ const OvertimePolicySettings = () => {
               <SettingRow label="Compensation Type">
                 {isEditing ? (
                   <Select
+                    testId="overtime-policy-compensation-type"
                     options={COMPENSATION_OPTIONS}
                     value={COMPENSATION_OPTIONS.find(o => o.value === form.compensation_type)}
                     onChange={(e) => handleChange("compensation_type", e.value)}
@@ -425,6 +428,7 @@ const OvertimePolicySettings = () => {
               <SettingRow label="OT Based On">
                 {isEditing ? (
                   <Select
+                    testId="overtime-policy-ot-based-on"
                     options={OT_BASED_ON_OPTIONS}
                     value={OT_BASED_ON_OPTIONS.find(o => o.value === form.ot_based_on)}
                     onChange={(e) => handleChange("ot_based_on", e.value)}
@@ -440,6 +444,7 @@ const OvertimePolicySettings = () => {
                 {isEditing ? (
                   <div>
                     <Input
+                      data-testid="overtime-policy-ot-multiplier-input"
                       type="number" step="0.01" min={MULTIPLIER_RANGE.min} max={MULTIPLIER_RANGE.max}
                       invalid={!!errors.ot_multiplier}
                       value={form.ot_multiplier || ""}
@@ -447,7 +452,7 @@ const OvertimePolicySettings = () => {
                       onBlur={() => handleBlur("ot_multiplier")}
                       style={{ width: 100 }}
                     />
-                    {errors.ot_multiplier && <FormFeedback style={{ display: "block" }}>{errors.ot_multiplier}</FormFeedback>}
+                    {errors.ot_multiplier && <FormFeedback data-testid="overtime-policy-ot-multiplier-error" style={{ display: "block" }}>{errors.ot_multiplier}</FormFeedback>}
                   </div>
                 ) : (
                   <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>×{data.ot_multiplier || "—"}</Badge>
@@ -457,6 +462,7 @@ const OvertimePolicySettings = () => {
                 {isEditing ? (
                   <div>
                     <Input
+                      data-testid="overtime-policy-minimum-ot-minutes-input"
                       type="number" min="0"
                       invalid={!!errors.minimum_ot_minutes}
                       value={form.minimum_ot_minutes ?? ""}
@@ -468,7 +474,7 @@ const OvertimePolicySettings = () => {
                       }}
                       style={{ width: 100 }}
                     />
-                    {errors.minimum_ot_minutes && <FormFeedback style={{ display: "block" }}>{errors.minimum_ot_minutes}</FormFeedback>}
+                    {errors.minimum_ot_minutes && <FormFeedback data-testid="overtime-policy-minimum-ot-minutes-error" style={{ display: "block" }}>{errors.minimum_ot_minutes}</FormFeedback>}
                   </div>
                 ) : (
                   <span style={{ fontSize: 13 }}>{data.minimum_ot_minutes ?? "—"} min</span>
@@ -478,6 +484,7 @@ const OvertimePolicySettings = () => {
                 {isEditing ? (
                   <div>
                     <Input
+                      data-testid="overtime-policy-maximum-ot-minutes-per-input"
                       type="number" min="0"
                       invalid={!!errors.maximum_ot_minutes_per_day}
                       value={form.maximum_ot_minutes_per_day ?? ""}
@@ -489,7 +496,7 @@ const OvertimePolicySettings = () => {
                       }}
                       style={{ width: 100 }}
                     />
-                    {errors.maximum_ot_minutes_per_day && <FormFeedback style={{ display: "block" }}>{errors.maximum_ot_minutes_per_day}</FormFeedback>}
+                    {errors.maximum_ot_minutes_per_day && <FormFeedback data-testid="overtime-policy-maximum-ot-minutes-per-error" style={{ display: "block" }}>{errors.maximum_ot_minutes_per_day}</FormFeedback>}
                   </div>
                 ) : (
                   <span style={{ fontSize: 13 }}>{data.maximum_ot_minutes_per_day ?? "—"} min</span>
@@ -502,7 +509,7 @@ const OvertimePolicySettings = () => {
               <SettingRow label="Enable Weekend OT">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0">
-                    <Input className="form-check-input" type="checkbox" checked={!!form.is_weekend_ot_enabled} onChange={() => handleToggle("is_weekend_ot_enabled")} />
+                    <Input data-testid="overtime-policy-is-weekend-ot-enabled-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_weekend_ot_enabled} onChange={() => handleToggle("is_weekend_ot_enabled")} />
                   </div>
                 ) : (
                   <ViewToggle checked={!!data.is_weekend_ot_enabled} />
@@ -513,6 +520,7 @@ const OvertimePolicySettings = () => {
                   {isEditing ? (
                     <div>
                       <Input
+                        data-testid="overtime-policy-weekend-ot-multiplier-input"
                         type="number" step="0.01" min={MULTIPLIER_RANGE.min} max={MULTIPLIER_RANGE.max}
                         invalid={!!errors.weekend_ot_multiplier}
                         value={form.weekend_ot_multiplier || ""}
@@ -520,7 +528,7 @@ const OvertimePolicySettings = () => {
                         onBlur={() => handleBlur("weekend_ot_multiplier")}
                         style={{ width: 100 }}
                       />
-                      {errors.weekend_ot_multiplier && <FormFeedback style={{ display: "block" }}>{errors.weekend_ot_multiplier}</FormFeedback>}
+                      {errors.weekend_ot_multiplier && <FormFeedback data-testid="overtime-policy-weekend-ot-multiplier-error" style={{ display: "block" }}>{errors.weekend_ot_multiplier}</FormFeedback>}
                     </div>
                   ) : (
                     <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>×{data.weekend_ot_multiplier || "—"}</Badge>
@@ -537,7 +545,7 @@ const OvertimePolicySettings = () => {
               <SettingRow label="Enable Holiday OT">
                 {isEditing ? (
                   <div className="form-check form-switch mb-0">
-                    <Input className="form-check-input" type="checkbox" checked={!!form.is_holiday_ot_enabled} onChange={() => handleToggle("is_holiday_ot_enabled")} />
+                    <Input data-testid="overtime-policy-is-holiday-ot-enabled-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_holiday_ot_enabled} onChange={() => handleToggle("is_holiday_ot_enabled")} />
                   </div>
                 ) : (
                   <ViewToggle checked={!!data.is_holiday_ot_enabled} />
@@ -548,6 +556,7 @@ const OvertimePolicySettings = () => {
                   {isEditing ? (
                     <div>
                       <Input
+                        data-testid="overtime-policy-holiday-ot-multiplier-input"
                         type="number" step="0.01" min={MULTIPLIER_RANGE.min} max={MULTIPLIER_RANGE.max}
                         invalid={!!errors.holiday_ot_multiplier}
                         value={form.holiday_ot_multiplier || ""}
@@ -555,7 +564,7 @@ const OvertimePolicySettings = () => {
                         onBlur={() => handleBlur("holiday_ot_multiplier")}
                         style={{ width: 100 }}
                       />
-                      {errors.holiday_ot_multiplier && <FormFeedback style={{ display: "block" }}>{errors.holiday_ot_multiplier}</FormFeedback>}
+                      {errors.holiday_ot_multiplier && <FormFeedback data-testid="overtime-policy-holiday-ot-multiplier-error" style={{ display: "block" }}>{errors.holiday_ot_multiplier}</FormFeedback>}
                     </div>
                   ) : (
                     <Badge color="light" className="text-dark border" style={{ fontSize: 12 }}>×{data.holiday_ot_multiplier || "—"}</Badge>
@@ -578,8 +587,8 @@ const OvertimePolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="overtime-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
+            <Button data-testid="overtime-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line align-middle me-1"></i>
               {loading ? "Saving…" : "Save Changes"}
             </Button>

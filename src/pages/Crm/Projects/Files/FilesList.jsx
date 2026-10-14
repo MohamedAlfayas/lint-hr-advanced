@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Alert,
@@ -10,9 +10,11 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
-  Spinner,
 } from "reactstrap";
+import { Stack } from "@mui/material";
 import Dropzone from "react-dropzone";
+import AppTable from "../../../../shared/ui/table/AppTable";
+import { LinkCell } from "../../../../shared/ui/table/cells";
 import { GetApi } from "../../../../common/api/GetApi";
 import { PostApi } from "../../../../common/api/PostApi";
 import {
@@ -23,6 +25,8 @@ import {
   setFolderSuccess,
   clearFolderMessages,
 } from "../../../../redux/reducers/ChildReducer/FolderReducer";
+import { testId, itemTestKey } from "../../../../shared/testing/testId";
+import ModalCloseButton from "../../../../shared/ui/ModalCloseButton";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -84,6 +88,12 @@ const formatDate = (dateStr) => {
   });
 };
 
+const toSortableDate = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return Number.isNaN(d.getTime()) ? String(dateStr) : d.toISOString().slice(0, 10);
+};
+
 const formatBytes = (bytes) => {
   if (!bytes) return "0 KB";
   if (bytes < 1024) return `${bytes} B`;
@@ -138,13 +148,14 @@ const FileViewerModal = ({ file, onClose }) => {
 
   return (
     <Modal
+      data-testid="project-files-list-file-dialog"
       isOpen={!!file}
       toggle={onClose}
       centered
       size="xl"
       className="zoomIn"
     >
-      <ModalHeader toggle={onClose} className="border-bottom pb-3">
+      <ModalHeader close={<ModalCloseButton onClick={onClose} testId="project-files-list-file-close-button" />} toggle={onClose} className="border-bottom pb-3">
         <div className="d-flex align-items-center gap-2">
           <div
             className={`avatar-xs d-flex align-items-center justify-content-center rounded bg-${iconClass}-subtle flex-shrink-0`}
@@ -205,6 +216,7 @@ const FileViewerModal = ({ file, onClose }) => {
             </p>
             {file.file_url && (
               <a
+                data-testid="project-files-list-file-download-file-link"
                 href={file.file_url}
                 target="_blank"
                 rel="noreferrer"
@@ -221,6 +233,7 @@ const FileViewerModal = ({ file, onClose }) => {
       <ModalFooter className="border-top gap-2 pt-3">
         {file.file_url && (
           <a
+            data-testid="project-files-list-file-download-link"
             href={file.file_url}
             target="_blank"
             rel="noreferrer"
@@ -230,7 +243,7 @@ const FileViewerModal = ({ file, onClose }) => {
             Download
           </a>
         )}
-        <Button color="light" size="sm" onClick={onClose}>
+        <Button data-testid="project-files-list-file-footer-close-button" color="light" size="sm" onClick={onClose}>
           Close
         </Button>
       </ModalFooter>
@@ -347,7 +360,10 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
   const errorMsg = useSelector((s) => s.FolderReducer.folder_error);
 
   // Derive display list — normalise Folders shape → FilesList shape
-  const fileList = (rootFiles || []).map(normaliseFile);
+  const fileList = useMemo(
+    () => (rootFiles || []).map(normaliseFile),
+    [rootFiles],
+  );
 
   // ── Local UI state ────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
@@ -409,6 +425,50 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
       delete: () => setDeleteConfirm({ item }),
     })[action]?.();
   }, []);
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: "original_file_name",
+        header: "Name",
+        size: 280,
+        Cell: ({ row }) => {
+          const { icon, iconClass } = getFileIcon(row.original.original_file_name);
+          return (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <i className={`${icon} text-${iconClass} fs-17`} />
+              <LinkCell onClick={() => handleContextAction("view", row.original)}>
+                {row.original.original_file_name}
+              </LinkCell>
+            </Stack>
+          );
+        },
+      },
+      {
+        id: "file_type",
+        accessorFn: (r) =>
+          `${r.original_file_name?.split(".").pop()?.toUpperCase() ?? ""} File`,
+        header: "File Type",
+        filterVariant: "select",
+      },
+      {
+        id: "file_size",
+        accessorFn: (r) => r.file_size ?? 0,
+        header: "File Size",
+        filterVariant: "range",
+        exportValue: (r) => formatFileSize(r.file_size),
+        Cell: ({ row }) => formatFileSize(row.original.file_size),
+      },
+      {
+        id: "created_on",
+        accessorFn: (r) => toSortableDate(r.created_on),
+        header: "Recent Date",
+        exportValue: (r) => formatDate(r.created_on),
+        Cell: ({ row }) => formatDate(row.original.created_on),
+      },
+    ],
+    [handleContextAction],
+  );
 
   // ── Add File Modal ────────────────────────────────────────────────────────
   const openAddModal = () => {
@@ -545,86 +605,28 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
           <div className="d-flex align-items-center mb-3">
             <h5 className="flex-grow-1 fs-16 mb-0">Recent Files</h5>
                        {canAddFiles && (
-              <button className="btn btn-success" onClick={openAddModal}>
+              <button data-testid="project-files-list-add-file-button" className="btn btn-success" onClick={openAddModal}>
                 <i className="ri-add-line align-bottom me-1" />
                 Add File
               </button>
             )}
           </div>
 
-          <div
-            className="table-responsive"
-            style={{ maxHeight: 420, overflowY: "auto" }}
-          >
-            {loading ? (
-              <div className="text-center py-4 text-muted">
-                <Spinner size="sm" className="me-2" />
-                Loading…
-              </div>
-            ) : (
-              <table className="table align-middle table-nowrap mb-0">
-                <thead
-                  className="table-active"
-                  style={{ position: "sticky", top: 0, zIndex: 1 }}
-                >
-                  <tr>
-                    <th>Name</th>
-                    <th>File Type</th>
-                    <th>File Size</th>
-                    <th>Recent Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fileList.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center text-muted py-4">
-                        No files found.
-                      </td>
-                    </tr>
-                  ) : (
-                    fileList.map((item) => {
-                      const { icon, iconClass } = getFileIcon(
-                        item.original_file_name,
-                      );
-                      return (
-                        <tr
-                          key={item.id}
-                          onContextMenu={(e) => handleRowContextMenu(e, item)}
-                          style={{ cursor: "context-menu" }}
-                        >
-                          <td>
-                            <div className="d-flex align-items-center">
-                              <div className="flex-shrink-0 fs-17 me-2">
-                                <i className={`${icon} text-${iconClass}`} />
-                              </div>
-                              <div
-                                className="flex-grow-1 text-primary"
-                                style={{ cursor: "pointer" }}
-                                onClick={() =>
-                                  handleContextAction("view", item)
-                                }
-                              >
-                                {item.original_file_name}
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            {item.original_file_name
-                              ?.split(".")
-                              .pop()
-                              ?.toUpperCase()}{" "}
-                            File
-                          </td>
-                          <td>{formatFileSize(item.file_size)}</td>
-                          <td>{formatDate(item.created_on)}</td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <AppTable
+            columns={columns}
+            data={fileList}
+            isLoading={loading}
+            emptyMessage="No files found."
+            initialState={{ pagination: { pageIndex: 0, pageSize: 10 } }}
+            muiTableBodyRowProps={({ row }) => ({
+              hover: true,
+              onContextMenu: (e) => handleRowContextMenu(e, row.original),
+              sx: {
+                cursor: "context-menu",
+                "&:last-of-type td": { borderBottom: 0 },
+              },
+            })}
+          />
 
           {!loading && (
             <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
@@ -650,13 +652,14 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
 
       {/* ── Add File Modal ── */}
       <Modal
+        data-testid="project-files-list-add-files-dialog"
         isOpen={addModal}
         toggle={closeAddModal}
         centered
         size="md"
         className="zoomIn"
       >
-        <ModalHeader toggle={closeAddModal} className="p-3 bg-success-subtle">
+        <ModalHeader close={<ModalCloseButton onClick={closeAddModal} testId="project-files-list-add-files-close-button" />} toggle={closeAddModal} className="p-3 bg-success-subtle">
           Add Files
         </ModalHeader>
         <ModalBody>
@@ -675,7 +678,7 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
                   }`}
                 >
                   <div className="dz-message needsclick" {...getRootProps()}>
-                    <input {...getInputProps()} />
+                    <input data-testid="project-files-list-add-files-upload-files-input" {...getInputProps()} />
                     <div className="mb-3">
                       <i className="display-4 text-muted ri-upload-cloud-2-fill" />
                     </div>
@@ -715,6 +718,7 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
                         </span>
                       </div>
                       <button
+                        data-testid={testId("project-files-list-add-files-close", itemTestKey(f), "button")}
                         type="button"
                         className="btn btn-sm btn-ghost-danger p-0 px-1"
                         onClick={() => removeQueued(i)}
@@ -750,6 +754,7 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
 
           <div className="hstack gap-2 justify-content-end mt-1">
             <button
+              data-testid="project-files-list-add-files-footer-close-button"
               type="button"
               className="btn btn-ghost-success"
               onClick={closeAddModal}
@@ -759,6 +764,7 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
               Close
             </button>
             <button
+              data-testid="project-files-list-add-files-upload-button"
               type="button"
               className="btn btn-primary"
               onClick={handleAddSubmit}
@@ -782,13 +788,14 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
 
       {/* ── Delete Confirm Modal ── */}
       <Modal
+        data-testid="project-files-list-delete-file-dialog"
         isOpen={!!deleteConfirm}
         toggle={cancelDelete}
         centered
         size="sm"
         className="zoomIn"
       >
-        <ModalHeader toggle={cancelDelete} className="p-3 bg-danger-subtle">
+        <ModalHeader close={<ModalCloseButton onClick={cancelDelete} testId="project-files-list-delete-file-close-button" />} toggle={cancelDelete} className="p-3 bg-danger-subtle">
           Delete File
         </ModalHeader>
         <ModalBody>
@@ -803,6 +810,7 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
           </div>
           <div className="hstack gap-2 justify-content-center">
             <button
+              data-testid="project-files-list-delete-file-cancel-button"
               type="button"
               className="btn btn-ghost-danger"
               onClick={cancelDelete}
@@ -811,6 +819,7 @@ const FilesList = ({ projectId, folderId, canAddFiles = true  }) => {
               Cancel
             </button>
             <button
+              data-testid="project-files-list-delete-file-confirm-button"
               type="button"
               className="btn btn-danger"
               onClick={confirmDelete}

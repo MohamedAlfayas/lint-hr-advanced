@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, CardBody, Col, Input, Label, Row, Spinner, Modal, ModalHeader, ModalBody } from "reactstrap";
+import { Input, Modal, ModalBody } from "reactstrap";
+import { CardGridSkeleton } from "../../../component/common/skeleton/Skeleton";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
@@ -14,6 +15,11 @@ import {
   setPTSettings,
 } from "../../../redux/reducers/ChildReducer/PTSettingsReducer";
 import { pt_settings_form_component_name } from "../../../common/constant/Constants";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
+import "./PTSettings.scss";
+
+const OPEN_ENDED = 999999;
 
 const formatState = (slug) => {
   if (!slug) return "";
@@ -25,57 +31,77 @@ const formatCycle = (cycle) => {
   return cycle.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("-");
 };
 
+const initials = (slug) =>
+  formatState(slug)
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+const inr = (n) => Number(n || 0).toLocaleString("en-IN");
+
+const rangeLabel = (s) =>
+  s.end == null || s.end >= OPEN_ENDED
+    ? `₹${inr(s.start)} & above`
+    : `₹${inr(s.start)} – ₹${inr(s.end)}`;
+
+const amountLabel = (amount) => (Number(amount) === 0 ? "Nil" : `₹${inr(amount)}`);
+
 // ── Slab Modal ───────────────────────────────────────────────────────────────
 const SlabModal = ({ isOpen, toggle, item }) => {
   if (!item) return null;
+  const slabs = item.slabs || [];
+  const maxAmount = Math.max(1, ...slabs.map((s) => Number(s.amount) || 0));
+
   return (
-    <Modal isOpen={isOpen} toggle={toggle} centered size="md">
-      <ModalHeader toggle={toggle} className="border-bottom-0 pb-0">
-        <div>
-          <h5 className="mb-0 fw-semibold">{formatState(item.state)}</h5>
-          <span className="text-muted" style={{ fontSize: 13 }}>Professional Tax Slabs</span>
+    <Modal data-testid="pt-settings-professional-tax-slabs-dialog" isOpen={isOpen} toggle={toggle} centered size="md" contentClassName="pts-modal">
+      <div className="pts-modal-head">
+        <span className="pts-avatar is-lg">{initials(item.state)}</span>
+        <div className="pts-modal-title">
+          <h5>{formatState(item.state)}</h5>
+          <span>Professional Tax slabs</span>
         </div>
-      </ModalHeader>
-      <ModalBody className="pt-2">
-        <div className="d-flex gap-2 mb-3">
-          <span className="badge bg-primary-subtle text-primary px-3 py-2" style={{ fontSize: 12 }}>
-            <i className="ri-repeat-line me-1"></i>
-            {formatCycle(item.deduction_cycle)} Deduction
+        <ModalCloseButton onClick={toggle} testId="pt-settings-professional-tax-slabs-close-button" />
+      </div>
+
+      <ModalBody className="pts-modal-body">
+        <div className="pts-chips">
+          <span className="pts-chip is-primary">
+            <i className="ri-repeat-line"></i>
+            {formatCycle(item.deduction_cycle)} deduction
           </span>
-          <span className="badge bg-info-subtle text-info px-3 py-2" style={{ fontSize: 12 }}>
-            <i className="ri-calculator-line me-1"></i>
-            {formatCycle(item.slab_basis)} Basis
+          <span className="pts-chip is-info">
+            <i className="ri-calculator-line"></i>
+            {formatCycle(item.slab_basis)} basis
+          </span>
+          <span className="pts-chip">
+            <i className="ri-stack-line"></i>
+            {slabs.length} slab{slabs.length === 1 ? "" : "s"}
           </span>
         </div>
 
-        {item.slabs?.length > 0 ? (
-          <div className="table-responsive border rounded">
-            <table className="table table-sm mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th style={{ fontSize: 13 }}>Gross Range (₹)</th>
-                  <th style={{ fontSize: 13 }} className="text-end">PT Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {item.slabs.map((s, i) => (
-                  <tr key={i}>
-                    <td style={{ fontSize: 13 }}>
-                      {s.start?.toLocaleString("en-IN")} – {s.end == null || s.end >= 999999 ? "Above" : s.end.toLocaleString("en-IN")}
-                    </td>
-                    <td style={{ fontSize: 13 }} className="text-end fw-medium">
-                      {s.amount === 0
-                        ? <span className="text-success">Nil</span>
-                        : `₹${s.amount?.toLocaleString("en-IN")}`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {slabs.length > 0 ? (
+          <ol className="pts-slab-list">
+            {slabs.map((s, i) => {
+              const nil = Number(s.amount) === 0;
+              return (
+                <li key={`${s.start}-${s.end}`} className={nil ? "is-nil" : ""}>
+                  <span className="pts-slab-no">{i + 1}</span>
+                  <div className="pts-slab-main">
+                    <div className="pts-slab-range">{rangeLabel(s)}</div>
+                    <div className="pts-slab-bar">
+                      <span style={{ width: `${nil ? 0 : Math.max(6, ((Number(s.amount) || 0) / maxAmount) * 100)}%` }} />
+                    </div>
+                  </div>
+                  <span className="pts-slab-amt">{amountLabel(s.amount)}</span>
+                </li>
+              );
+            })}
+          </ol>
         ) : (
-          <div className="text-center text-muted py-4" style={{ fontSize: 13 }}>
-            <i className="ri-file-list-3-line fs-24 d-block mb-2"></i>
+          <div className="pts-empty is-sm">
+            <i className="ri-file-list-3-line"></i>
             No slabs configured.
           </div>
         )}
@@ -168,97 +194,151 @@ const PTSettings = () => {
   };
 
   if (loading) {
-    return (
-      <div className="text-center py-5">
-        <Spinner color="primary" />
-        <p className="text-muted mt-2" style={{ fontSize: 13 }}>
-          Loading PT Settings...
-        </p>
-      </div>
-    );
+    return <CardGridSkeleton count={4} min={300} testId="pt-settings-loading-skeleton" label="Loading PT settings" />;
   }
 
   if (!ptSettings.length) {
     return (
-      <div className="text-center text-muted py-5" style={{ fontSize: 13 }}>
+      <div className="pts-empty">
+        <i className="ri-government-line"></i>
         No Professional Tax found.
       </div>
     );
   }
 
+  const activeCount = ptSettings.filter((p) => p.is_active).length;
+
   return (
-    <>
-      {/* Slab Modal */}
+    <div className="pts">
       <SlabModal isOpen={slabModalOpen} toggle={closeSlabModal} item={selectedItem} />
 
-      <div className="d-flex flex-column gap-3">
-        {ptSettings.map((item) => (
-          <Card key={item.id} className="border shadow-sm mb-0">
-            <CardBody>
+      <div className="pts-summary">
+        <span className="pts-chip">
+          <i className="ri-map-pin-2-line"></i>
+          {ptSettings.length} state{ptSettings.length === 1 ? "" : "s"}
+        </span>
+        <span className="pts-chip is-success">
+          <i className="ri-checkbox-circle-line"></i>
+          {activeCount} active
+        </span>
+        <span className="pts-chip is-muted">
+          <i className="ri-indeterminate-circle-line"></i>
+          {ptSettings.length - activeCount} inactive
+        </span>
+      </div>
 
-              {/* Header */}
-              <div className={`p-3 mt-n3 mx-n3 mb-3 bg-${item.is_active ? "success" : "secondary"}-subtle rounded-top`}>
-                <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0 fs-14 fw-semibold">{formatState(item?.state)}</h5>
-                  <div className="d-flex align-items-center gap-2">
-                    <div className="form-check form-switch m-0">
-                      <Input
-                        type="checkbox"
-                        className="form-check-input"
-                        checked={!!item?.is_active}
-                        disabled={togglingId === item.id}
-                        onChange={() => handleToggleActive(item)}
-                      />
-                      <Label className="form-check-label">
-                        {item?.is_active ? "Active" : "Inactive"}
-                      </Label>
-                    </div>
-                    <button
-                      className="btn btn-link text-primary p-0"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <i className="ri-pencil-fill fs-16"></i>
-                    </button>
+      <div className="pts-grid">
+        {ptSettings.map((item) => {
+          const slabs = item.slabs || [];
+          const amounts = slabs.map((s) => Number(s.amount) || 0);
+          const maxAmount = amounts.length ? Math.max(...amounts) : 0;
+          const exempt = slabs.find((s) => Number(s.amount) === 0);
+
+          return (
+            <article
+              key={item.id}
+              className={`pts-card${item.is_active ? " is-active" : ""}`}
+              data-testid={testId("pt-settings", itemTestKey(item), "item")}
+            >
+              <header className="pts-card-head">
+                <span className="pts-avatar">{initials(item.state)}</span>
+                <div className="pts-card-title">
+                  <h6 title={formatState(item.state)}>{formatState(item?.state)}</h6>
+                  <span>Professional Tax</span>
+                </div>
+                <button
+                  data-testid={testId("pt-settings-edit", itemTestKey(item), "button")}
+                  type="button"
+                  className="pts-icon-btn"
+                  title="Edit"
+                  onClick={() => handleEdit(item)}
+                >
+                  <i className="ri-pencil-line"></i>
+                </button>
+              </header>
+
+              <div className="pts-status">
+                <span className={`pts-status-pill${item.is_active ? " is-on" : ""}`}>
+                  <span className="pts-dot" />
+                  {item?.is_active ? "Active" : "Inactive"}
+                </span>
+                <div className="form-check form-switch m-0" title={item.is_active ? "Deactivate" : "Activate"}>
+                  <Input
+                    data-testid={testId("pt-settings-is-active", itemTestKey(item), "checkbox")}
+                    type="checkbox"
+                    className="form-check-input"
+                    checked={!!item?.is_active}
+                    disabled={togglingId === item.id}
+                    onChange={() => handleToggleActive(item)}
+                    aria-label={`${formatState(item.state)} active`}
+                  />
+                </div>
+              </div>
+
+              <div className="pts-facts">
+                <div className="pts-fact">
+                  <i className="ri-repeat-line"></i>
+                  <div>
+                    <span>Deduction cycle</span>
+                    <strong>{formatCycle(item?.deduction_cycle)}</strong>
+                  </div>
+                </div>
+                <div className="pts-fact">
+                  <i className="ri-calculator-line"></i>
+                  <div>
+                    <span>Slab basis</span>
+                    <strong>{formatCycle(item?.slab_basis)}</strong>
+                  </div>
+                </div>
+                <div className="pts-fact">
+                  <i className="ri-stack-line"></i>
+                  <div>
+                    <span>Slabs</span>
+                    <strong>{slabs.length}</strong>
+                  </div>
+                </div>
+                <div className="pts-fact">
+                  <i className="ri-coins-line"></i>
+                  <div>
+                    <span>Max PT</span>
+                    <strong>{slabs.length ? amountLabel(maxAmount) : "—"}</strong>
                   </div>
                 </div>
               </div>
 
-              {/* Info Row — 4 columns: State | Deduction Cycle | Slab Basis | PT Tax Slabs */}
-              <Row className="gy-2 mb-1 align-items-end">
-                <Col sm={3}>
-                  <p className="text-muted mb-1" style={{ fontSize: 12 }}>State</p>
-                  <h6 className="fs-14 mb-0">{formatState(item?.state)}</h6>
-                </Col>
-                <Col sm={3}>
-                  <p className="text-muted mb-1" style={{ fontSize: 12 }}>Deduction Cycle</p>
-                  <h6 className="fs-14 mb-0">{formatCycle(item?.deduction_cycle)}</h6>
-                </Col>
-                <Col sm={3}>
-                  <p className="text-muted mb-1" style={{ fontSize: 12 }}>Slab Basis</p>
-                  <h6 className="fs-14 mb-0">{formatCycle(item?.slab_basis)}</h6>
-                </Col>
-
-                {/* Separate column for View Tax Slabs */}
-                {item?.slabs?.length > 0 && (
-                  <Col sm={3}>
-                    <p className="text-muted mb-1" style={{ fontSize: 12 }}>PT Tax Slabs</p>
-                    <button
-                      className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
-                      style={{ fontSize: 12, padding: "3px 10px" }}
-                      onClick={() => openSlabModal(item)}
-                    >
-                      <i className="ri-file-list-3-line fs-13"></i>
-                      View Tax Slabs
-                    </button>
-                  </Col>
+              <footer className="pts-card-foot">
+                <span className="pts-foot-note">
+                  {exempt ? (
+                    <>
+                      <i className="ri-information-line"></i>
+                      Nil up to ₹{inr(exempt.end)}
+                    </>
+                  ) : slabs.length ? (
+                    <>
+                      <i className="ri-information-line"></i>
+                      From ₹{inr(slabs[0].start)}
+                    </>
+                  ) : (
+                    "No slabs configured"
+                  )}
+                </span>
+                {slabs.length > 0 && (
+                  <button
+                    data-testid={testId("pt-settings-view-tax-slabs", itemTestKey(item), "button")}
+                    type="button"
+                    className="pts-link-btn"
+                    onClick={() => openSlabModal(item)}
+                  >
+                    View slabs
+                    <i className="ri-arrow-right-line"></i>
+                  </button>
                 )}
-              </Row>
-
-            </CardBody>
-          </Card>
-        ))}
+              </footer>
+            </article>
+          );
+        })}
       </div>
-    </>
+    </div>
   );
 };
 

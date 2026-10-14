@@ -4,9 +4,22 @@ import React, { Suspense, useEffect } from "react";
 import "./assets/scss/themes.scss";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ToastCloseButton } from "./shared/testing/toastTestIds";
 
 // Rsuite css
 import "rsuite/dist/rsuite-no-reset.min.css";
+import "./assets/scss/dark-inline-overrides.scss";
+import "./assets/scss/table-scrollbar.scss";
+import "./assets/scss/theme-surfaces.scss";
+import "./assets/scss/sidebar-modern.scss";
+import "./assets/scss/modal-modern.scss";
+import "./assets/scss/table-actions.scss";
+import "./assets/scss/antd-picker.scss";
+import "./assets/scss/table-toolbar.scss";
+import "./assets/scss/responsive.scss";
+import "./assets/scss/approval.scss";
+import "./assets/scss/toast-modern.scss";
+import "./assets/scss/shell-modern.scss";
 
 //imoprt Route
 import Route from "./routes";
@@ -79,16 +92,16 @@ function App() {
       <Route />
       <ToastContainer
         position="bottom-left"
-        autoClose={2000}
+        autoClose={3000}
         hideProgressBar={false}
         newestOnTop={true}
         closeOnClick={true}
         rtl={false}
         pauseOnFocusLoss
         draggable
-        pauseOnHover={false}
+        pauseOnHover
         theme="light"
-        progressStyle={{ height: "2px" }}
+        closeButton={ToastCloseButton}
       />
     </React.Fragment>
   );

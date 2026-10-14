@@ -10,10 +10,12 @@ import {
   Card, CardHeader, CardBody, CardTitle, CardSubtitle,
   Col, Row, Label, Button, Input, Badge, Spinner,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, range, day, runChecks } from "./validators";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import { DetailSkeleton } from "../../../component/common/skeleton/Skeleton";
 
 const SALARY_METHOD_OPTIONS = [
   { value: "calendar_days", label: "Calendar Days" },
@@ -46,7 +48,7 @@ const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span style={{
       display: "inline-block", width: 36, height: 20, borderRadius: 12,
-      background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0,
+      background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0,
     }}>
       <span style={{
         position: "absolute", top: 3, left: checked ? 18 : 3,
@@ -57,9 +59,9 @@ const ViewToggle = ({ checked, label }) => (
   </div>
 );
 
-const Switch = ({ checked, onChange, disabled }) => (
+const Switch = ({ checked, onChange, disabled, testId: switchTestId }) => (
   <div className="form-check form-switch mb-0">
-    <Input className="form-check-input" type="checkbox" checked={!!checked} disabled={disabled} onChange={onChange} />
+    <Input className="form-check-input" type="checkbox" checked={!!checked} disabled={disabled} onChange={onChange} data-testid={switchTestId} />
   </div>
 );
 
@@ -243,7 +245,7 @@ const AttendancePolicySettings = () => {
   const compDisabled = !comp.is_comp_off_enabled;
 
   if (loading) {
-    return <div className="text-center py-5"><Spinner color="primary" /></div>;
+    return <DetailSkeleton sections={3} testId="attendance-policy-loading-skeleton" label="Loading attendance policy" />;
   }
 
   if (isEmpty && !isEditing) {
@@ -263,7 +265,7 @@ const AttendancePolicySettings = () => {
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
               Set up attendance, hours, and comp-off preferences.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="attendance-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
             </Button>
           </div>
@@ -282,7 +284,7 @@ const AttendancePolicySettings = () => {
           </CardSubtitle>
         </div>
         {!isEditing && (
-          <Button size="sm" color="primary" outline onClick={() => setIsEditing(true)}>
+          <Button data-testid="attendance-policy-edit-button" size="sm" color="primary" outline onClick={() => setIsEditing(true)}>
             <i className="ri-edit-line fs-14"></i> Edit
           </Button>
         )}
@@ -303,13 +305,13 @@ const AttendancePolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
-              <Input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} style={{ width: 180 }} />
+              <Input data-testid="attendance-policy-effective-date-input" type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} style={{ width: 180 }} />
             ) : <span style={{ fontSize: 13 }}>{effectiveDate || "—"}</span>}
           </SettingRow>
           <SettingRow label="Status">
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={isActive} onChange={() => setIsActive(v => !v)} />
+                <Input data-testid="attendance-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={isActive} onChange={() => setIsActive(v => !v)} />
                 <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{isActive ? "Active" : "Inactive"}</Label>
               </div>
             ) : <ViewToggle checked={isActive} label={isActive ? "Active" : "Inactive"} />}
@@ -317,6 +319,7 @@ const AttendancePolicySettings = () => {
           <SettingRow label="Salary Calculation Method" last>
             {isEditing ? (
               <Select
+                testId="attendance-policy-active"
                 options={SALARY_METHOD_OPTIONS}
                 value={SALARY_METHOD_OPTIONS.find(o => o.value === att.salary_calculation_method)}
                 onChange={(e) => {
@@ -346,13 +349,13 @@ const AttendancePolicySettings = () => {
               ].map(([key, label], i, arr) => (
                 <SettingRow key={key} label={label} last={false}>
                   {isEditing
-                    ? <Switch checked={att[key]} disabled={isWorkingDays && ["include_week_offs", "include_holidays"].includes(key)} onChange={() => setA(key, !att[key])} />
+                    ? <Switch testId={testId("attendance-policy", key, "switch")} checked={att[key]} disabled={isWorkingDays && ["include_week_offs", "include_holidays"].includes(key)} onChange={() => setA(key, !att[key])} />
                     : <ViewToggle checked={!!att[key]} />}
                 </SettingRow>
               ))}
               <SettingRow label="Half Day Value" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="1" value={att.half_day_value}
+                  <Input data-testid="attendance-policy-half-day-value-input" type="number" step="0.01" min="0" max="1" value={att.half_day_value}
                     onChange={(e) => {
                       let v = e.target.value;
                       if (v !== "" && Number(v) > 1) v = "1";
@@ -369,7 +372,9 @@ const AttendancePolicySettings = () => {
             <div className="border rounded mb-4">
               <SettingRow label="Fixed Pay Days">
                 {isEditing ? (
-                  <Select options={DAY_OPTIONS}
+                  <Select
+                    testId="attendance-policy-fixed-pay-days"
+                    options={DAY_OPTIONS}
                     value={DAY_OPTIONS.find(o => o.value === att.fixed_pay_days)}
                     onChange={(e) => setA("fixed_pay_days", e.value)}
                     styles={{ container: (p) => ({ ...p, width: 120 }) }} />
@@ -377,7 +382,7 @@ const AttendancePolicySettings = () => {
               </SettingRow>
               <SettingRow label="Half Day Value" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="1" value={att.half_day_value}
+                  <Input data-testid="attendance-policy-half-day-value-input" type="number" step="0.01" min="0" max="1" value={att.half_day_value}
                     onChange={(e) => {
                       let v = e.target.value;
                       if (v !== "" && Number(v) > 1) v = "1";
@@ -395,21 +400,23 @@ const AttendancePolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Enable Late Mark Policy" last={!att.enable_late_mark_policy}>
             {isEditing
-              ? <Switch checked={att.enable_late_mark_policy} onChange={() => setA("enable_late_mark_policy", !att.enable_late_mark_policy)} />
+              ? <Switch testId="attendance-policy-enable-late-mark-policy-switch" checked={att.enable_late_mark_policy} onChange={() => setA("enable_late_mark_policy", !att.enable_late_mark_policy)} />
               : <ViewToggle checked={!!att.enable_late_mark_policy} />}
           </SettingRow>
           {att.enable_late_mark_policy && (
             <>
               <SettingRow label="Allowed Late Marks">
                 {isEditing ? (
-                  <Input type="number" min="0" max="31" value={att.late_mark_limit || 0}
+                  <Input
+                    data-testid="attendance-policy-late-mark-limit-input" type="number" min="0" max="31" value={att.late_mark_limit || 0}
                     onChange={(e) => { let v = parseInt(e.target.value) || 0; v = Math.max(0, Math.min(31, v)); setA("late_mark_limit", v); }}
                     style={{ width: 100 }} />
                 ) : <span style={{ fontSize: 13 }}>{att.late_mark_limit ?? "—"}</span>}
               </SettingRow>
               <SettingRow label="Penalty (LOP Days)" last>
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="31" value={att.late_mark_penalty_days || "0.00"}
+                  <Input
+                    data-testid="attendance-policy-late-mark-penalty-days-input" type="number" step="0.01" min="0" max="31" value={att.late_mark_penalty_days || "0.00"}
                     onChange={(e) => {
                       let v = e.target.value;
                       if (v !== "" && Number(v) > 31) v = "31";
@@ -427,19 +434,22 @@ const AttendancePolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Half-Day Minimum (hrs)">
             {isEditing ? (
-              <Input type="number" step="0.25" min="0" value={hours.half_day_minimum_hours}
+              <Input
+                data-testid="attendance-policy-half-day-minimum-hours-input" type="number" step="0.25" min="0" value={hours.half_day_minimum_hours}
                 onChange={(e) => setH("half_day_minimum_hours", e.target.value)} style={{ width: 120 }} />
             ) : <span style={{ fontSize: 13 }}>{hours.half_day_minimum_hours}</span>}
           </SettingRow>
           <SettingRow label="Full-Day Minimum (hrs)">
             {isEditing ? (
-              <Input type="number" step="0.25" min="0" value={hours.full_day_minimum_hours}
+              <Input
+                data-testid="attendance-policy-full-day-minimum-hours-input" type="number" step="0.25" min="0" value={hours.full_day_minimum_hours}
                 onChange={(e) => setH("full_day_minimum_hours", e.target.value)} style={{ width: 120 }} />
             ) : <span style={{ fontSize: 13 }}>{hours.full_day_minimum_hours}</span>}
           </SettingRow>
           <SettingRow label="Max Permission (hrs/day)" last>
             {isEditing ? (
-              <Input type="number" step="0.25" min="0" value={hours.max_permission_hours_per_day}
+              <Input
+                data-testid="attendance-policy-max-permission-hours-per-input" type="number" step="0.25" min="0" value={hours.max_permission_hours_per_day}
                 onChange={(e) => setH("max_permission_hours_per_day", e.target.value)} style={{ width: 120 }} />
             ) : <span style={{ fontSize: 13 }}>{hours.max_permission_hours_per_day}</span>}
           </SettingRow>
@@ -450,34 +460,38 @@ const AttendancePolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Comp-Off Enabled">
             {isEditing
-              ? <Switch checked={comp.is_comp_off_enabled} onChange={() => setC("is_comp_off_enabled", !comp.is_comp_off_enabled)} />
+              ? <Switch testId="attendance-policy-is-comp-off-enabled-switch" checked={comp.is_comp_off_enabled} onChange={() => setC("is_comp_off_enabled", !comp.is_comp_off_enabled)} />
               : <ViewToggle checked={!!comp.is_comp_off_enabled} />}
           </SettingRow>
           <SettingRow label="Pending Rounding Method">
             {isEditing ? (
-              <Input type="select" value={comp.rounding_method} disabled={compDisabled}
+              <Input
+                data-testid="attendance-policy-rounding-method-select" type="select" value={comp.rounding_method} disabled={compDisabled}
                 onChange={(e) => setC("rounding_method", e.target.value)} style={{ width: 240 }}>
-                {ROUNDING_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {ROUNDING_OPTIONS.map((o) => <option data-testid={testId("attendance-policy-rounding-method-option", itemTestKey(o))} key={o.value} value={o.value}>{o.label}</option>)}
               </Input>
             ) : <span style={{ fontSize: 13 }}>{ROUNDING_OPTIONS.find(o => o.value === comp.rounding_method)?.label || "—"}</span>}
           </SettingRow>
           <SettingRow label="Compensation Rounding Method">
             {isEditing ? (
-              <Input type="select" value={comp.compensation_rounding_method} disabled={compDisabled}
+              <Input
+                data-testid="attendance-policy-compensation-rounding-method-select" type="select" value={comp.compensation_rounding_method} disabled={compDisabled}
                 onChange={(e) => setC("compensation_rounding_method", e.target.value)} style={{ width: 240 }}>
-                {ROUNDING_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {ROUNDING_OPTIONS.map((o) => <option data-testid={testId("attendance-policy-compensation-rounding-method-option", itemTestKey(o))} key={o.value} value={o.value}>{o.label}</option>)}
               </Input>
             ) : <span style={{ fontSize: 13 }}>{ROUNDING_OPTIONS.find(o => o.value === comp.compensation_rounding_method)?.label || "—"}</span>}
           </SettingRow>
           <SettingRow label="Minimum Hours for Rounding">
             {isEditing ? (
-              <Input type="number" step="0.25" min="0" disabled={compDisabled} value={comp.minimum_hours_for_rounding}
+              <Input
+                data-testid="attendance-policy-minimum-hours-for-rounding-input" type="number" step="0.25" min="0" disabled={compDisabled} value={comp.minimum_hours_for_rounding}
                 onChange={(e) => setC("minimum_hours_for_rounding", e.target.value)} style={{ width: 120 }} />
             ) : <span style={{ fontSize: 13 }}>{comp.minimum_hours_for_rounding}</span>}
           </SettingRow>
           <SettingRow label="Max Comp-Off (hrs/day)" last>
             {isEditing ? (
-              <Input type="number" step="0.25" min="0" disabled={compDisabled}
+              <Input
+                data-testid="attendance-policy-blank-no-cap-input" type="number" step="0.25" min="0" disabled={compDisabled}
                 value={comp.max_comp_off_hours_per_day} placeholder="Blank = no cap"
                 onChange={(e) => setC("max_comp_off_hours_per_day", e.target.value)} style={{ width: 160 }} />
             ) : <span style={{ fontSize: 13 }}>{comp.max_comp_off_hours_per_day === "" ? "No cap" : comp.max_comp_off_hours_per_day}</span>}
@@ -486,8 +500,8 @@ const AttendancePolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={saving}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={saving}>
+            <Button data-testid="attendance-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={saving}>Cancel</Button>
+            <Button data-testid="attendance-policy-save-changes-button" color="success" onClick={handleSave} disabled={saving}>
               {saving ? <Spinner size="sm" className="me-1" /> : <i className="ri-check-double-line align-middle me-1"></i>}
               {saving ? "Saving…" : "Save Changes"}
             </Button>

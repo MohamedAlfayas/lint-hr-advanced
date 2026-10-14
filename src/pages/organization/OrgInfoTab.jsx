@@ -1,22 +1,27 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Link } from "react-router-dom";
 import {
+  Autocomplete,
+  Avatar,
+  Box,
   Button,
   Card,
-  CardBody,
-  CardHeader,
-  Col,
-  DropdownItem,
-  DropdownMenu,
-  DropdownToggle,
-  Form,
-  FormFeedback,
-  Input,
-  Label,
-  Row,
-  UncontrolledDropdown,
-} from "reactstrap";
-import Select from "react-select";
+  Grid,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
+import LanguageRoundedIcon from "@mui/icons-material/LanguageRounded";
+import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
+import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
+import LocationCityRoundedIcon from "@mui/icons-material/LocationCityRounded";
+import PinDropRoundedIcon from "@mui/icons-material/PinDropRounded";
+import ScheduleRoundedIcon from "@mui/icons-material/ScheduleRounded";
+import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
+import FormSection from "../../shared/ui/form/FormSection";
 import {
   form_default_input_types,
   timzone_options,
@@ -31,28 +36,20 @@ import {
 } from "../../common/js/ConvertDateFormat";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { DatePicker } from "antd";
-dayjs.extend(customParseFormat);
 import { useFormik } from "formik";
 import * as Yup from "yup";
-
-import avatar2 from "../../assets/images/users/avatar-2.jpg";
-import avatar3 from "../../assets/images/users/avatar-3.jpg";
-import avatar4 from "../../assets/images/users/avatar-4.jpg";
-import avatar7 from "../../assets/images/users/avatar-7.jpg";
-
-import SimpleBar from "simplebar-react";
-import CountryList from "../../common/data/CountryList";
+import CountryList, { countriesWithStates } from "../../common/data/CountryList";
 import Dropzone from "react-dropzone";
 import { Api } from "../../common/api/Api";
 import { toast } from "react-toastify";
 import { GetCustomField } from "../../common/js/GetCustomField";
-import { CountryCodeDisplayInSelect } from "../../common/js/CountryCodeDisplayInSelect";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { useDispatch } from "react-redux";
 import { PostApi } from "../../common/api/PostApi";
 import { setCompanyDetail } from "../../redux/reducers/ChildReducer/CompanyReducer";
 import { CheckRoleAccess } from "../../common/js/CheckRoleAccess";
+
+dayjs.extend(customParseFormat);
 
 const allowedTlds = [
   // gTLDs
@@ -162,10 +159,12 @@ const OrgInfoTab = () => {
   const [darkLogoFile, setDarkLogoFile] = useState(null);
   const [lightLogoFile, setLightLogoFile] = useState(null);
   const [showUpdateBtn, setShowUpdateBtn] = useState(false);
+  // Without update access the whole form is view-only.
+  const readOnly = !showUpdateBtn;
   const dispatch = useDispatch();
   const inputRef = useRef();
 
-  const CountryListOptions = CountryList.filter((c) => c.show === true).map(
+  const CountryListOptions = countriesWithStates.map(
     (d) => ({
       ...d,
       label: d.countryName,
@@ -173,7 +172,7 @@ const OrgInfoTab = () => {
     }),
   );
 
-  const CountryCodeListOptions = CountryList.filter((c) => c.show === true).map(
+  const CountryCodeListOptions = CountryList.filter((c) => c.countryCode).map(
     (d) => ({
       ...d,
       label: d.countryCode,
@@ -426,827 +425,541 @@ const OrgInfoTab = () => {
   const isInvalid = (field) => !!(t[field] && e[field]);
   const showHint = (field) => !e[field];
 
+  const fieldError = (field) => (isInvalid(field) ? e[field] : undefined);
+  const touch = (field) => () => FormikForm.setFieldTouched(field, true);
+  const logoPreview = lightLogoFile?.preview || v.light_logo_image;
+
   return (
-    <React.Fragment>
-      <Row>
-        <Col xl={12} lg={8}>
-          <Card>
-            <CardBody>
-              <h6 className="mb-3 fw-semibold text-uppercase">Company Info</h6>
+    <Box component="form" id="company-info-form" onSubmit={FormikForm.handleSubmit} noValidate>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <Card sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          justifyContent="space-between"
+        >
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar
+              src={logoPreview || undefined}
+              alt={v.name || "Company logo"}
+              sx={{
+                width: 64,
+                height: 64,
+                flexShrink: 0,
+                bgcolor: logoPreview ? "background.paper" : "primary.main",
+                border: 1,
+                borderColor: "divider",
+                "& img": { width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" },
+              }}
+            >
+              <BusinessRoundedIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" fontWeight={600}>
+                {v.name || "Company Info"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Manage your company profile, contact details and branding
+              </Typography>
+            </Box>
+          </Stack>
+          {showUpdateBtn && (
+            <Button
+              data-testid="organization-header-update-button"
+              type="submit"
+              variant="contained"
+              color="success"
+              startIcon={<SaveRoundedIcon />}
+              disabled={FormikForm.isSubmitting}
+            >
+              Update
+            </Button>
+          )}
+        </Stack>
+      </Card>
 
-              <Form onSubmit={FormikForm.handleSubmit} noValidate>
-                <div className="live-preview">
-                  <Row className="gy-4">
-                    {/* ── Website ──────────────────────────────────────── */}
-                    <Col xxl={8} md={7}>
-                      <Label htmlFor="orgwebsite" className="form-label">
-                        Company Website <span>*</span>
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="text"
-                          name="website"
-                          id="orgwebsite"
-                          innerRef={inputRef}
-                          className="form-control form-control-icon"
-                          placeholder="www.company.com"
-                          value={v.website || ""}
-                          // onChange={(e) => setField("website", e.target.value)}
-                          onChange={(e) => {
-                            const value = e.target.value
-                              .toLowerCase()
-                              // .replace(/[^a-z0-9:/.-]/g, "")
-                              .replace(/[^a-z0-9:/?&=._#-]/gi, "");
+      <Grid container spacing={3}>
+        {/* ── Contact ──────────────────────────────────────────────────── */}
+        <Grid size={{ xs: 12, lg: 6 }}>
+          <Card sx={{ p: { xs: 2, md: 3 }, height: "100%" }}>
+            <FormSection title="Contact" description="How people reach your company">
+              <TextField
+                disabled={readOnly}
+                label="Company Website"
+                required
+                fullWidth
+                name="website"
+                inputRef={inputRef}
+                placeholder="www.company.com"
+                value={v.website || ""}
+                onChange={(ev) =>
+                  setField(
+                    "website",
+                    ev.target.value.toLowerCase().replace(/[^a-z0-9:/?&=._#-]/gi, ""),
+                  )
+                }
+                onBlur={touch("website")}
+                error={isInvalid("website")}
+                helperText={fieldError("website")}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LanguageRoundedIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
 
-                            setField("website", value);
-                            console.log(value.length);
-                          }}
-                          onBlur={() =>
-                            FormikForm.setFieldTouched("website", true)
-                          }
-                          invalid={isInvalid("website")}
-                        />
-                        {!isInvalid("website") && (
-                          <i className="ri-global-line" />
+              <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                <Autocomplete
+                  disabled={readOnly}
+                  disableClearable
+                  options={CountryCodeListOptions}
+                  value={
+                    CountryCodeListOptions.find((d) => d.value === v.country_code && d.show) ||
+                    CountryCodeListOptions.find((d) => d.value === v.country_code) ||
+                    null
+                  }
+                  getOptionLabel={(o) => o.countryCode || ""}
+                  getOptionKey={(o) => o.id}
+                  isOptionEqualToValue={(o, val) => o.id === val.id}
+                  filterOptions={(opts, { inputValue }) => {
+                    const q = inputValue.trim().toLowerCase().replace(/^\+/, "");
+                    return opts.filter(
+                      (o) =>
+                        o.countryCode.replace(/^\+/, "").startsWith(q) ||
+                        o.countryName.toLowerCase().startsWith(q),
+                    );
+                  }}
+                  onChange={(_, opt) => opt && handleCountryCodeChange(opt)}
+                  renderOption={({ key, ...props }, o) => (
+                    <Box component="li" key={o.id} {...props} sx={{ gap: 1 }}>
+                      {o.flagImg && (
+                        <img src={o.flagImg} alt="" width={20} style={{ borderRadius: 2 }} />
+                      )}
+                      <span>{o.countryCode}</span>
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {o.countryName}
+                      </Typography>
+                    </Box>
+                  )}
+                  slotProps={{ popper: { sx: { minWidth: 260 } } }}
+                  sx={{ width: 130, flexShrink: 0 }}
+                  renderInput={(params) => <TextField {...params} label="Code" />}
+                />
+                <TextField
+                  disabled={readOnly}
+                  label="Contact Number"
+                  required
+                  fullWidth
+                  name="contact_number"
+                  placeholder="Enter number"
+                  value={v.contact_number || ""}
+                  onChange={(ev) => handleNumberOnly(ev, "contact_number", 10)}
+                  onBlur={touch("contact_number")}
+                  error={isInvalid("contact_number")}
+                  helperText={fieldError("contact_number")}
+                  slotProps={{
+                    htmlInput: { inputMode: "numeric", maxLength: 10 },
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneRoundedIcon fontSize="small" color="action" />
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              </Stack>
+
+              <TextField
+                disabled={readOnly}
+                label="Contact Email"
+                required
+                fullWidth
+                type="email"
+                name="contact_email"
+                placeholder="user@company.com"
+                value={v.contact_email || ""}
+                onChange={(ev) => setField("contact_email", ev.target.value.trim())}
+                onBlur={() => {
+                  FormikForm.setFieldTouched("contact_email", true);
+                  setField("contact_email", (v.contact_email || "").trim().toLowerCase());
+                }}
+                error={isInvalid("contact_email")}
+                helperText={fieldError("contact_email")}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailRoundedIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </FormSection>
+          </Card>
+        </Grid>
+
+        {/* ── About ────────────────────────────────────────────────────── */}
+        <Grid size={{ xs: 12, lg: 6 }}>
+          <Card sx={{ p: { xs: 2, md: 3 }, height: "100%" }}>
+            <FormSection title="About" description="A short description of your company">
+              <TextField
+                disabled={readOnly}
+                label="Company Overview"
+                required
+                fullWidth
+                multiline
+                minRows={7}
+                name="about"
+                value={v.about || ""}
+                onChange={(ev) =>
+                  setField(
+                    "about",
+                    ev.target.value
+                      .replace(/^\s+/, "")
+                      .replace(/[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g, ""),
+                  )
+                }
+                onBlur={touch("about")}
+                error={isInvalid("about")}
+                helperText={fieldError("about")}
+              />
+            </FormSection>
+          </Card>
+        </Grid>
+
+        {/* ── Address & region ─────────────────────────────────────────── */}
+        <Grid size={12}>
+          <Card sx={{ p: { xs: 2, md: 3 } }}>
+            <FormSection title="Address & Region" description="Registered office location and time zone">
+              <TextField
+                disabled={readOnly}
+                label="Address"
+                required
+                fullWidth
+                multiline
+                minRows={2}
+                name="address"
+                value={v.address || ""}
+                onChange={(ev) =>
+                  setField(
+                    "address",
+                    ev.target.value.replace(/^\s+/, "").replace(/[^a-zA-Z0-9\s.,\-#/'&]/g, ""),
+                  )
+                }
+                onBlur={touch("address")}
+                error={isInvalid("address")}
+                helperText={fieldError("address") || `${(v.address || "").length}/300`}
+                slotProps={{ htmlInput: { maxLength: 300 } }}
+              />
+
+              <Grid container spacing={2.5}>
+                <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+                  <Autocomplete
+                    disabled={readOnly}
+                    disableClearable
+                    options={CountryListOptions}
+                    value={CountryListOptions.find((d) => d.value === v.country) || null}
+                    isOptionEqualToValue={(o, val) => o.value === val.value}
+                    onChange={(_, opt) => opt && handleCountryChange(opt)}
+                    onBlur={touch("country")}
+                    renderOption={({ key, ...props }, o) => (
+                      <Box component="li" key={o.id} {...props} sx={{ gap: 1 }}>
+                        {o.flagImg && (
+                          <img src={o.flagImg} alt="" width={20} style={{ borderRadius: 2 }} />
                         )}
-                        {isInvalid("website") && (
-                          <FormFeedback type="invalid">
-                            {e.website}
-                          </FormFeedback>
-                        )}
-                      </div>
-                      {showHint("website") && (
-                        <div className="form-text">
-                          Enter your company website.
-                        </div>
-                      )}
-                    </Col>
-
-                    {/* ── Contact Number ───────────────────────────────── */}
-                    <Col xxl={8} md={7}>
-                      <Label htmlFor="contact_number" className="form-label">
-                        Contact Number <span>*</span>
-                      </Label>
-                      <Row>
-                        <Col md={3}>
-                          <Select
-                            id="country_code"
-                            name="country_code"
-                            isMulti={false}
-                            options={CountryCodeListOptions}
-                            className="basic-multi-select"
-                            components={{ Option: CountryCodeDisplayInSelect }}
-                            value={
-                              v.country_code
-                                ? CountryCodeListOptions.find(
-                                    (d) => d.value === v.country_code,
-                                  )
-                                : null
-                            }
-                            onChange={handleCountryCodeChange}
-                          />
-                        </Col>
-                        <Col md={9}>
-                          <Input
-                            type="text"
-                            id="contact_number"
-                            name="contact_number"
-                            className="form-control rounded-end flag-input"
-                            placeholder="Enter number"
-                            inputMode="numeric"
-                            value={v.contact_number || ""}
-                            onChange={(e) =>
-                              handleNumberOnly(e, "contact_number", 10)
-                            }
-                            onBlur={() =>
-                              FormikForm.setFieldTouched("contact_number", true)
-                            }
-                            invalid={isInvalid("contact_number")}
-                          />
-                          {isInvalid("contact_number") && (
-                            <FormFeedback type="invalid">
-                              {e.contact_number}
-                            </FormFeedback>
-                          )}
-                        </Col>
-                      </Row>
-                      {showHint("contact_number") && (
-                        <div className="form-text">
-                          Enter digits only, no spaces or special characters.
-                        </div>
-                      )}
-                    </Col>
-
-                    {/* ── Contact Email ────────────────────────────────── */}
-                    <Col xxl={8} md={7}>
-                      <Label htmlFor="companyemail" className="form-label">
-                        Contact Email <span>*</span>
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="email"
-                          name="contact_email"
-                          id="companyemail"
-                          className="form-control form-control-icon"
-                          placeholder="user@company.com"
-                          value={v.contact_email || ""}
-                          onChange={(e) =>
-                            setField("contact_email", e.target.value.trim())
-                          }
-                          onBlur={() => {
-                            FormikForm.setFieldTouched("contact_email", true);
-                            setField(
-                              "contact_email",
-                              (v.contact_email || "").trim().toLowerCase(),
-                            );
-                          }}
-                          invalid={isInvalid("contact_email")}
-                        />
-                        {!isInvalid("contact_email") && (
-                          <i className="ri-mail-line" />
-                        )}
-                        {isInvalid("contact_email") && (
-                          <FormFeedback type="invalid">
-                            {e.contact_email}
-                          </FormFeedback>
-                        )}
-                      </div>
-                      {showHint("contact_email") && (
-                        <div className="form-text">
-                          Enter your contact email.
-                        </div>
-                      )}
-                    </Col>
-
-                    {/* ── Company Overview ─────────────────────────────── */}
-                    <Col xxl={8} md={7}>
-                      <Label htmlFor="about" className="form-label">
-                        Company Overview <span>*</span>
-                      </Label>
-                      <Input
-                        type="textarea"
-                        name="about"
-                        id="about"
-                        className="form-control"
-                        rows="3"
-                        value={v.about || ""}
-                        // onChange={(e) => setField("about", e.target.value)}
-                        onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/^\s+/, "") // remove leading spaces                 
-                            .replace(
-                              /[^a-zA-Z0-9\s\n.,!?'"\-_()&:;/]/g,
-                              ""
-                            );
-                          setField("about", value);
-                        }}
-                        onBlur={() => FormikForm.setFieldTouched("about", true)}
-                        invalid={isInvalid("about")}
-                      />
-                      {isInvalid("about") && (
-                        <FormFeedback type="invalid">{e.about}</FormFeedback>
-                      )}
-                      {showHint("about") && (
-                        <div className="form-text">Company overview.</div>
-                      )}
-                    </Col>
-
-                    {/* ── Address ──────────────────────────────────────── */}
-                    <Col xxl={8} md={12}>
-                      <Label htmlFor="address" className="form-label">
-                        Address <span>*</span>
-                      </Label>
-                      <Input
-                        type="textarea"
-                        name="address"
-                        id="address"
-                        className="form-control"
-                        rows="2"
-                        value={v.address || ""}
-                        // onChange={(e) => setField("address", e.target.value)}
-                        onChange={(e) => {
-                          const value = e.target.value
-                            .replace(/^\s+/, "") // remove leading spaces only
-                            .replace(/[^a-zA-Z0-9\s.,\-#/'&]/g, "");
-
-                          setField("address", value);
-                        }}
-                        onBlur={() =>
-                          FormikForm.setFieldTouched("address", true)
-                        }
-                        invalid={isInvalid("address")}
-                      />
-                      {isInvalid("address") && (
-                        <FormFeedback type="invalid">{e.address}</FormFeedback>
-                      )}
-                      {showHint("address") && (
-                        <div className="form-text">Address.</div>
-                      )}
-                    </Col>
-
-                    {/* ── Country ──────────────────────────────────────── */}
-                    <Col xxl={8} md={6}>
-                      <Label htmlFor="country" className="form-label">
-                        Country <span>*</span>
-                      </Label>
-                      <Select
-                        id="country"
-                        name="country"
-                        isMulti={false}
-                        options={CountryListOptions}
-                        className="basic-multi-select"
-                        value={
-                          v.country
-                            ? CountryListOptions.find(
-                                (d) => d.value === v.country,
-                              )
-                            : null
-                        }
-                        styles={{
-                          control: (provided, state) => ({
-                            ...provided,
-                            borderColor:
-                              !state.isFocused && t.country && e.country
-                                ? "red"
-                                : provided.borderColor,
-                          }),
-                        }}
-                        onChange={handleCountryChange}
-                        onBlur={() =>
-                          FormikForm.setFieldTouched("country", true)
-                        }
-                      />
-                      {t.country && e.country && (
-                        <div className="lc_form_error_text">{e.country}</div>
-                      )}
-                      {showHint("country") && (
-                        <div className="form-text">Select country.</div>
-                      )}
-                    </Col>
-
-                    {/* ── State ────────────────────────────────────────── */}
-                    <Col xxl={8} md={6}>
-                      <Label htmlFor="state" className="form-label">
-                        State <span>*</span>
-                      </Label>
-                      <Select
-                        id="state"
-                        name="state"
-                        isMulti={false}
-                        options={stateListOptions}
-                        className="basic-multi-select"
-                        value={
-                          v.state
-                            ? stateListOptions.find(
-                                (d) => d.value === v.state,
-                              ) || null
-                            : null
-                        }
-                        styles={{
-                          control: (provided, state) => ({
-                            ...provided,
-                            borderColor:
-                              !state.isFocused && t.state && e.state
-                                ? "red"
-                                : provided.borderColor,
-                          }),
-                        }}
-                        onChange={(opt) => setField("state", opt.value)}
-                        onBlur={() => FormikForm.setFieldTouched("state", true)}
-                      />
-                      {t.state && e.state && (
-                        <div className="lc_form_error_text">{e.state}</div>
-                      )}
-                      {showHint("state") && (
-                        <div className="form-text">Select state.</div>
-                      )}
-                    </Col>
-
-                    {/* ── City ─────────────────────────────────────────── */}
-                    <Col xxl={8} md={6}>
-                      <Label htmlFor="companycity" className="form-label">
-                        City <span>*</span>
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="text"
-                          name="city"
-                          id="companycity"
-                          className="form-control form-control-icon"
-                          placeholder="Chennai"
-                          value={v.city || ""}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(
-                              /[^a-zA-Z\s]/g,
-                              "",
-                            );
-                            setField("city", val);
-                          }}
-                          onBlur={() =>
-                            FormikForm.setFieldTouched("city", true)
-                          }
-                          invalid={isInvalid("city")}
-                        />
-                        {!isInvalid("city") && (
-                          <i className="ri-map-pin-line" />
-                        )}
-                        {isInvalid("city") && (
-                          <FormFeedback type="invalid">{e.city}</FormFeedback>
-                        )}
-                      </div>
-                      {showHint("city") && (
-                        <div className="form-text">
-                          Enter city name (letters only).
-                        </div>
-                      )}
-                    </Col>
-
-                    {/* ── Pincode ──────────────────────────────────────── */}
-                    <Col xxl={8} md={6}>
-                      <Label htmlFor="companypincode" className="form-label">
-                        Pincode <span>*</span>
-                      </Label>
-                      <div className="form-icon right">
-                        <Input
-                          type="text"
-                          name="pincode"
-                          id="companypincode"
-                          className="form-control form-control-icon"
-                          placeholder="600001"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={v.pincode || ""}
-                          onChange={(e) => handleNumberOnly(e, "pincode", 6)}
-                          onBlur={() =>
-                            FormikForm.setFieldTouched("pincode", true)
-                          }
-                          invalid={isInvalid("pincode")}
-                        />
-                        {!isInvalid("pincode") && (
-                          <i className="ri-map-2-line" />
-                        )}
-                        {isInvalid("pincode") && (
-                          <FormFeedback type="invalid">
-                            {e.pincode}
-                          </FormFeedback>
-                        )}
-                      </div>
-                      {showHint("pincode") && (
-                        <div className="form-text">
-                          Enter pincode (6 digits only).
-                        </div>
-                      )}
-                    </Col>
-
-                    {/* ── Time Zone ────────────────────────────────────── */}
-                    <Col xxl={8} md={6}>
-                      <Label htmlFor="timezone" className="form-label">
-                        Time Zone <span>*</span>
-                      </Label>
-                      <Select
-                        name="timezone"
-                        id="timezone"
-                        options={timzone_options}
-                        placeholder="Select a time zone"
-                        value={
-                          v.timezone
-                            ? timzone_options.find(
-                                (opt) => opt.value === v.timezone,
-                              )
-                            : null
-                        }
-                        styles={{
-                          control: (provided, state) => ({
-                            ...provided,
-                            borderColor:
-                              !state.isFocused && t.timezone && e.timezone
-                                ? "red"
-                                : provided.borderColor,
-                          }),
-                        }}
-                        onChange={(opt) => setField("timezone", opt.value)}
-                        onBlur={() =>
-                          FormikForm.setFieldTouched("timezone", true)
-                        }
-                      />
-                      {t.timezone && e.timezone && (
-                        <div className="lc_form_error_text">{e.timezone}</div>
-                      )}
-                      {showHint("timezone") && (
-                        <div className="form-text">Select time zone.</div>
-                      )}
-                    </Col>
-
-                    {/* ── Custom Fields ────────────────────────────────── */}
-                    {v.cf_values && v.cf_values.length
-                      ? v.cf_values.map((obj) => (
-                          <Col xxl={8} md={6} key={obj.id}>
-                            <Label
-                              htmlFor={obj.input_name}
-                              className="form-label"
-                            >
-                              {obj.name}
-                            </Label>
-                            {form_default_input_types.includes(obj.type) && (
-                              <Input
-                                type={obj.type || "text"}
-                                name={obj.input_name}
-                                id={obj.input_name}
-                                className="form-control"
-                                placeholder={`Enter ${obj.name}`}
-                                value={obj.value || ""}
-                                onChange={(e) => handleCFInputChange(e, obj.id)}
-                              />
-                            )}
-                            {obj.type === form_date_type && (
-                              <DatePicker
-                                name={obj.input_name}
-                                id={obj.input_name}
-                                className="form-control"
-                                format={DateFormat}
-                                value={
-                                  obj.value === ""
-                                    ? null
-                                    : dayjs(
-                                        ConvertDateFormat(obj.value),
-                                        DateFormat,
-                                      )
-                                }
-                                allowClear={false}
-                                onChange={(e, dateStr) =>
-                                  handleCFDateChange(e, dateStr, obj.id)
-                                }
-                              />
-                            )}
-                            <div className="form-text">Enter {obj.name}</div>
-                          </Col>
-                        ))
-                      : null}
-
-                    {/* ── Logo Upload ──────────────────────────────────── */}
-                    <Col xxl={8} md={12}>
-                      <Row>
-                        <Col xxl={6} md={6}>
-                          <Label className="form-label">Logo</Label>
-                          {/* <Dropzone
-                            multiple={false}
-                            onDrop={(acceptedFiles) =>
-                              handleAcceptedFiles(acceptedFiles, "light")
-                            }
-                          > */}
-
-                          <Dropzone
-                            multiple={false}
-                            accept={{
-                              "image/jpeg": [".jpeg", ".jpg"],
-                              "image/png": [".png"],
-                              "image/webp": [".webp"],
-                            }}
-                            onDrop={(acceptedFiles, fileRejections) => {
-                              if (fileRejections.length > 0) {
-                                toast.error("Only image files are allowed");
-                                return;
-                              }
-
-                              handleAcceptedFiles(acceptedFiles, "light");
-                            }}
-                          >
-                            {({ getRootProps }) => (
-                              <div className="dropzone dz-clickable">
-                                <div
-                                  className="dz-message needsclick"
-                                  {...getRootProps()}
-                                >
-                                  <div className="mb-3">
-                                    <i className="display-4 text-muted ri-upload-cloud-2-fill" />
-                                  </div>
-                                  <h5>
-                                    Drop files here or click to upload Logo.
-                                  </h5>
-                                </div>
-                              </div>
-                            )}
-                          </Dropzone>
-                          {/* {lightLogoFile && ( */}
-                          {/* {lightLogoFile ? (
-                            <Card className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete">
-                              <div className="p-2">
-                                <Row className="align-items-center">
-                                  <Col className="col-auto">
-                                    <img
-                                      height="80"
-                                      className="avatar-sm rounded bg-light"
-                                      alt={lightLogoFile.name}
-                                      src={lightLogoFile.preview}
-                                    />
-                                  </Col>
-                                  <Col>
-                                    <Link
-                                      to="#"
-                                      className="text-muted font-weight-bold"
-                                    >
-                                      {lightLogoFile.name}
-                                    </Link>
-                                    <p className="mb-0">
-                                      <strong>
-                                        {lightLogoFile.formattedSize}
-                                      </strong>
-                                    </p>
-                                  </Col>
-                                </Row>
-                              </div>
-                            </Card>
-                          ):
-                          (v.light_logo_image && (
-                            <div className="p-2 m-3">
-                              <Row className="align-items-center">
-                                <Col className="col-auto">
-                                  <img
-                                    height="80"
-                                    className="avatar-sm rounded bg-light"
-                                    alt="logo"
-                                    src={v.light_logo_image}
-                                  />
-                                </Col>
-                              </Row>
-                            </div>
-                          )
-                          )} */}
-                          {lightLogoFile && (
-                            <Card className="mt-1 mb-0 shadow-none border dz-processing dz-image-preview dz-success dz-complete">
-                              <div className="p-2">
-                                <Row className="align-items-center">
-                                  <Col className="col-auto">
-                                    <img
-                                      height="80"
-                                      className="avatar-sm rounded bg-light"
-                                      alt={lightLogoFile.name}
-                                      src={lightLogoFile.preview}
-                                    />
-                                  </Col>
-                                  <Col>
-                                    <Link to="#" className="text-muted font-weight-bold">
-                                      {lightLogoFile.name}
-                                    </Link>
-                                    <p className="mb-0">
-                                      <strong>{lightLogoFile.formattedSize}</strong>
-                                    </p>
-                                  </Col>
-                                </Row>
-                              </div>
-                            </Card>
-                          )}
-                        </Col>
-                      </Row>
-                    </Col>
-
-                    {/* ── Submit ───────────────────────────────────────── */}
-                    {showUpdateBtn && (
-                      <Col xxl={12} md={12}>
-                        <Button
-                          type="submit"
-                          color="success"
-                          className="btn-label"
-                        >
-                          <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
-                          Update
-                        </Button>
-                      </Col>
+                        {o.countryName}
+                      </Box>
                     )}
-                  </Row>
-                </div>
-              </Form>
-            </CardBody>
+                    renderInput={(params) => (
+                      <TextField
+                        disabled={readOnly}
+                        {...params}
+                        label="Country"
+                        required
+                        name="country"
+                        error={!!(t.country && e.country)}
+                        helperText={t.country ? e.country : undefined}
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+                  <Autocomplete
+                    disabled={readOnly}
+                    disableClearable
+                    options={stateListOptions}
+                    value={stateListOptions.find((d) => d.value === v.state) || null}
+                    isOptionEqualToValue={(o, val) => o.value === val.value}
+                    onChange={(_, opt) => opt && setField("state", opt.value)}
+                    onBlur={touch("state")}
+                    noOptionsText={v.country ? "No states" : "Select a country first"}
+                    renderInput={(params) => (
+                      <TextField
+                        disabled={readOnly}
+                        {...params}
+                        label="State"
+                        required
+                        name="state"
+                        error={!!(t.state && e.state)}
+                        helperText={t.state ? e.state : undefined}
+                      />
+                    )}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+                  <TextField
+                    disabled={readOnly}
+                    label="City"
+                    required
+                    fullWidth
+                    name="city"
+                    placeholder="Chennai"
+                    value={v.city || ""}
+                    onChange={(ev) => setField("city", ev.target.value.replace(/[^a-zA-Z\s]/g, ""))}
+                    onBlur={touch("city")}
+                    error={isInvalid("city")}
+                    helperText={fieldError("city")}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LocationCityRoundedIcon fontSize="small" color="action" />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6, xl: 4 }}>
+                  <TextField
+                    disabled={readOnly}
+                    label="Pincode"
+                    required
+                    fullWidth
+                    name="pincode"
+                    placeholder="600001"
+                    value={v.pincode || ""}
+                    onChange={(ev) => handleNumberOnly(ev, "pincode", 6)}
+                    onBlur={touch("pincode")}
+                    error={isInvalid("pincode")}
+                    helperText={fieldError("pincode")}
+                    slotProps={{
+                      htmlInput: { inputMode: "numeric", maxLength: 6 },
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <PinDropRoundedIcon fontSize="small" color="action" />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 12, xl: 8 }}>
+                  <Autocomplete
+                    disabled={readOnly}
+                    disableClearable
+                    options={timzone_options}
+                    value={timzone_options.find((o) => o.value === v.timezone) || null}
+                    isOptionEqualToValue={(o, val) => o.value === val.value}
+                    onChange={(_, opt) => opt && setField("timezone", opt.value)}
+                    onBlur={touch("timezone")}
+                    renderInput={(params) => (
+                      <TextField
+                        disabled={readOnly}
+                        {...params}
+                        label="Time Zone"
+                        required
+                        name="timezone"
+                        placeholder="Select a time zone"
+                        error={!!(t.timezone && e.timezone)}
+                        helperText={t.timezone ? e.timezone : undefined}
+                        slotProps={{
+                          input: {
+                            ...params.InputProps,
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <ScheduleRoundedIcon fontSize="small" color="action" />
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                </Grid>
+              </Grid>
+            </FormSection>
           </Card>
-        </Col>
+        </Grid>
 
-        {/* ── Right Sidebar ─────────────────────────────────────────────── */}
-        {/* <Col xl={3} lg={4}>
-          <Card>
-            <CardBody>
-              <h5 className="card-title mb-4">Skills</h5>
-              <div className="d-flex flex-wrap gap-2 fs-16">
-                {[
-                  "UI/UX",
-                  "Figma",
-                  "HTML",
-                  "CSS",
-                  "Javascript",
-                  "C#",
-                  "Nodejs",
-                ].map((s) => (
-                  <div
-                    key={s}
-                    className="badge fw-medium bg-secondary-subtle text-secondary"
-                  >
-                    {s}
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader className="align-items-center d-flex border-bottom-dashed">
-              <h4 className="card-title mb-0 flex-grow-1">Members</h4>
-              <div className="flex-shrink-0">
-                <button
-                  type="button"
-                  className="btn btn-soft-danger btn-sm"
-                  data-bs-toggle="modal"
-                  data-bs-target="#inviteMembersModal"
-                >
-                  <i className="ri-share-line me-1 align-bottom"></i> Invite
-                  Member
-                </button>
-              </div>
-            </CardHeader>
-            <CardBody>
-              <SimpleBar
-                data-simplebar
-                style={{ height: "235px" }}
-                className="mx-n3 px-3"
-              >
-                <div className="vstack gap-3">
-                  {[
-                    { img: avatar2, name: "Nancy Martino" },
-                    { initials: "HB", color: "danger", name: "Henry Baird" },
-                    { img: avatar3, name: "Frank Hook" },
-                    { img: avatar4, name: "Jennifer Carter" },
-                    { initials: "AC", color: "success", name: "Alexis Clarke" },
-                    { img: avatar7, name: "Joseph Parker" },
-                  ].map((m) => (
-                    <div key={m.name} className="d-flex align-items-center">
-                      <div className="avatar-xs flex-shrink-0 me-3">
-                        {m.img ? (
-                          <img
-                            src={m.img}
-                            alt=""
-                            className="img-fluid rounded-circle"
+        {/* ── Custom fields ────────────────────────────────────────────── */}
+        {v.cf_values && v.cf_values.length > 0 && (
+          <Grid size={12}>
+            <Card sx={{ p: { xs: 2, md: 3 } }}>
+              <FormSection title="Additional Details">
+                <Grid container spacing={2.5}>
+                  {v.cf_values.map((obj) => (
+                    <Grid key={obj.id} size={{ xs: 12, md: 6, xl: 4 }}>
+                      {obj.type === form_date_type ? (
+                        <DatePicker
+                          disabled={readOnly}
+                          label={obj.name}
+                          format={DateFormat}
+                          value={obj.value ? dayjs(ConvertDateFormat(obj.value), DateFormat) : null}
+                          onChange={(d) =>
+                            d?.isValid() && handleCFDateChange(null, d.format(DateFormat), obj.id)
+                          }
+                          slotProps={{ textField: { fullWidth: true, name: obj.input_name } }}
+                        />
+                      ) : (
+                        form_default_input_types.includes(obj.type) && (
+                          <TextField
+                            disabled={readOnly}
+                            label={obj.name}
+                            fullWidth
+                            type={obj.type === "number" ? "number" : "text"}
+                            name={obj.input_name}
+                            placeholder={`Enter ${obj.name}`}
+                            value={obj.value || ""}
+                            onChange={(ev) => handleCFInputChange(ev, obj.id)}
                           />
-                        ) : (
-                          <div
-                            className={`avatar-title bg-${m.color}-subtle text-${m.color} rounded-circle`}
-                          >
-                            {m.initials}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-grow-1">
-                        <h5 className="fs-13 mb-0">
-                          <Link to="#" className="text-body d-block">
-                            {m.name}
-                          </Link>
-                        </h5>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <div className="d-flex align-items-center gap-1">
-                          <button
-                            type="button"
-                            className="btn btn-light btn-sm"
-                          >
-                            Message
-                          </button>
-                          <UncontrolledDropdown>
-                            <DropdownToggle
-                              tag="button"
-                              className="btn btn-icon btn-sm fs-16 text-muted dropdown"
-                            >
-                              <i className="ri-more-fill"></i>
-                            </DropdownToggle>
-                            <DropdownMenu>
-                              <li>
-                                <DropdownItem>
-                                  <i className="ri-eye-fill text-muted me-2 align-bottom"></i>
-                                  View
-                                </DropdownItem>
-                              </li>
-                              <li>
-                                <DropdownItem>
-                                  <i className="ri-star-fill text-muted me-2 align-bottom"></i>
-                                  Favourite
-                                </DropdownItem>
-                              </li>
-                              <li>
-                                <DropdownItem>
-                                  <i className="ri-delete-bin-5-fill text-muted me-2 align-bottom"></i>
-                                  Delete
-                                </DropdownItem>
-                              </li>
-                            </DropdownMenu>
-                          </UncontrolledDropdown>
-                        </div>
-                      </div>
-                    </div>
+                        )
+                      )}
+                    </Grid>
                   ))}
-                </div>
-              </SimpleBar>
-            </CardBody>
-          </Card>
+                </Grid>
+              </FormSection>
+            </Card>
+          </Grid>
+        )}
 
-          <Card>
-            <CardHeader className="align-items-center d-flex border-bottom-dashed">
-              <h4 className="card-title mb-0 flex-grow-1">Attachments</h4>
-              <div className="flex-shrink-0">
-                <button type="button" className="btn btn-soft-info btn-sm">
-                  <i className="ri-upload-2-fill me-1 align-bottom"></i> Upload
-                </button>
-              </div>
-            </CardHeader>
-            <CardBody>
-              <div className="vstack gap-2">
-                {[
-                  {
-                    icon: "ri-folder-zip-line",
-                    name: "App-pages.zip",
-                    size: "2.2MB",
-                  },
-                  {
-                    icon: "ri-file-ppt-2-line",
-                    name: "Velzon-admin.ppt",
-                    size: "2.4MB",
-                  },
-                  {
-                    icon: "ri-folder-zip-line",
-                    name: "Images.zip",
-                    size: "1.2MB",
-                  },
-                  {
-                    icon: "ri-image-2-line",
-                    name: "bg-pattern.png",
-                    size: "1.1MB",
-                  },
-                ].map((f) => (
-                  <div
-                    key={f.name}
-                    className="border rounded border-dashed p-2"
-                  >
-                    <div className="d-flex align-items-center">
-                      <div className="flex-shrink-0 me-3">
-                        <div className="avatar-sm">
-                          <div className="avatar-title bg-light text-secondary rounded fs-24">
-                            <i className={f.icon}></i>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex-grow-1 overflow-hidden">
-                        <h5 className="fs-13 mb-1">
-                          <Link
-                            to="#"
-                            className="text-body text-truncate d-block"
-                          >
-                            {f.name}
-                          </Link>
-                        </h5>
-                        <div>{f.size}</div>
-                      </div>
-                      <div className="flex-shrink-0 ms-2">
-                        <div className="d-flex gap-1">
-                          <button
-                            type="button"
-                            className="btn btn-icon text-muted btn-sm fs-18"
-                          >
-                            <i className="ri-download-2-line"></i>
-                          </button>
-                          <UncontrolledDropdown>
-                            <DropdownToggle
-                              tag="button"
-                              className="btn btn-icon text-muted btn-sm fs-18 dropdown"
-                              type="button"
-                            >
-                              <i className="ri-more-fill"></i>
-                            </DropdownToggle>
-                            <DropdownMenu>
-                              <li>
-                                <DropdownItem>
-                                  <i className="ri-pencil-fill align-bottom me-2 text-muted"></i>
-                                  Rename
-                                </DropdownItem>
-                              </li>
-                              <li>
-                                <DropdownItem>
-                                  <i className="ri-delete-bin-fill align-bottom me-2 text-muted"></i>
-                                  Delete
-                                </DropdownItem>
-                              </li>
-                            </DropdownMenu>
-                          </UncontrolledDropdown>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="mt-2 text-center">
-                  <button type="button" className="btn btn-success">
-                    View more
-                  </button>
-                </div>
-              </div>
-            </CardBody>
+        {/* ── Branding ─────────────────────────────────────────────────── */}
+        <Grid size={12}>
+          <Card sx={{ p: { xs: 2, md: 3 } }}>
+            <FormSection title="Branding" description="Logo shown in the app header and documents">
+              <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems="stretch">
+                <Box
+                  sx={{
+                    width: { xs: "100%", md: 180 },
+                    height: 140,
+                    flexShrink: 0,
+                    border: 1,
+                    borderColor: "divider",
+                    borderRadius: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    bgcolor: "action.hover",
+                    overflow: "hidden",
+                  }}
+                >
+                  {logoPreview ? (
+                    <Box
+                      component="img"
+                      src={logoPreview}
+                      alt="Company logo"
+                      sx={{ maxWidth: "85%", maxHeight: "85%", objectFit: "contain" }}
+                    />
+                  ) : (
+                    <Typography variant="caption" color="text.secondary">
+                      No logo
+                    </Typography>
+                  )}
+                </Box>
+
+                <Dropzone
+                  disabled={readOnly}
+                  multiple={false}
+                  accept={{
+                    "image/jpeg": [".jpeg", ".jpg"],
+                    "image/png": [".png"],
+                    "image/webp": [".webp"],
+                  }}
+                  onDrop={(acceptedFiles, fileRejections) => {
+                    if (fileRejections.length > 0) {
+                      toast.error("Only image files are allowed");
+                      return;
+                    }
+                    handleAcceptedFiles(acceptedFiles, "light");
+                  }}
+                >
+                  {({ getRootProps, getInputProps, isDragActive }) => (
+                    <Box
+                      {...getRootProps()}
+                      sx={{
+                        flex: 1,
+                        minHeight: 140,
+                        border: "2px dashed",
+                        borderColor: isDragActive ? "primary.main" : "divider",
+                        borderRadius: 2,
+                        bgcolor: readOnly
+                          ? "action.disabledBackground"
+                          : isDragActive
+                            ? "action.selected"
+                            : "transparent",
+                        opacity: readOnly ? 0.6 : 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 0.5,
+                        p: 2,
+                        cursor: readOnly ? "not-allowed" : "pointer",
+                        textAlign: "center",
+                        transition: "border-color .15s, background-color .15s",
+                        "&:hover": { borderColor: readOnly ? "divider" : "primary.main" },
+                      }}
+                      aria-disabled={readOnly}
+                    >
+                      <input {...getInputProps()} data-testid="organization-logo-file-input" />
+                      <CloudUploadOutlinedIcon color={readOnly ? "disabled" : "primary"} sx={{ fontSize: 36 }} />
+                      <Typography variant="body2" fontWeight={600}>
+                        {readOnly
+                          ? "Logo upload is disabled"
+                          : lightLogoFile
+                            ? lightLogoFile.name
+                            : "Drop your logo here or click to upload"}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {readOnly
+                          ? "You don't have permission to update the company profile"
+                          : lightLogoFile
+                            ? `${lightLogoFile.formattedSize} · will be saved when you click Update`
+                            : "PNG, JPG or WEBP"}
+                      </Typography>
+                    </Box>
+                  )}
+                </Dropzone>
+              </Stack>
+            </FormSection>
           </Card>
-        </Col> */}
-      </Row>
-    </React.Fragment>
+        </Grid>
+      </Grid>
+
+      {showUpdateBtn && (
+        <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3 }}>
+          <Button
+            data-testid="organization-logo-update-button"
+            type="submit"
+            variant="contained"
+            color="success"
+            size="large"
+            startIcon={<SaveRoundedIcon />}
+            disabled={FormikForm.isSubmitting}
+          >
+            Update
+          </Button>
+        </Stack>
+      )}
+    </Box>
   );
 };
 

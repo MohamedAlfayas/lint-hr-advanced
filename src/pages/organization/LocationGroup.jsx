@@ -1,14 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  Row,
-  Input,
-  Label,
-} from "reactstrap";
+import { Card, CardBody } from "reactstrap";
 
 import {
   setComponentToShow,
@@ -30,6 +22,10 @@ import { GetApi } from "../../common/api/GetApi";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import "./LocationGroup.scss";
+import { testId, itemTestKey } from "../../shared/testing/testId";
+
+const LG_TONES = ["success", "primary", "info", "warning", "danger"];
 
 const LocationGroup = () => {
   const dispatch = useDispatch();
@@ -74,117 +70,119 @@ const LocationGroup = () => {
     dispatch(toggleRSBView(true));
   };
 
+  const [query, setQuery] = useState("");
+
+  const groups = location_group_data || [];
+  const q = query.trim().toLowerCase();
+  const visibleGroups = q
+    ? groups.filter((g) =>
+        [g?.name, g?.description]
+          .filter(Boolean)
+          .some((v) => String(v).trim().toLowerCase().startsWith(q)))
+    : groups;
+
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
+
   return (
     <React.Fragment>
-      <Card>
-        <CardHeader>
-          {showCreateBtn && (
-            <span className="float-end">
-              <button
-                className="btn btn-success add-btn"
-                onClick={() => handleCreateOrEdit(0)}
-              >
-                <i className="ri-add-line align-bottom me-1"></i>
-                New Location Group
-              </button>
-            </span>
-          )}
-          <h4 className="card-title mb-0">Location Group</h4>
-        </CardHeader>
-
+      <Card className="apv-card it-card lgp">
         <CardBody>
-          <Row>
-            {!!location_group_data &&
-              location_group_data.length > 0 &&
-              location_group_data.map((lg) => (
-                <Col xxl={6} key={lg.id}>
-                  <Card className="border card-border-success">
-                    <CardBody>
-                      {/* HEADER */}
-                      <div className="p-3 mt-n3 mx-n3 bg-success-subtle rounded-top">
-                        <div className="d-flex align-items-center">
-                          <div className="flex-grow-1">
-                            <h5 className="mb-0 fs-14">
-                              {lg?.name}
-                            </h5>
-                          </div>
-
-                          <div className="flex-shrink-0">
-                            <div className="d-flex gap-1 align-items-center my-n2">
-                              
-                              {/* SWITCH (UI ONLY) */}
-                              <div className="form-check form-switch form-switch-success">
-                                <Input
-                                  className="form-check-input"
-                                  type="checkbox"
-                                  checked={true}
-                                  readOnly
-                                />
-                                <Label className="form-check-label">
-                                  Active
-                                </Label>
-                              </div>
-
-                              {/* EDIT ONLY */}
-                              {showEditBtn && (
-                                <button
-                                  onClick={() =>
-                                    handleCreateOrEdit(lg?.id, lg)
-                                  }
-                                  className="btn btn-link text-primary d-inline-block ms-2 p-0"
-                                >
-                                  <i className="ri-pencil-fill fs-16"></i>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* BODY */}
-                      <div className="py-3">
-                        <Row className="gy-3">
-                          <Col xs={12}>
-                            <div>
-                              <h5 className="fs-14">
-                                {lg?.description || "—"}
-                              </h5>
-                            </div>
-                            <hr />
-                          </Col>
-                        </Row>
-
-                        <Row className="gy-3">
-                          <Col xs={12}>
-                            <div>
-                              <p className="text-muted mb-1">
-                                Created On
-                              </p>
-                              <h5 className="fs-14">
-                                {lg?.created_on
-                                  ? new Date(
-                                      lg.created_on
-                                    ).toLocaleDateString()
-                                  : "—"}
-                              </h5>
-                            </div>
-                          </Col>
-                        </Row>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </Col>
-              ))}
-
-            {/* EMPTY STATE */}
-            {(!location_group_data ||
-              location_group_data.length === 0) && (
-              <div className="text-center py-5 text-muted w-100">
-                <i className="ri-map-pin-line fs-48 mb-2 d-block" />
-                No location groups found
+          <div className="lgp-top">
+            <div className="apv-head">
+              <span className="apv-head-icon tone-success">
+                <i className="ri-map-pin-range-line"></i>
+              </span>
+              <div>
+                <h5 className="apv-head-title">Location Group</h5>
+                <span className="apv-head-sub">
+                  {groups.length} {groups.length === 1 ? "group" : "groups"} · Bundle office locations for attendance rules
+                </span>
               </div>
-            )}
-          </Row>
+            </div>
+
+            <div className="lgp-actions">
+              {groups.length > 0 && (
+                <div className="lgp-search">
+                  <i className="ri-search-line"></i>
+                  <input
+                    data-testid="location-group-list-search-groups-input"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search groups…"
+                  />
+                  {query && (
+                    <button data-testid="location-group-list-clear-search-button" type="button" onClick={() => setQuery("")} aria-label="Clear search">
+                      <i className="ri-close-line"></i>
+                    </button>
+                  )}
+                </div>
+              )}
+              {showCreateBtn && (
+                <button data-testid="location-group-list-new-location-group-button" type="button" className="it-btn is-primary" onClick={() => handleCreateOrEdit(0)}>
+                  <i className="ri-add-line"></i>New Location Group
+                </button>
+              )}
+            </div>
+          </div>
+
+          {visibleGroups.length > 0 && (
+            <div className="lgp-grid">
+              {visibleGroups.map((lg, i) => (
+                <div key={lg.id} className={`lgp-item tone-${LG_TONES[i % LG_TONES.length]}`}>
+                  <div className="lgp-item-head">
+                    <span className="lgp-item-icon">
+                      {(lg?.name || "?").trim().charAt(0).toUpperCase()}
+                    </span>
+                    <div className="lgp-item-title">
+                      <h6 title={lg?.name}>{lg?.name}</h6>
+                      <span className="lgp-pill"><span></span>Active</span>
+                    </div>
+                    {showEditBtn && (
+                      <button
+                        data-testid={testId("location-group-list-edit-group", itemTestKey(lg), "button")}
+                        type="button"
+                        className="lgp-edit"
+                        onClick={() => handleCreateOrEdit(lg?.id, lg)}
+                        title="Edit group"
+                      >
+                        <i className="ri-pencil-line"></i>
+                      </button>
+                    )}
+                  </div>
+
+                  <p className={`lgp-desc ${lg?.description ? "" : "is-empty"}`}>
+                    {lg?.description || "No description added"}
+                  </p>
+
+                  <div className="lgp-meta">
+                    <span><i className="ri-calendar-2-line"></i>Created {fmtDate(lg?.created_on)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {groups.length > 0 && visibleGroups.length === 0 && (
+            <div className="lgp-empty">
+              <span className="lgp-empty-icon"><i className="ri-search-line"></i></span>
+              <h6>No groups match “{query}”</h6>
+              <p>Try a different name or clear the search.</p>
+            </div>
+          )}
+
+          {groups.length === 0 && (
+            <div className="lgp-empty">
+              <span className="lgp-empty-icon"><i className="ri-map-pin-2-line"></i></span>
+              <h6>No location groups yet</h6>
+              <p>Group your office locations to apply attendance rules together.</p>
+              {showCreateBtn && (
+                <button data-testid="location-group-list-create-your-first-group-button" type="button" className="it-btn is-primary mt-2" onClick={() => handleCreateOrEdit(0)}>
+                  <i className="ri-add-line"></i>Create your first group
+                </button>
+              )}
+            </div>
+          )}
         </CardBody>
       </Card>
     </React.Fragment>

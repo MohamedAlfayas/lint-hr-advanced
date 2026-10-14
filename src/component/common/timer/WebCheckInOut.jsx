@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Button, Col, Modal, ModalBody, Spinner } from "reactstrap";
+import { Skel } from "../skeleton/Skeleton";
+import { Button, Col, Modal, Spinner } from "reactstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { PostApi } from "../../../common/api/PostApi";
 import { toast } from "react-toastify";
@@ -8,6 +9,19 @@ import { setTimer } from "../../../redux/reducers/ChildReducer/ClockReducer";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import StatusBottomSheet from "../timeLine/StatusBottomSheet";
 import TimelineModal from "../timeLine/TimelineModal";
+import CheckInBuddy from "./CheckInBuddy";
+import "./lateReasonModal.scss";
+import { testId } from "../../../shared/testing/testId";
+
+const LATE_REASON_MAX = 200;
+const LATE_REASONS = [
+  { label: "Traffic delay", icon: "ri-traffic-light-line", tone: "warning" },
+  { label: "Public transport delay", icon: "ri-bus-line", tone: "info" },
+  { label: "Medical appointment", icon: "ri-first-aid-kit-line", tone: "danger" },
+  { label: "Personal emergency", icon: "ri-user-heart-line", tone: "pink" },
+  { label: "Bad weather", icon: "ri-rainy-line", tone: "primary" },
+  { label: "Approved by manager", icon: "ri-user-star-line", tone: "success" },
+];
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_MAP_API_KEY;
 
@@ -25,6 +39,7 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
     show_attendance_timer,
     clock_initialized,
   } = useSelector((state) => state.ClockReducer);
+  const { profile_data } = useSelector((state) => state.MyProfileReducer);
   const dispatch = useDispatch();
 
   const isTimerPaused =
@@ -217,8 +232,77 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
   const payableBreak = Math.min(total_break_duration, maximum_break_duration);
   const displaySeconds = total_seconds;
 
+  const isHeader = layout === "header";
+
   return (
     <React.Fragment>
+      {isHeader ? (
+        <div className="wci-header">
+          {show_attendance_timer && clock_initialized && !currently_checked_in && !loading && (
+            <CheckInBuddy
+              profile={profile_data}
+              workedSeconds={total_seconds}
+              onCheckIn={handleButtonClick}
+            />
+          )}
+          {show_attendance_timer && (
+            <button
+              data-testid="check-in-timer-toggle-button"
+              type="button"
+              className={`wci-btn ${currently_checked_in ? "is-out" : "is-in"}`}
+              onClick={handleButtonClick}
+              disabled={loading}
+            >
+              {loading ? (
+                <Spinner size="sm" />
+              ) : (
+                <i className={currently_checked_in ? "ri-logout-circle-r-line" : "ri-login-circle-line"} />
+              )}
+              <span>{currently_checked_in ? "Check Out" : "Check In"}</span>
+            </button>
+          )}
+
+          {showTimer && (
+            <div
+              className={`wci-timer${currently_checked_in ? " is-running" : ""}`}
+              title={currently_checked_in ? "Checked in" : "Not checked in"}
+            >
+              <span className="wci-dot" />
+              <span className="wci-time">{formatTime(displaySeconds)}</span>
+            </div>
+          )}
+
+          {currently_checked_in && isTimerPaused && (
+            <span className="wci-warn" title="Break time exceeded 1 hour">
+              <i className="ri-error-warning-line" /> Break &gt; 1h
+            </span>
+          )}
+
+          <style>{`
+            .wci-header { display:flex; align-items:center; gap:8px; margin-right:8px; }
+            .wci-btn {
+              display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px;
+              border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap;
+              border:1px solid transparent; transition:filter .15s ease, background-color .15s ease;
+            }
+            .wci-btn i { font-size:16px; }
+            .wci-btn.is-in { background:var(--vz-success); color:#fff; box-shadow:0 4px 12px rgba(var(--vz-success-rgb), .3); }
+            .wci-btn.is-out { background:rgba(var(--vz-warning-rgb), .12); color:var(--vz-warning); border-color:rgba(var(--vz-warning-rgb), .4); }
+            .wci-btn:hover:not(:disabled) { filter:brightness(.95); }
+            .wci-btn:disabled { opacity:.7; }
+            .wci-timer {
+              display:inline-flex; align-items:center; gap:8px; height:34px; padding:0 12px;
+              border-radius:999px; border:1px solid var(--vz-border-color); background:var(--vz-tertiary-bg);
+            }
+            .wci-time { font-weight:700; font-size:14px; font-variant-numeric:tabular-nums; letter-spacing:.5px; color:var(--vz-body-color); }
+            .wci-dot { width:8px; height:8px; border-radius:50%; background:var(--vz-secondary-color); opacity:.6; }
+            .wci-timer.is-running .wci-dot { background:var(--vz-success); opacity:1; animation:wci-pulse 1.6s ease-in-out infinite; }
+            @keyframes wci-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(var(--vz-success-rgb), .5); } 50% { box-shadow:0 0 0 5px rgba(var(--vz-success-rgb), 0); } }
+            .wci-warn { font-size:11px; font-weight:600; color:var(--vz-danger); white-space:nowrap; }
+            @media (max-width: 575.98px) { .wci-btn span { display:none; } .wci-btn { padding:0 10px; } }
+          `}</style>
+        </div>
+      ) : (
       <Col
         xxl={hideTimer ? 3 : 6}
         md={hideTimer ? 3 : 6}
@@ -236,16 +320,12 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
         {show_attendance_timer && (
           <>
             {loading ? (
-              <Button color="primary" className="btn-load" outline>
-                <span className="d-flex align-items-center">
-                  <Spinner size="sm" className="flex-shrink-0">
-                    Loading...
-                  </Spinner>
-                  <span className="flex-grow-1 ms-2">Loading...</span>
-                </span>
-              </Button>
+              <span className="sk-inline" role="status" aria-label="Loading" data-testid="check-in-loading-button">
+                <Skel w={120} h={38} />
+              </span>
             ) : (
               <Button
+                data-testid="check-in-toggle-button"
                 color={currently_checked_in ? "warning" : "secondary"}
                 className="custom-toggle"
                 onClick={handleButtonClick}
@@ -304,6 +384,7 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
           )}
         </div>
       </Col>
+      )}
 
       <StatusBottomSheet
         show={showStatusSheet}
@@ -323,40 +404,84 @@ const WebCheckInOut = ({ showTimer, hideTimer, layout }) => {
       />
 
       <Modal
+        data-testid="check-in-late-reason-dialog"
         fade
         isOpen={showLateModal}
         toggle={() => setShowLateModal(false)}
         centered
+        className="lat-modal"
+        contentClassName="lat-content"
       >
-        <ModalBody className="py-2 px-3">
-          <div className="mt-2 text-center">
-            <div className="mt-4 pt-2 fs-15 mx-4">
-              <h4>Please Enter the Reason for Late Attendance</h4>
-            </div>
+        <div className="lat-hero">
+          <span className="lat-hero-icon"><i className="ri-alarm-warning-line"></i></span>
+          <div className="lat-hero-text">
+            <h5>You're checking in late</h5>
+            <p>Add a short reason so your manager knows what happened</p>
+          </div>
+          <button type="button" className="lat-close" onClick={() => setShowLateModal(false)} aria-label="Close" data-testid="check-in-late-reason-close-button">
+            <i className="ri-close-line"></i>
+          </button>
+        </div>
+
+        <div className="lat-body">
+          <div className="lat-time">
+            <i className="ri-time-line"></i>
+            <span>Check-in time</span>
+            <b>{new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</b>
+            <em>{new Date().toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}</em>
+          </div>
+
+          <label className="lat-label">Quick reasons</label>
+          <div className="lat-chips">
+            {LATE_REASONS.map((r) => (
+              <button
+                data-testid={testId("check-in-late-reason-option", r.label)}
+                key={r.label}
+                type="button"
+                aria-pressed={lateReason === r.label}
+                className={`lat-chip tone-${r.tone} ${lateReason === r.label ? "is-active" : ""}`}
+                onClick={() => setLateReason(lateReason === r.label ? "" : r.label)}
+              >
+                <span className="lat-chip-icon"><i className={r.icon}></i></span>
+                <span className="lat-chip-label">{r.label}</span>
+                <i className="ri-checkbox-circle-fill lat-chip-check"></i>
+              </button>
+            ))}
+          </div>
+
+          <div className="lat-label-row">
+            <label className="lat-label" htmlFor="lat-reason">Reason <span>*</span></label>
+            <span className="lat-counter">{lateReason.length}/{LATE_REASON_MAX}</span>
+          </div>
+          <div className="lat-textarea">
+            <i className="ri-edit-2-line"></i>
             <textarea
-              className="form-control"
-              placeholder="Enter Reason"
+              data-testid="check-in-late-reason-textarea"
+              id="lat-reason"
+              rows={3}
+              maxLength={LATE_REASON_MAX}
+              placeholder="e.g. Stuck in heavy traffic on the highway"
               value={lateReason}
               onChange={(e) => setLateReason(e.target.value)}
+              autoFocus
             />
           </div>
-          <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
-            <button
-              type="button"
-              className="btn w-sm btn-light"
-              onClick={() => setShowLateModal(false)}
-            >
-              Close
-            </button>
-            <button
-              type="button"
-              className="btn w-sm btn-danger"
-              onClick={FirstCheckinWithLateAttendanceNotesAPI}
-            >
-              Submit
-            </button>
-          </div>
-        </ModalBody>
+        </div>
+
+        <div className="lat-footer">
+          <button type="button" className="it-btn is-soft" onClick={() => setShowLateModal(false)} data-testid="check-in-late-reason-cancel-button">
+            Close
+          </button>
+          <button
+            data-testid="check-in-late-reason-submit-button"
+            type="button"
+            className="it-btn is-primary lat-submit"
+            onClick={FirstCheckinWithLateAttendanceNotesAPI}
+            disabled={!lateReason.trim()}
+          >
+            <i className="ri-send-plane-fill"></i>Submit & Check In
+          </button>
+        </div>
       </Modal>
     </React.Fragment>
   );

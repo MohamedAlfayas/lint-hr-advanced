@@ -12,7 +12,7 @@ import {
   Input,
   Badge,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, percent, min, day, runChecks, range } from "./validators";
@@ -61,7 +61,7 @@ const ViewToggle = ({ checked, label }) => (
         width: 36,
         height: 20,
         borderRadius: 12,
-        background: checked ? "#0ab39c" : "#ced4da",
+        background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)",
         position: "relative",
         flexShrink: 0,
       }}
@@ -215,7 +215,7 @@ const BonusPolicySettings = () => {
             <p className="text-muted mb-4">
               Configure statutory and performance bonus rules.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="bonus-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line me-1"></i>
               Configure Policy
             </Button>
@@ -239,6 +239,7 @@ const BonusPolicySettings = () => {
         {!isEditing && (
           <div className="d-flex gap-2">
             <Button
+              data-testid="bonus-policy-edit-button"
               size="sm"
               color="primary"
               outline
@@ -249,7 +250,7 @@ const BonusPolicySettings = () => {
             >
               <i className="ri-edit-line"></i> Edit
             </Button>
-            <Button size="sm" color="success" outline onClick={handleNew}>
+            <Button data-testid="bonus-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
               <i className="ri-add-line"></i> New Version
             </Button>
           </div>
@@ -289,6 +290,7 @@ const BonusPolicySettings = () => {
           <SettingRow label="Effective Date">
             {isEditing ? (
               <Input
+                data-testid="bonus-policy-effective-date-input"
                 type="date"
                 value={form.effective_date || ""}
                 onChange={(e) => handleChange("effective_date", e.target.value)}
@@ -303,6 +305,7 @@ const BonusPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="bonus-policy-is-active-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.is_active}
@@ -321,6 +324,7 @@ const BonusPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="bonus-policy-include-bonus-in-ctc-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.include_bonus_in_ctc}
@@ -339,6 +343,7 @@ const BonusPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="bonus-policy-enable-statutory-bonus-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.enable_statutory_bonus}
@@ -355,6 +360,7 @@ const BonusPolicySettings = () => {
               <SettingRow label="Calculation Basis">
                 {isEditing ? (
                   <Select
+                    testId="bonus-policy-statutory-bonus-calculation-basis"
                     options={BONUS_BASIS_OPTIONS}
                     value={BONUS_BASIS_OPTIONS.find(
                       (o) => o.value === form.statutory_bonus_calculation_basis
@@ -370,7 +376,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Eligibility Ceiling">
                 {isEditing ? (
-                  <Input type="number" min="1" value={form.statutory_eligibility_ceiling || ""}
+                  <Input
+                    data-testid="bonus-policy-statutory-eligibility-ceiling-input" type="number" min="1" value={form.statutory_eligibility_ceiling || ""}
                     onChange={(e) => handleChange("statutory_eligibility_ceiling", Math.max(0, e.target.value))} />
                 ) : (
                   `₹ ${data.statutory_eligibility_ceiling}`
@@ -379,7 +386,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Calculation Ceiling">
                 {isEditing ? (
-                  <Input type="number" min="1" value={form.statutory_calculation_ceiling || ""}
+                  <Input
+                     data-testid="bonus-policy-statutory-calculation-ceiling-input" type="number" min="1" value={form.statutory_calculation_ceiling || ""}
                      onChange={(e) => handleChange("statutory_calculation_ceiling", Math.max(0, e.target.value))} />
 
                 ) : (
@@ -389,7 +397,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Minimum Bonus %">
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="100" value={form.minimum_bonus_percentage || ""}
+                  <Input
+                    data-testid="bonus-policy-minimum-bonus-percentage-input" type="number" step="0.01" min="0" max="100" value={form.minimum_bonus_percentage || ""}
                     onChange={(e) => {
                       let val = e.target.value;
                       if (val !== "" && Number(val) > 100) val = "100";
@@ -403,7 +412,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Maximum Bonus %">
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="100" value={form.maximum_bonus_percentage || ""}
+                  <Input
+                    data-testid="bonus-policy-maximum-bonus-percentage-input" type="number" step="0.01" min="0" max="100" value={form.maximum_bonus_percentage || ""}
                     onChange={(e) => {
                       let val = e.target.value;
                       if (val !== "" && Number(val) > 100) val = "100";
@@ -417,7 +427,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Minimum Working Days" last>
                 {isEditing ? (
-                  <Input type="number" min="0" max="31" value={form.minimum_working_days_for_eligibility || ""}
+                  <Input
+                    data-testid="bonus-policy-minimum-working-days-for-input" type="number" min="0" max="31" value={form.minimum_working_days_for_eligibility || ""}
                     onChange={(e) => {
                       let val = parseInt(e.target.value) || 0;
                       val = Math.max(0, Math.min(31, val));
@@ -437,6 +448,7 @@ const BonusPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch">
                 <Input
+                  data-testid="bonus-policy-enable-performance-bonus-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.enable_performance_bonus}
@@ -453,6 +465,7 @@ const BonusPolicySettings = () => {
               <SettingRow label="Calculation Basis">
                 {isEditing ? (
                   <Select
+                    testId="bonus-policy-performance-bonus-calculation-basis"
                     options={BONUS_BASIS_OPTIONS}
                     value={BONUS_BASIS_OPTIONS.find(
                       (o) => o.value === form.performance_bonus_calculation_basis
@@ -472,7 +485,8 @@ const BonusPolicySettings = () => {
 
               <SettingRow label="Bonus Percentage">
                 {isEditing ? (
-                  <Input type="number" step="0.01" min="0" max="100" value={form.performance_bonus_percentage || ""}
+                  <Input
+                    data-testid="bonus-policy-performance-bonus-percentage-input" type="number" step="0.01" min="0" max="100" value={form.performance_bonus_percentage || ""}
                     onChange={(e) => {
                       let val = e.target.value;
                       if (val !== "" && Number(val) > 100) val = "100";
@@ -487,6 +501,7 @@ const BonusPolicySettings = () => {
               <SettingRow label="Payout Frequency" last>
                 {isEditing ? (
                   <Select
+                    testId="bonus-policy-performance-bonus-payout-frequency"
                     options={PAYOUT_FREQUENCY_OPTIONS}
                     value={PAYOUT_FREQUENCY_OPTIONS.find(
                       (o) => o.value === form.performance_bonus_payout_frequency
@@ -509,10 +524,10 @@ const BonusPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 border-top pt-3">
-            <Button color="light" className="border" onClick={handleCancel}>
+            <Button data-testid="bonus-policy-cancel-button" color="light" className="border" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="bonus-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line me-1"></i>
               {loading ? "Saving..." : "Save Changes"}
             </Button>

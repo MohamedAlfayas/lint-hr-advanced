@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from "react";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Col, Label } from "reactstrap";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { setEmployeeTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 
@@ -52,6 +52,7 @@ const EmployeeTableFilter = () => {
     <React.Fragment>
       <Col md={3}>
         <Select
+          testId="employee-filter-department-filter"
           id="department_filter"
           name="department_filter"
           isClearable={true}
@@ -59,6 +60,8 @@ const EmployeeTableFilter = () => {
           isMulti={false}
           options={dep_options || []}
           className="basic-multi-select"
+          menuPortalTarget={document.body}
+          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
           placeholder="Select Department"
           value={
             !!employee_table_filter_keys?.primary_department_id_list
@@ -76,6 +79,7 @@ const EmployeeTableFilter = () => {
 
       <Col md={2}>
         <Select
+          testId="employee-filter-role-filter"
           id="role_filter"
           name="role_filter"
           isClearable={true}
@@ -83,6 +87,8 @@ const EmployeeTableFilter = () => {
           isMulti={false}
           options={role_options || []}
           className="basic-multi-select"
+          menuPortalTarget={document.body}
+          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
           placeholder="Select Role"
           filterOption={handleFilterOption}
           onChange={(e) => handleFilterChange(e, "role_id")}
@@ -98,6 +104,7 @@ const EmployeeTableFilter = () => {
 
       <Col md={3}>
         <Select
+          testId="employee-filter-manager-filter"
           id="manager_filter"
           name="manager_filter"
           isClearable={true}
@@ -106,6 +113,8 @@ const EmployeeTableFilter = () => {
           isMulti={false}
           options={manager_options.filter((d) => d.is_active) || []}
           className="basic-multi-select"
+          menuPortalTarget={document.body}
+          styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
           placeholder="Select Reporting Manager"
           filterOption={handleFilterOption}
           onChange={(e) => handleFilterChange(e, "reporting_manager_id")}

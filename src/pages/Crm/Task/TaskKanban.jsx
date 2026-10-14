@@ -883,6 +883,7 @@
 
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { KanbanSkeleton } from "../../../component/common/skeleton/Skeleton";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Button,
@@ -906,6 +907,8 @@ import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { Api } from "../../../common/api/Api";
 import { PutApi } from "../../../common/api/PutApi";
 import Swal from "sweetalert2";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import TaskDetailModal from "./Modal/TaskDetailModal";
 
 // ─── Theme (colors reused from the project's DEFAULT_COLORS chart palette) ──
 const PALETTE = {
@@ -919,14 +922,14 @@ const PALETTE = {
 
 const THEME = {
   primary: PALETTE.permission,
-  primarySoft: "#f0e6f6",
-  track: "#e8ebf3",
+  primarySoft: "var(--tk-primary-soft)",
+  track: "var(--tk-track)",
   success: PALETTE.inHour,
-  panelBg: "#f5f7fb",
-  cardBg: "#ffffff",
-  text: PALETTE.weekend,
-  muted: "#7b809a",
-  border: "#e6e9f2",
+  panelBg: "var(--tk-panel-bg)",
+  cardBg: "var(--tk-card-bg)",
+  text: "var(--tk-text)",
+  muted: "var(--tk-muted)",
+  border: "var(--tk-border)",
 };
 
 // ─── The 4 board columns ───────────────────────────────────────────
@@ -1002,8 +1005,8 @@ function isOverdue(end_time) {
   return new Date(end_time) < new Date();
 }
 
-// Default columns are always present. Any other status only gets a column
-// while at least one active task is in it.
+// Every active status gets a column; statuses that are inactive only appear
+// while at least one active task is still in them.
 function buildColumns(taskStatusList, activeTasks) {
   const list = Array.isArray(taskStatusList) ? taskStatusList : [];
   const activeStatuses = list.filter((s) => s.status === true);
@@ -1027,7 +1030,10 @@ function buildColumns(taskStatusList, activeTasks) {
   });
 
   const extraIds = [
-    ...new Set(activeTasks.map((t) => Number(t.task_status))),
+    ...new Set([
+      ...activeStatuses.map((s) => Number(s.id)),
+      ...activeTasks.map((t) => Number(t.task_status)),
+    ]),
   ].filter((id) => !Number.isNaN(id) && !used.has(id));
 
   const extraColumns = extraIds
@@ -1112,6 +1118,14 @@ const avatarBg = (id) => AVATAR_BG_COLORS[Number(id) % AVATAR_BG_COLORS.length];
 
 // ─── Styles ────────────────────────────────────────────────────────
 const CSS = `
+:root {
+  --tk-primary-soft: #f0e6f6; --tk-track: #e8ebf3; --tk-panel-bg: #f5f7fb;
+  --tk-card-bg: #ffffff; --tk-text: ${PALETTE.weekend}; --tk-muted: #7b809a; --tk-border: #e6e9f2;
+}
+[data-bs-theme="dark"] {
+  --tk-primary-soft: rgba(124, 92, 168, 0.18); --tk-track: #2f343a; --tk-panel-bg: #1a1d21;
+  --tk-card-bg: #212529; --tk-text: #ced4da; --tk-muted: #878a99; --tk-border: #32383e;
+}
 .tk-board { scrollbar-width: thin; scrollbar-color: #cfd4e4 transparent; }
 .tk-board::-webkit-scrollbar { height: 8px; }
 .tk-board::-webkit-scrollbar-thumb { background: #cfd4e4; border-radius: 8px; }
@@ -1248,6 +1262,7 @@ function TaskCard({
   onDragEnd,
   onEdit,
   onDelete,
+  onOpen,
 }) {
   const priority = priorityMap[Number(task.task_priority)] || {
     label: "Normal",
@@ -1261,13 +1276,29 @@ function TaskCard({
   const progress = getProgress(task, columns);
   const barColor = accent || THEME.primary;
 
+  // The ⋯ menu renders in a portal, so its clicks still bubble here through React.
+  const handleOpen = (e) => {
+    if (e.target.closest(".dropdown, .dropdown-menu, button, a")) return;
+    onOpen(task.id);
+  };
+
   return (
     <div
       draggable
+      role="button"
+      tabIndex={0}
+      data-testid={testId("task-kanban-card", task.id, "item")}
+      onClick={handleOpen}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onOpen(task.id);
+        }
+      }}
       onDragStart={(e) => onDragStart(e, task)}
       onDragEnd={onDragEnd}
       className={`tk-card${isDragging ? " is-dragging" : ""}`}
-      style={{ ...styles.taskCard, opacity: isUpdating ? 0.6 : undefined }}
+      style={{ ...styles.taskCard, cursor: "pointer", opacity: isUpdating ? 0.6 : undefined }}
     >
       {/* Tag pill + menu */}
       <div className="d-flex align-items-start justify-content-between mb-2">
@@ -1316,16 +1347,17 @@ function TaskCard({
         </div>
 
         <UncontrolledDropdown>
-          <DropdownToggle tag="button" type="button" className="tk-menu-btn">
+          <DropdownToggle data-testid={testId("task-kanban-card", task.id, "more-trigger")} tag="button" type="button" className="tk-menu-btn">
             <i className="ri-more-fill fs-16"></i>
           </DropdownToggle>
           {/* container="body" stops the menu being clipped by the scroll area */}
           <DropdownMenu end container="body">
-            <DropdownItem onClick={() => onEdit(task)}>
+            <DropdownItem data-testid={testId("task-kanban-card", task.id, "edit-option")} onClick={() => onEdit(task)}>
               <i className="ri-edit-2-line align-bottom me-2 text-muted"></i>
               Edit
             </DropdownItem>
             <DropdownItem
+              data-testid={testId("task-kanban-card", task.id, "delete-option")}
               className="text-danger"
               onClick={() => onDelete(task.id)}
             >
@@ -1508,6 +1540,7 @@ function KanbanColumn({
   onDrop,
   onEdit,
   onDelete,
+  onOpen,
   onAdd,
   onHide,
 }) {
@@ -1547,6 +1580,7 @@ function KanbanColumn({
         </div>
         <div className="d-flex align-items-center gap-1">
           <button
+            data-testid={testId("task-kanban-column", column.key, "hide-button")}
             type="button"
             className="tk-menu-btn"
             title={`Hide ${column.title} column`}
@@ -1555,6 +1589,7 @@ function KanbanColumn({
             <i className="ri-eye-off-line fs-15"></i>
           </button>
           <button
+            data-testid={testId("task-kanban-column", column.key, "add-button")}
             type="button"
             className="tk-add-btn"
             style={{ background: column.color + "26", color: column.color }}
@@ -1611,6 +1646,7 @@ function KanbanColumn({
               onDragEnd={onDragEnd}
               onEdit={onEdit}
               onDelete={onDelete}
+              onOpen={onOpen}
             />
           ))
         )}
@@ -1863,6 +1899,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
   const [error, setError] = useState(null);
   const [updatingIds, setUpdatingIds] = useState(new Set());
   const [draggingId, setDraggingId] = useState(null);
+  const [detailTaskId, setDetailTaskId] = useState(null);
   const [hiddenKeys, setHiddenKeys] = useState(loadHiddenColumns);
   const draggedTask = useRef(null);
   const boardScrollRef = useRef(null);
@@ -2139,6 +2176,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
 
           <UncontrolledDropdown>
             <DropdownToggle
+              data-testid="task-kanban-columns-trigger"
               tag="button"
               type="button"
               className="btn btn-sm d-inline-flex align-items-center gap-1"
@@ -2173,12 +2211,14 @@ const TaskKanban = ({ searchQuery = "" }) => {
                 const isVisible = !hiddenKeys.includes(col.key);
                 return (
                   <DropdownItem
+                    data-testid={testId("task-kanban", itemTestKey(col), "option")}
                     key={col.key}
                     toggle={false}
                     onClick={() => toggleColumn(col.key)}
                     className="d-flex align-items-center gap-2"
                   >
                     <input
+                      data-testid={testId("task-kanban-is-visible", itemTestKey(col), "checkbox")}
                       type="checkbox"
                       className="form-check-input m-0"
                       checked={isVisible}
@@ -2204,7 +2244,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
               {hiddenCount > 0 && (
                 <>
                   <DropdownItem divider />
-                  <DropdownItem toggle={false} onClick={showAllColumns}>
+                  <DropdownItem data-testid="task-kanban-show-all-columns-option" toggle={false} onClick={showAllColumns}>
                     <i className="ri-eye-line align-bottom me-2 text-muted"></i>
                     Show all columns
                   </DropdownItem>
@@ -2214,6 +2254,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
           </UncontrolledDropdown>
 
           <Button
+            data-testid="task-kanban-create-task-button"
             size="sm"
             className="tk-create-btn"
             onClick={() => handleAddTask()}
@@ -2239,6 +2280,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
           <i className="ri-error-warning-line fs-16"></i>
           <span>{error}</span>
           <Button
+            data-testid="task-kanban-retry-button"
             color="link"
             size="sm"
             className="ms-auto p-0 text-danger"
@@ -2251,18 +2293,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
 
       {/* Board */}
       {loading ? (
-        <div className="text-center py-5">
-          <div
-            className="spinner-border"
-            role="status"
-            style={{ color: THEME.primary }}
-          >
-            <span className="visually-hidden">Loading…</span>
-          </div>
-          <p className="mt-2 fs-14" style={{ color: THEME.muted }}>
-            Loading tasks…
-          </p>
-        </div>
+        <KanbanSkeleton columns={4} cards={3} testId="task-kanban-loading-skeleton" label="Loading tasks" />
       ) : visibleColumns.length === 0 ? (
         <div
           className="d-flex flex-column align-items-center justify-content-center py-5"
@@ -2271,6 +2302,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
           <i className="ri-eye-off-line fs-24 mb-2"></i>
           <p className="mb-2 fs-14">All columns are hidden.</p>
           <Button
+            data-testid="task-kanban-show-all-columns-button"
             size="sm"
             onClick={showAllColumns}
             style={{
@@ -2308,6 +2340,7 @@ const TaskKanban = ({ searchQuery = "" }) => {
                 onDrop={handleDrop}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onOpen={(taskId) => setDetailTaskId(taskId)}
                 onAdd={handleAddTask}
                 onHide={toggleColumn}
               />
@@ -2315,6 +2348,16 @@ const TaskKanban = ({ searchQuery = "" }) => {
           </div>
         </div>
       )}
+
+      <TaskDetailModal
+        isOpen={detailTaskId != null}
+        toggle={() => setDetailTaskId(null)}
+        taskId={detailTaskId}
+        dispatch={dispatch}
+        task_list_component_name={task_list_component_name}
+        onTaskClosed={getAllTasks}
+        onTaskDeleted={getAllTasks}
+      />
     </div>
   );
 };

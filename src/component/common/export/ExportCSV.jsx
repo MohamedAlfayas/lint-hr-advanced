@@ -7,6 +7,7 @@ import {
   employeeSampleData,
   employeeCSVHeaders,
 } from "../../../common/js/employeeSampleData";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 const ExportCSV = ({ show, onCloseClick, formname, data }) => {
   // Only the employee form gets the special template.
@@ -19,8 +20,8 @@ const ExportCSV = ({ show, onCloseClick, formname, data }) => {
     : "export.csv";
 
   return (
-    <Modal isOpen={show} toggle={onCloseClick} centered={true}>
-      <ModalHeader toggle={onCloseClick}></ModalHeader>
+    <Modal data-testid="export-show-dialog" isOpen={show} toggle={onCloseClick} centered={true}>
+      <ModalHeader close={<ModalCloseButton onClick={onCloseClick} testId="export-show-close-button" />} toggle={onCloseClick}></ModalHeader>
       <ModalBody className="py-3 px-5">
         <div className="mt-2 text-center">
           <lord-icon
@@ -38,6 +39,7 @@ const ExportCSV = ({ show, onCloseClick, formname, data }) => {
         </div>
         <div className="d-flex gap-2 justify-content-center mt-4 mb-2">
           <button
+            data-testid="export-show-footer-close-button"
             type="button"
             className="btn w-sm btn-light"
             data-bs-dismiss="modal"

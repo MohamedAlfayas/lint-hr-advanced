@@ -7,13 +7,18 @@ import React, { useState } from "react";
 import {
   Modal, ModalHeader, ModalBody, ModalFooter,
   Button, FormGroup, Label, Input, FormFeedback,
-  FormText, Alert, Row, Col, Badge,
+  Alert, Row, Col, Badge,
 } from "reactstrap";
 import Dropzone from "react-dropzone";
+import { DatePicker } from "antd";
+import dayjs from "dayjs";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { setLoaderVisible } from "../../../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../../../common/api/PostApi";
+import ClaimModalStyles from "./ClaimModalStyles";
+import { testId, itemTestKey } from "../../../../shared/testing/testId";
+import ModalCloseButton from "../../../../shared/ui/ModalCloseButton";
 
 const fmt = (v) => {
   const n = parseFloat(v);
@@ -137,8 +142,15 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} toggle={handleToggle} size="md" centered>
-      <ModalHeader toggle={handleToggle}>Submit Reimbursement Claim</ModalHeader>
+    <Modal data-testid="employee-claim-dialog" isOpen={isOpen} toggle={handleToggle} size="md" centered className="rc-modal">
+      <ClaimModalStyles />
+      <ModalHeader close={<ModalCloseButton onClick={handleToggle} testId="employee-claim-close-button" />} toggle={handleToggle} className="rc-head">
+        <span className="rc-head-icon"><i className="ri-hand-coin-line" /></span>
+        <span className="rc-head-text">
+          <span className="rc-head-title">Submit Reimbursement Claim</span>
+          <span className="rc-head-sub">Claim expenses to be paid with your salary</span>
+        </span>
+      </ModalHeader>
 
       <ModalBody>
         {errors.cap && <Alert color="warning" className="py-2">{errors.cap}</Alert>}
@@ -146,6 +158,7 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
         <FormGroup>
           <Label>Reimbursement Type <span className="text-danger">*</span></Label>
           <Input
+            data-testid="employee-claim-reimbursement-type-select"
             type="select"
             value={form.reimbursement_type}
             onChange={(e) => {
@@ -157,9 +170,9 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
             }}
             invalid={!!errors.type}
           >
-            <option value="">— select type —</option>
+            <option data-testid="employee-claim-reimbursement-type-option-none" value="">— select type —</option>
             {types.filter((t) => t.is_active).map((t) => (
-              <option key={t.id} value={t.id}>
+              <option data-testid={testId("employee-claim-reimbursement-type-option", itemTestKey(t))} key={t.id} value={t.id}>
                 {t.name}
                 {t.calculation_mode === "rate_x_units"
                   ? ` (₹${t.meta?.rate}/${t.meta?.unit_label})`
@@ -167,11 +180,11 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
               </option>
             ))}
           </Input>
-          <FormFeedback>{errors.type}</FormFeedback>
+          <FormFeedback data-testid="employee-claim-submit-reimbursement-claim-claim-reimbursement-type-error">{errors.type}</FormFeedback>
         </FormGroup>
 
         {selectedType && (
-          <div className="border rounded p-3 bg-light mb-3">
+          <div className="rc-type-card">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <span className="fw-medium" style={{ fontSize: 13 }}>{selectedType.name}</span>
               <Badge
@@ -195,16 +208,17 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
                     <span className="text-danger"> *</span>
                   </Label>
                   <Input
+                    data-testid="employee-claim-submit-reimbursement-claim-claim-claim-data-input"
                     type="number" min="0" step="0.1"
                     value={form.claim_data?.units || ""}
                     onChange={(e) => setCD("units", e.target.value)}
                     invalid={!!errors.units}
                     placeholder={`Enter ${unitLabel}`}
                   />
-                  <FormFeedback>{errors.units}</FormFeedback>
+                  <FormFeedback data-testid="employee-claim-submit-reimbursement-claim-claim-claim-data-error">{errors.units}</FormFeedback>
                 </FormGroup>
                 {units > 0 && (
-                  <div className="d-flex justify-content-between border-top pt-2 mt-1">
+                  <div className="rc-amount">
                     <span className="text-muted" style={{ fontSize: 13 }}>Computed amount</span>
                     <span className="fw-medium text-success">
                       ₹{fmt(preview)}
@@ -223,16 +237,17 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
                     <span className="text-danger"> *</span>
                   </Label>
                   <Input
+                    data-testid="employee-claim-bill-amount-input"
                     type="number" min="0" step="0.01"
                     value={form.claim_data?.amount || ""}
                     onChange={(e) => setCD("amount", e.target.value)}
                     invalid={!!errors.amount}
                     placeholder="Enter bill amount"
                   />
-                  <FormFeedback>{errors.amount}</FormFeedback>
+                  <FormFeedback data-testid="employee-claim-bill-amount-error">{errors.amount}</FormFeedback>
                 </FormGroup>
                 {flatAmt > 0 && (
-                  <div className="d-flex justify-content-between border-top pt-2 mt-2">
+                  <div className="rc-amount">
                     <span className="text-muted" style={{ fontSize: 13 }}>Payable amount</span>
                     <span className="fw-medium text-success">₹{fmt(flatAmt)}</span>
                   </div>
@@ -246,31 +261,35 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
           <Col md={6}>
             <FormGroup>
               <Label>Claim date <span className="text-danger">*</span></Label>
-              <Input
-                type="date"
-                value={form.claim_date}
-                onChange={(e) => {
-                  const d = new Date(e.target.value);
-                  set("claim_date", e.target.value);
-                  set("month", d.getMonth() + 1);
-                  set("year",  d.getFullYear());
+              <DatePicker
+                value={form.claim_date ? dayjs(form.claim_date) : null}
+                onChange={(d) => {
+                  if (!d) return;
+                  set("claim_date", d.format("YYYY-MM-DD"));
+                  set("month", d.month() + 1);
+                  set("year",  d.year());
                 }}
-                invalid={!!errors.claim_date}
+                format="DD MMM YYYY"
+                allowClear={false}
+                disabledDate={(d) => d.isAfter(dayjs(), "day")}
+                status={errors.claim_date ? "error" : undefined}
+                popupStyle={{ zIndex: 1080 }}
+                className="rc-date"
               />
-              <FormFeedback>{errors.claim_date}</FormFeedback>
+              {errors.claim_date && <div className="text-danger small mt-1">{errors.claim_date}</div>}
             </FormGroup>
           </Col>
           <Col md={6}>
             <FormGroup>
               <Label>Payroll period</Label>
-              <Input
-                disabled
-                value={
-                  `${new Date(`${form.claim_date}T00:00:00`)
-                    .toLocaleString("default", { month: "long" })} ${form.year}`
-                }
-              />
-              <FormText>Appears in this month's payslip once approved</FormText>
+              <div className="rc-period">
+                <i className="ri-calendar-check-line" />
+                <span>
+                  {`${new Date(`${form.claim_date}T00:00:00`)
+                    .toLocaleString("default", { month: "long" })} ${form.year}`}
+                </span>
+              </div>
+              <div className="rc-hint"><i className="ri-information-line" />Appears in this month's payslip once approved</div>
             </FormGroup>
           </Col>
         </Row>
@@ -288,20 +307,19 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
               <Dropzone onDrop={handleReceiptDrop} multiple={false}>
                 {({ getRootProps, getInputProps, isDragActive }) => (
                   <div
-                    className={`dropzone dz-clickable border rounded p-3 text-center ${
-                      isDragActive ? "border-success bg-success-subtle" : ""
-                    } ${errors.receipt ? "border-danger" : ""}`}
+                    className={`rc-drop ${isDragActive ? "is-active" : ""} ${errors.receipt ? "is-error" : ""}`}
                   >
                     <div className="dz-message needsclick" {...getRootProps()}>
-                      <input {...getInputProps()} />
-                      <i className="ri-upload-cloud-2-fill display-6 text-muted d-block mb-1" />
-                      <span className="fs-13">Drop receipt here or click to upload</span>
+                      <input data-testid="employee-claim-receipt-file-input" {...getInputProps()} />
+                      <div className="rc-drop-icon"><i className="ri-upload-cloud-2-line" /></div>
+                      <div className="rc-drop-title">Drop receipt here or click to upload</div>
+                      <div className="rc-drop-sub">{RECEIPT_EXTS.join(", ").toUpperCase()} · up to {MAX_RECEIPT_MB} MB</div>
                     </div>
                   </div>
                 )}
               </Dropzone>
             ) : (
-              <div className="d-flex align-items-center justify-content-between border rounded p-2 bg-light">
+              <div className="rc-file">
                 <div className="d-flex align-items-center gap-2 text-truncate">
                   <i className={`${receipt.name.toLowerCase().endsWith(".pdf")
                     ? "ri-file-pdf-fill text-danger"
@@ -310,6 +328,7 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
                   <small className="text-muted">({(receipt.size / 1024).toFixed(0)} KB)</small>
                 </div>
                 <button
+                  data-testid="employee-claim-footer-close-button"
                   type="button"
                   className="btn btn-sm btn-ghost-danger p-0 px-1"
                   onClick={() => setReceipt(null)}
@@ -331,6 +350,7 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
         <FormGroup>
           <Label>Description / notes</Label>
           <Input
+            data-testid="employee-claim-description-notes-textarea"
             type="textarea" rows={2}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
@@ -349,14 +369,15 @@ const EmployeeClaimModal = ({ isOpen, toggle, employeeId, types, onSaved }) => {
         )}
       </ModalBody>
 
-      <ModalFooter>
-        <Button className="btn btn-danger" onClick={handleToggle}>Cancel</Button>
+      <ModalFooter className="rc-foot">
+        <Button data-testid="employee-claim-cancel-button" className="rc-btn-cancel" onClick={handleToggle}>Cancel</Button>
         <Button
-          className="btn-label btn btn-success"
+          data-testid="employee-claim-submit-claim-button"
+          className="rc-btn-submit"
           onClick={handleSave}
           disabled={!selectedType}
         >
-          <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
+          <i className="ri-send-plane-2-line" />
           Submit Claim
         </Button>
       </ModalFooter>

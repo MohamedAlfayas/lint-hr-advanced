@@ -1,18 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
 
-// import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import InfoTable from "../../../component/common/table/InfoTable";
 import { MetaTitle } from "../../../common/data/MetaTitle";
-import { useMemo } from "react";
-import { UncontrolledTooltip } from "reactstrap";
-import { useDispatch, useSelector } from "react-redux";
-import { contact_group_component_name } from "../../../common/constant/Constants"
-
+import { useSelector } from "react-redux";
+import { contact_group_component_name } from "../../../common/constant/Constants";
+import {
+  ApvActive,
+  ApvChip,
+  ApvReason,
+  ApvTitle,
+} from "../../../component/common/approval/ApprovalCells";
 
 const ContactGroup = () => {
-  const dispatch = useDispatch();
 
   const { contact_group_data } = useSelector(
     (state) => state.ContactGroupReducer
@@ -39,43 +40,27 @@ const ContactGroup = () => {
       accessor: "name",
       filterable: false,
       id: "name",
-      accessor: (obj) => {
-        return (
-          <span>
-            {obj.name}
-          </span>
-        );
-      },
+      accessor: (obj) => (
+        <ApvTitle icon="ri-contacts-book-line" title={obj.name} tone="info" />
+      ),
     },
     {
       Header: "Description",
-      accessor: "description",
       filterable: false,
       id: "description",
+      accessor: (obj) => <ApvReason text={obj.description} />,
     },
     {
       Header: "Domain",
-      accessor: "domain",
       filterable: false,
       id: "domain",
+      accessor: (obj) => <ApvChip icon="ri-global-line">{obj.domain}</ApvChip>,
     },
-   
     {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.status ? "Active" : "Inactive";
-        let statusClass = obj.status ? "success" : "warning";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {" "}
-            {status}{" "}
-          </span>
-        );
-      },
+      accessor: (obj) => <ApvActive active={obj.status} />,
     },
   ];
 

@@ -1,193 +1,145 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import Select from "react-select";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownToggle,
-  Form,
-  Input,
-  Label,
-  Row,
-  UncontrolledDropdown,
-  Table,
-} from "reactstrap";
+import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { useFieldArray, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import { Button, Grid, IconButton, Paper, Stack, Tooltip } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
+import SidebarFormLayout from "../../shared/ui/SidebarFormLayout";
+import { FormSection, FormTextField, FormToggleGroup } from "../../shared/ui/form";
+import { testId, itemTestKey } from "../../shared/testing/testId";
+
+const deduction_cycle_option = [
+  { id: "1", label: "Monthly", value: "Monthly" },
+  { id: "2", label: "Quarterly", value: "Quarterly" },
+  { id: "3", label: "Half-Yearly", value: "Half-Yearly" },
+  { id: "4", label: "Annually", value: "Annually" },
+];
+
+const schema = Yup.object({
+  state: Yup.string().nullable(),
+  cycle_id: Yup.string().nullable(),
+  range: Yup.array(),
+});
+
+const toFormValues = (obj) => ({
+  state: obj?.state ?? "",
+  cycle_id: obj?.cycle_id ?? null,
+  range: obj?.range ?? [],
+});
 
 const ProfessionalTaxForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  const [tableData, setTableData] = useState(form_obj.range);
-  const [cycleOption, setCycleOption] = useState(form_obj);
 
-  const deduction_cycle_option = useMemo(
-    () => [
-      { id: "1", label: "Monthly", value: "Monthly" },
-      { id: "2", label: "Quarterly", value: "Quarterly" },
-      { id: "3", label: "Half-Yearly", value: "Half-Yearly" },
-      { id: "4", label: "Annually", value: "Annually" },
-    ],
-    []
-  );
+  const { control, handleSubmit, reset } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
+  });
+
+  useEffect(() => {
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset]);
+
+  // keyName keeps each slab's own `id` from being overwritten by RHF's row key
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "range",
+    keyName: "_key",
+  });
 
   const addRow = () => {
-    const newRow = {
-      id: tableData.length + 1,
-      s: 0,
-      e: 0,
-      tax: 0,
-    };
-    setTableData([...tableData, newRow]);
+    append({ id: fields.length + 1, s: 0, e: 0, tax: 0 });
   };
+
   const deleteRow = () => {
-    if (tableData.length > 1) {
-      setTableData((prevData) => prevData.slice(0, -1));
+    if (fields.length > 1) {
+      remove(fields.length - 1);
     }
   };
-  const saveData = () => {
-    
-  };
+
+  const saveData = () => {};
+
   return (
-    <React.Fragment>
-      <Row>
-        <Col md={12} lg={12} xxl={12} className="folder-card" key={1}>
-          <Form action="javascript:void(0)">
-            <Col md={12} lg={12} xxl={12}>
-              <div className="mb-3">
-                <Label htmlFor="tax_state" className="form-label">
-                  Location
-                </Label>
-                <div className="form-icon right">
-                  <Input
-                    type="text"
-                    name="tax_state"
-                    id="tax_state"
-                    className="form-control"
-                    placeholder="Tax State"
-                    value={form_obj.state}
-                    disabled
+    <SidebarFormLayout onSubmit={handleSubmit(saveData)}>
+      <FormTextField
+        name="state"
+        control={control}
+        label="Location"
+        placeholder="Tax State"
+        disabled
+        startIcon={<PlaceOutlinedIcon fontSize="small" color="action" />}
+      />
+
+      <FormToggleGroup
+        name="cycle_id"
+        control={control}
+        label="Deduction Cycle"
+        options={deduction_cycle_option}
+        required
+        helperText="Please select Deduction Cycle."
+      />
+
+      <FormSection
+        title="Tax slabs"
+        action={
+          <Button data-testid="professional-tax-add-button" size="small" startIcon={<AddIcon />} onClick={addRow}>
+            Add
+          </Button>
+        }
+        spacing={1.5}
+      >
+        {fields.map((row, index) => (
+          <Paper key={row._key} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+            <Stack direction="row" alignItems="flex-start" spacing={1}>
+              <Grid container spacing={1.5} sx={{ flex: 1 }}>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormTextField
+                    name={`range.${index}.s`}
+                    control={control}
+                    label="Start"
+                    type="number"
+                    size="small"
+                    fullWidth
                   />
-                  <i className="ri-map-pin-user-line"></i>
-                </div>
-              </div>
-            </Col>
-            <Col md={12} lg={12} xxl={12}>
-              <div className="mb-3">
-                <Label>Deduction Cycle</Label>
-                <Select
-                  required
-                  isMulti={false}
-                  options={deduction_cycle_option || []}
-                  value={
-                    cycleOption
-                      ? deduction_cycle_option.find(
-                          (d) => d.id === cycleOption.cycle_id
-                        )
-                      : []
-                  }
-                  placeholder="Select Leave Type"
-                  className="basic-multi-select"
-                  classNamePrefix="lc-select"
-                />
-              </div>
-              <div id="passwordHelpBlock" className="form-text">
-                Please select Deduction Cycle.
-              </div>
-            </Col>
-            <Table>
-              <thead>
-                <tr>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row, index) => (
-                  <tr key={row.id}>
-                    <td>
-                      <Input
-                        type="number"
-                        value={row.s}
-                        onChange={(e) =>
-                          setTableData((prevData) =>
-                            prevData.map((prevRow) =>
-                              prevRow.id === row.id
-                                ? { ...prevRow, s: e.target.value }
-                                : prevRow
-                            )
-                          )
-                        }
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={row.e}
-                        onChange={(e) =>
-                          setTableData((prevData) =>
-                            prevData.map((prevRow) =>
-                              prevRow.id === row.id
-                                ? { ...prevRow, e: e.target.value }
-                                : prevRow
-                            )
-                          )
-                        }
-                      />
-                    </td>
-                    <td>
-                      <Input
-                        type="number"
-                        value={row.tax}
-                        onChange={(e) =>
-                          setTableData((prevData) =>
-                            prevData.map((prevRow) =>
-                              prevRow.id === row.id
-                                ? { ...prevRow, tax: e.target.value }
-                                : prevRow
-                            )
-                          )
-                        }
-                      />
-                    </td>
-                    <td>
-                      {index !== 0 && index === tableData.length - 1 && (
-                        <Button
-                          color="danger"
-                          onClick={() => deleteRow(row.id)}
-                          style={{ padding: "0.2rem 0.5rem", fontSize: "12px" }}
-                        >
-                          <i className="ri-delete-bin-5-fill fs-16"></i>
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-            <Button color="primary" onClick={addRow}>
-              <i className="ri-add-line align-bottom me-1"></i>
-              Add
-            </Button>{" "}
-            <Button
-              type="submit"
-              color="success"
-              className="btn-label"
-              onClick={saveData}
-            >
-              {" "}
-              <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-              Save{" "}
-            </Button>{" "}
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormTextField
+                    name={`range.${index}.e`}
+                    control={control}
+                    label="End"
+                    type="number"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <FormTextField
+                    name={`range.${index}.tax`}
+                    control={control}
+                    label="Amount"
+                    type="number"
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+              <Stack sx={{ width: 40, alignItems: "center", pt: 0.25 }}>
+                {index !== 0 && index === fields.length - 1 && (
+                  <Tooltip title="Remove slab">
+                    <IconButton data-testid={testId("professional-tax-delete-outline", itemTestKey(row), "button")} size="small" color="error" onClick={deleteRow}>
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </Stack>
+            </Stack>
+          </Paper>
+        ))}
+      </FormSection>
+    </SidebarFormLayout>
   );
 };
 

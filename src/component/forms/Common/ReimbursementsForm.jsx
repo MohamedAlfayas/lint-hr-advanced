@@ -1,251 +1,139 @@
-import React, { useState } from "react";
+import React from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import { Alert, Typography } from "@mui/material";
+import SidebarFormLayout from "../../../shared/ui/SidebarFormLayout";
 import {
-  Card,
-  CardBody,
-  Form,
-  FormGroup,
-  Label,
-  Input,
-  Button
-} from "reactstrap";
+  FormAutocomplete,
+  FormCheckbox,
+  FormSection,
+  FormTextField,
+  FormToggleGroup,
+} from "../../../shared/ui/form";
 
 const reimbursementTypes = [
   "Entertainment Reimbursement",
   "Gadget Reimbursement",
   "Books and Periodicals Reimbursement",
   "Business Development Expense Reimbursement",
-  "Helper Reimbursement"
+  "Helper Reimbursement",
+].map((item) => ({ id: item, label: item }));
+
+const carryForwardOptions = [
+  {
+    id: "yearly",
+    label: "Carry forward",
+    description: "Carry forward and encash at the end of the fiscal year",
+  },
+  {
+    id: "monthly",
+    label: "Encash monthly",
+    description: "Do not carry forward and encash monthly",
+  },
 ];
 
+const schema = Yup.object({
+  reimbursement_type: Yup.string().nullable(),
+  name_in_payslip: Yup.string(),
+  is_fbp: Yup.boolean(),
+  carry_forward: Yup.string(),
+  amount: Yup.mixed(),
+  mark_active: Yup.boolean(),
+});
+
+const defaultValues = {
+  reimbursement_type: null,
+  name_in_payslip: "",
+  is_fbp: false,
+  carry_forward: "yearly",
+  amount: 0,
+  mark_active: false,
+};
+
+const blockInvalidAmountKeys = (e) => {
+  if (e.key === "-" || e.key === "e") {
+    e.preventDefault();
+  }
+};
+
 const ReimbursementsForm = () => {
-  const [typeOpen, setTypeOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [selectedType, setSelectedType] = useState("");
+  const { control, handleSubmit } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues,
+  });
 
-  const [carryForward, setCarryForward] = useState("yearly");
+  const carryForward = useWatch({ control, name: "carry_forward" });
 
-  // ✅ Amount state
-  const [amount, setAmount] = useState(0);
+  const onSubmit = () => {};
 
   return (
-    <Card className="border">
-      <CardBody className="p-4" style={{ maxWidth: 650 }}>
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      footerStart={
+        <Typography variant="caption" color="error">
+          * indicates mandatory fields
+        </Typography>
+      }
+    >
+      <FormSection title="Reimbursement">
+        <FormAutocomplete
+          name="reimbursement_type"
+          control={control}
+          label="Reimbursement Type"
+          placeholder="Select"
+          options={reimbursementTypes}
+        />
+        <FormTextField
+          name="name_in_payslip"
+          control={control}
+          label="Name in Payslip"
+          required
+        />
+        <FormCheckbox
+          name="is_fbp"
+          control={control}
+          label="Include this as a Flexible Benefit Plan component"
+          helperText="FBP allows your employees to personalise their salary structure by choosing how much they want to receive under each FBP component."
+        />
+      </FormSection>
 
-        <h5 className="mb-4">New Reimbursement</h5>
+      <FormSection title="Payout">
+        <FormToggleGroup
+          name="carry_forward"
+          control={control}
+          label="How do you want to handle unclaimed reimbursement?"
+          options={carryForwardOptions}
+          helperText={carryForwardOptions.find((o) => o.id === carryForward)?.description}
+        />
+        <FormTextField
+          name="amount"
+          control={control}
+          label="Enter Amount"
+          required
+          type="number"
+          sanitize={(v) => v.replace(/-/g, "")}
+          startIcon="₹"
+          endIcon={
+            <Typography variant="body2" color="text.secondary" noWrap>
+              per month
+            </Typography>
+          }
+          slotProps={{
+            htmlInput: { min: 0, step: 1, onKeyDown: blockInvalidAmountKeys },
+          }}
+        />
+        <FormCheckbox name="mark_active" control={control} label="Mark this as Active" />
+      </FormSection>
 
-        <Form>
-
-          {/* Reimbursement Type */}
-          <FormGroup>
-            <Label>Reimbursement Type</Label>
-
-            <div style={{ position: "relative" }}>
-              <Input
-                readOnly
-                value={selectedType || "Select"}
-                onClick={() => setTypeOpen(!typeOpen)}
-                style={{ cursor: "pointer" }}
-              />
-
-              {typeOpen && (
-                <div style={dropdownStyle}>
-                  <Input
-                    placeholder="Search"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="mb-2"
-                  />
-
-                  <div style={{ maxHeight: 200, overflowY: "auto" }}>
-                    {reimbursementTypes
-                      .filter((item) =>
-                        item.toLowerCase().includes(search.toLowerCase())
-                      )
-                      .map((item, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            padding: "8px",
-                            cursor: "pointer",
-                            borderRadius: 4,
-                            background:
-                              selectedType === item ? "#3b82f6" : "",
-                            color:
-                              selectedType === item ? "#fff" : "#000"
-                          }}
-                          onClick={() => {
-                            setSelectedType(item);
-                            setTypeOpen(false);
-                          }}
-                        >
-                          {item}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </FormGroup>
-
-          {/* Name */}
-          <FormGroup>
-            <Label>
-              Name in Payslip <span className="text-danger">*</span>
-            </Label>
-            <Input />
-          </FormGroup>
-
-          {/* Checkbox */}
-          <FormGroup check className="mb-3">
-            <Input type="checkbox" />
-            <Label check>
-              Include this as a Flexible Benefit Plan component
-            </Label>
-            <div style={helperText}>
-              FBP allows your employees to personalise their salary structure
-              by choosing how much they want to receive under each FBP component.
-            </div>
-          </FormGroup>
-
-          {/* Radio Options */}
-          <FormGroup className="mb-3">
-            <Label>
-              How do you want to handle unclaimed reimbursement?
-            </Label>
-
-            <div>
-              <Input
-                type="radio"
-                name="carry"
-                checked={carryForward === "yearly"}
-                onChange={() => setCarryForward("yearly")}
-              />{" "}
-              Carry forward and encash at the end of the fiscal year
-            </div>
-
-            <div>
-              <Input
-                type="radio"
-                name="carry"
-                checked={carryForward === "monthly"}
-                onChange={() => setCarryForward("monthly")}
-              />{" "}
-              Do not carry forward and encash monthly
-            </div>
-          </FormGroup>
-
-          {/* Amount */}
-          <FormGroup>
-            <Label>
-              Enter Amount <span className="text-danger">*</span>
-            </Label>
-
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div style={amountBox}>
-                ₹
-                <Input
-                  type="number"
-                  value={amount}
-                  min={0}
-                  step={1}
-                  onChange={(e) => {
-                    const val = e.target.value;
-
-                    // ✅ prevent negative values
-                    if (val === "" || Number(val) >= 0) {
-                      setAmount(val);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    // ✅ block invalid keys
-                    if (e.key === "-" || e.key === "e") {
-                      e.preventDefault();
-                    }
-                  }}
-                  style={amountInput}
-                />
-              </div>
-              <span style={{ marginLeft: 10 }}>per month</span>
-            </div>
-          </FormGroup>
-
-          {/* Active */}
-          <FormGroup check className="mb-3">
-            <Input type="checkbox" />
-            <Label check>Mark this as Active</Label>
-          </FormGroup>
-
-          {/* Note */}
-          <div style={noteBox}>
-            <b>Note:</b> Once you associate this component with an employee,
-            you will only be able to edit the Name in Payslip and Amount.
-            The changes you make to Amount will apply only to new employees.
-          </div>
-
-          {/* Footer */}
-          <div className="d-flex justify-content-between mt-4">
-            <div>
-              <Button color="primary" size="sm" className="me-2">
-                Save
-              </Button>
-              <Button color="light" size="sm" className="border">
-                Cancel
-              </Button>
-            </div>
-
-            <span className="text-danger" style={{ fontSize: 12 }}>
-              * indicates mandatory fields
-            </span>
-          </div>
-
-        </Form>
-      </CardBody>
-    </Card>
+      <Alert severity="warning" variant="outlined">
+        <strong>Note:</strong> Once you associate this component with an employee, you will only
+        be able to edit the Name in Payslip and Amount. The changes you make to Amount will apply
+        only to new employees.
+      </Alert>
+    </SidebarFormLayout>
   );
-};
-
-/* Styles */
-
-const dropdownStyle = {
-  position: "absolute",
-  width: "100%",
-  background: "#fff",
-  border: "1px solid #ddd",
-  borderRadius: 6,
-  padding: 8,
-  zIndex: 100,
-  boxShadow: "0 4px 10px rgba(0,0,0,0.08)"
-};
-
-const helperText = {
-  fontSize: 12,
-  color: "#6b7280",
-  marginLeft: 22,
-  marginTop: 4
-};
-
-const amountBox = {
-  display: "flex",
-  alignItems: "center",
-  border: "1px solid #ccc",
-  borderRadius: 6,
-  padding: "4px 8px",
-  width: 140
-};
-
-const amountInput = {
-  border: "none",
-  outline: "none",
-  width: "100%",
-  marginLeft: 5
-};
-
-const noteBox = {
-  background: "#fef3c7",
-  border: "1px solid #fde68a",
-  padding: 12,
-  fontSize: 13,
-  borderRadius: 6
 };
 
 export default ReimbursementsForm;

@@ -9,7 +9,7 @@ import avatar2 from "../../assets/images/users/avatar-2.jpg";
 import { format } from "date-fns";
 
 //SimpleBar
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 
 import SimpleBar from "simplebar-react";
 import { ParseTime } from "../../common/js/ParseTime";

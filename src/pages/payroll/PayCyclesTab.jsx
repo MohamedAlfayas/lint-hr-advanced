@@ -8,7 +8,7 @@ import {
   Label,
   Row,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import { DatePicker } from "antd";
 import dayjs from "dayjs";
@@ -28,6 +28,7 @@ const PayCyclesTab = ({ payrollobj, repeatOption, cutOfMonthOption }) => {
             </Label>
             <div className="form-icon right">
               <Input
+                data-testid="pay-cycles-pc-name-input"
                 type="text"
                 name="pc_name"
                 id="pc_name"
@@ -50,6 +51,7 @@ const PayCyclesTab = ({ payrollobj, repeatOption, cutOfMonthOption }) => {
             </Label>
             <div className="form-icon right">
               <textarea
+                data-testid="pay-cycles-description-textarea"
                 name="description"
                 className="form-control"
                 id="description"
@@ -91,6 +93,7 @@ const PayCyclesTab = ({ payrollobj, repeatOption, cutOfMonthOption }) => {
             </Label>
             <div>
               <Select
+                testId="pay-cycles-repeat-every"
                 id="repeatEvery"
                 isMulti={false}
                 options={repeatOption || []}
@@ -117,6 +120,7 @@ const PayCyclesTab = ({ payrollobj, repeatOption, cutOfMonthOption }) => {
             </Label>
             <div>
               <Select
+                testId="pay-cycles-cutoff-date"
                 id="cutoffDate"
                 isMulti={false}
                 options={cutOfMonthOption || []}
@@ -139,7 +143,7 @@ const PayCyclesTab = ({ payrollobj, repeatOption, cutOfMonthOption }) => {
 
         <Col lg={12}>
           <div className="text-start">
-            <Button type="submit" color="success" className="btn-label">
+            <Button data-testid="pay-cycles-save-button" type="submit" color="success" className="btn-label">
               <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
               Save
             </Button>

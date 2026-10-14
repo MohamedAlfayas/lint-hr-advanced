@@ -29,7 +29,7 @@ const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span style={{
       display: "inline-block", width: 36, height: 20, borderRadius: 12,
-      background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0,
+      background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0,
     }}>
       <span style={{
         position: "absolute", top: 3, left: checked ? 18 : 3,
@@ -145,7 +145,7 @@ const ReimbursementPolicySettings = () => {
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
               Define claim windows, receipt rules, and payout settings for employee reimbursements.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="reimbursement-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
             </Button>
           </div>
@@ -167,10 +167,10 @@ const ReimbursementPolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
+              <Button data-testid="reimbursement-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}>
+              <Button data-testid="reimbursement-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
                 <i className="ri-add-line fs-14"></i> New Version
               </Button>
             </>
@@ -216,6 +216,7 @@ const ReimbursementPolicySettings = () => {
           <SettingRow label="Effective Date">
             {isEditing ? (
               <Input
+                data-testid="reimbursement-policy-effective-date-input"
                 type="date"
                 value={form.effective_date || ""}
                 onChange={(e) => handleChange("effective_date", e.target.value)}
@@ -230,6 +231,7 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch mb-0">
                 <Input
+                  data-testid="reimbursement-policy-is-active-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.is_active}
@@ -251,6 +253,7 @@ const ReimbursementPolicySettings = () => {
           <SettingRow label="Submission Window (days)">
             {isEditing ? (
               <Input
+                data-testid="reimbursement-policy-active-input"
                 type="number"
                 min="1" max="365"
                 value={form.claim_submission_window_days || 30}
@@ -272,6 +275,7 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch mb-0">
                 <Input
+                  data-testid="reimbursement-policy-require-receipt-for-all-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.require_receipt_for_all}
@@ -291,6 +295,7 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <div className="d-flex align-items-center gap-2">
                 <Input
+                  data-testid="reimbursement-policy-auto-approve-below-amount-input"
                   type="number"
                   min="0" step="0.01"
                   value={form.auto_approve_below_amount || "0.00"}
@@ -316,6 +321,7 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch mb-0">
                 <Input
+                  data-testid="reimbursement-policy-payout-with-salary-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.payout_with_salary}
@@ -341,6 +347,7 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch mb-0">
                 <Input
+                  data-testid="reimbursement-policy-included-in-payroll-run-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.is_taxable_by_default}
@@ -362,6 +369,7 @@ const ReimbursementPolicySettings = () => {
             {isEditing ? (
               <div className="form-check form-switch mb-0">
                 <Input
+                  data-testid="reimbursement-policy-taxable-checkbox"
                   className="form-check-input"
                   type="checkbox"
                   checked={!!form.include_reimbursement_in_ctc}
@@ -378,10 +386,10 @@ const ReimbursementPolicySettings = () => {
         {/* ── Actions ── */}
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>
+            <Button data-testid="reimbursement-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>
               Cancel
             </Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="reimbursement-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line align-middle me-1"></i>
               {loading ? "Saving…" : "Save Changes"}
             </Button>

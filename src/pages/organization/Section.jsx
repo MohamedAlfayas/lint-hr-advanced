@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  CardBody,
-  Col,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
-  TabContent,
-  TabPane,
-} from "reactstrap";
-import classnames from "classnames";
+import { Col, Row, TabContent, TabPane } from "reactstrap";
+import { Avatar, Box, Card, Chip, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
+import AccountTreeRoundedIcon from "@mui/icons-material/AccountTreeRounded";
+import StoreRoundedIcon from "@mui/icons-material/StoreRounded";
+import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
+import PaymentsRoundedIcon from "@mui/icons-material/PaymentsRounded";
+import TuneRoundedIcon from "@mui/icons-material/TuneRounded";
+import AdminPanelSettingsRoundedIcon from "@mui/icons-material/AdminPanelSettingsRounded";
+import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
+import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
+import ApartmentRoundedIcon from "@mui/icons-material/ApartmentRounded";
+import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
+import LanguageRoundedIcon from "@mui/icons-material/LanguageRounded";
 
 //import images
 import slack from "../../assets/images/brands/slack.png";
@@ -18,7 +21,6 @@ import DepartmentsTab from "./DepartmentsTab";
 import Branch from "./Branch";
 import TeamTab from "./TeamTab";
 import OrgInfoTab from "./OrgInfoTab";
-import PayRollConfig from "./../payroll/PayRollConfig";
 import AttendanceConfig from "./../attendanceConfig/AttendanceConfig";
 import CustomField from "../customField/CustomField";
 import Roles from "../roles/Roles";
@@ -33,7 +35,6 @@ import {
   BRANCH_VIEW_ACCESS_KEY,
   CUSTOM_FIELD_VIEW_ACCESS_KEY,
   ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
-  PAYROLL_VIEW_ACCESS_KEY,
   ROLES_VIEW_ACCESS_KEY,
   FORMS_VIEW_ACCESS_KEY,
   LOCATION_GROUP_VIEW_ACCESS_KEY,
@@ -73,7 +74,6 @@ const Section = () => {
     department: false,
     branch: false,
     attendance: false,
-    payroll: false,
     customField: false,
     roles: false,
     forms: false,
@@ -83,59 +83,33 @@ const Section = () => {
 
   useEffect(() => {
     const profileData = JSON.parse(
-      localStorage.getItem("lint_hr_profile_data"),
+      localStorage.getItem("lint_hr_profile_data") || "null",
     );
-    console.log(profileData.permission_list);
-    console.log("Profile Data:", profileData);
+    if (!profileData) return;
 
-    if (!profileData?.permission_list) return;
+    const isAdmin = profileData.is_admin === true;
+    const permissionList = Array.isArray(profileData.permission_list)
+      ? profileData.permission_list
+      : [];
+    const has = (key) => isAdmin || permissionList.includes(key);
 
-    const permissionList = profileData.permission_list;
-    console.log("Permission List:", permissionList);
-
-    console.log("Payroll:", permissionList.includes(PAYROLL_VIEW_ACCESS_KEY));
-
-    console.log("Roles:", permissionList.includes(ROLES_VIEW_ACCESS_KEY));
-
-    console.log("Forms:", permissionList.includes(FORMS_VIEW_ACCESS_KEY));
-
-    console.log(
-      "Location Group:",
-      permissionList.includes(LOCATION_GROUP_VIEW_ACCESS_KEY),
-    );
-
-    console.log(
-      "Attendance Config:",
-      permissionList.includes(ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY),
-    );
     setPermissions({
-      companyInfo: permissionList.includes(COMPANY_PROFILE_VIEW_ACCESS_KEY),
-
-      department: permissionList.includes(DEPARTMENT_VIEW_ACCESS_KEY),
-
-      branch: permissionList.includes(BRANCH_VIEW_ACCESS_KEY),
-
-      customField: permissionList.includes(CUSTOM_FIELD_VIEW_ACCESS_KEY),
-
-      attendance: permissionList.includes(
-        ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY,
-      ),
-
-      payroll: permissionList.includes(PAYROLL_VIEW_ACCESS_KEY),
-
-      roles: permissionList.includes(ROLES_VIEW_ACCESS_KEY),
-
-      forms: permissionList.includes(FORMS_VIEW_ACCESS_KEY),
-
-      locationGroup: permissionList.includes(LOCATION_GROUP_VIEW_ACCESS_KEY),
-
-      customStatus: permissionList.includes(CONFIGURATION_VIEW_ACCESS_KEY),
+      companyInfo: has(COMPANY_PROFILE_VIEW_ACCESS_KEY),
+      department: has(DEPARTMENT_VIEW_ACCESS_KEY),
+      branch: has(BRANCH_VIEW_ACCESS_KEY),
+      customField: has(CUSTOM_FIELD_VIEW_ACCESS_KEY),
+      attendance: has(ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY),
+      roles: has(ROLES_VIEW_ACCESS_KEY),
+      forms: has(FORMS_VIEW_ACCESS_KEY),
+      locationGroup: has(LOCATION_GROUP_VIEW_ACCESS_KEY),
+      customStatus: has(CONFIGURATION_VIEW_ACCESS_KEY),
     });
   }, []);
 
   //Tab
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem("activeTab") || "1";
+    const savedTab = localStorage.getItem("activeTab");
+    return savedTab && savedTab !== "5" ? savedTab : "1";
   });
   const toggleTab = (tab) => {
     if (activeTab !== tab) {
@@ -150,253 +124,130 @@ const Section = () => {
   }, []);
   const { company_detail } = useSelector((state) => state.CompanyReducer);
 
-  console.log("Current Active Tab:", activeTab);
+  const tabs = [
+    { value: "1", label: "Company Info", icon: <BusinessRoundedIcon />, show: permissions.companyInfo },
+    { value: "2", label: "Departments", icon: <AccountTreeRoundedIcon />, show: permissions.department },
+    { value: "3", label: "Branch", icon: <StoreRoundedIcon />, show: permissions.branch },
+    { value: "4", label: "Attendance", icon: <EventAvailableRoundedIcon />, show: permissions.attendance },
+    { value: "5", label: "Payroll", icon: <PaymentsRoundedIcon />, show: permissions.payroll },
+    { value: "6", label: "Custom Field", icon: <TuneRoundedIcon />, show: permissions.customField },
+    { value: "7", label: "Roles", icon: <AdminPanelSettingsRoundedIcon />, show: permissions.roles },
+    { value: "8", label: "Forms", icon: <DescriptionRoundedIcon />, show: permissions.forms },
+    { value: "9", label: "Location Group", icon: <PlaceRoundedIcon />, show: permissions.locationGroup },
+  ].filter((t) => t.show);
+  // Roles without the default tab's permission land on their first allowed tab.
+  const currentTab = tabs.some((t) => t.value === activeTab)
+    ? activeTab
+    : tabs[0]?.value || false;
+  const companyName = company_detail?.full_name || "Organization";
 
   return (
     <React.Fragment>
+      <Card
+        sx={{
+          mt: -3,
+          mx: { xs: -1.5, md: -3 },
+          mb: 3,
+          borderRadius: 0,
+          borderLeft: 0,
+          borderRight: 0,
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          sx={(theme) => ({
+            px: { xs: 2, md: 4 },
+            pt: { xs: 2.5, md: 3 },
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.info.main, 0.08)} 100%)`,
+          })}
+        >
+          <Stack direction="row" spacing={2.5} alignItems="center" sx={{ mb: 2 }}>
+            <Avatar
+              variant="rounded"
+              src={company_detail?.light_logo_image || slack}
+              alt={companyName}
+              slotProps={{
+                img: {
+                  onError: (ev) => {
+                    ev.currentTarget.onerror = null;
+                    ev.currentTarget.src = slack;
+                  },
+                },
+              }}
+              sx={{
+                width: 72,
+                height: 72,
+                flexShrink: 0,
+                bgcolor: "background.paper",
+                borderRadius: "50%",
+                border: 1,
+                borderColor: "divider",
+                boxShadow: "0 4px 14px rgba(56, 65, 74, 0.12)",
+                "& img": { width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" },
+              }}
+            />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h5" fontWeight={700} noWrap>
+                {companyName}
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }} flexWrap="wrap" useFlexGap>
+                <Chip
+                  size="small"
+                  icon={<ApartmentRoundedIcon />}
+                  label="Headquarter"
+                  sx={{ bgcolor: "background.paper", fontWeight: 500 }}
+                />
+                <Chip
+                  size="small"
+                  icon={<CalendarMonthRoundedIcon />}
+                  label="Created 15 Sep, 2021"
+                  sx={{ bgcolor: "background.paper", fontWeight: 500 }}
+                />
+                {company_detail?.website && (
+                  <Chip
+                    size="small"
+                    icon={<LanguageRoundedIcon />}
+                    label={company_detail.website}
+                    component="a"
+                    href={/^https?:\/\//.test(company_detail.website) ? company_detail.website : `https://${company_detail.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    clickable
+                    sx={{ bgcolor: "background.paper", fontWeight: 500 }}
+                  />
+                )}
+              </Stack>
+            </Box>
+          </Stack>
+
+          <Tabs
+            value={currentTab}
+            onChange={(_, v) => toggleTab(v)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            sx={{
+              minHeight: 48,
+              "& .MuiTab-root": {
+                minHeight: 48,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: 14,
+                gap: 0.75,
+              },
+              "& .MuiTab-root svg": { fontSize: 18 },
+              "& .MuiTabs-indicator": { height: 3, borderRadius: "3px 3px 0 0" },
+            }}
+          >
+            {tabs.map((t) => (
+              <Tab key={t.value} value={t.value} label={t.label} icon={t.icon} iconPosition="start" />
+            ))}
+          </Tabs>
+        </Box>
+      </Card>
       <Row>
         <Col lg={12}>
-          <Card className="mt-n4 mx-n4">
-            <div className="bg-info-subtle">
-              <CardBody className="pb-0 px-4">
-                <Row className="mb-3">
-                  <div className="col-md">
-                    <Row className="align-items-center g-3">
-                      <div className="col-md-auto">
-                        <div className="avatar-md">
-                          <div className="avatar-title bg-white rounded-circle" style={{ overflow: "hidden" }}>
-                            {/* <img src={slack} alt="" className="avatar-xs" /> */}
-                             <img
-                                src={company_detail?.light_logo_image || slack}
-                                alt={company_detail?.full_name || "Company Logo"}
-                                className="rounded-circle"
-                                style={{ width: "90%", height: "90%", objectFit: "cover", background: "#fff" }}
-                                onError={(e) => { e.target.onerror = null; e.target.src = slack; }}
-                              />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-md">
-                        <div>
-                          <h4 className="fw-bold">
-                            {company_detail?.full_name || ""}
-                          </h4>
-                          <div className="hstack gap-3 flex-wrap">
-                            <div>
-                              <i className="ri-building-line align-bottom me-1"></i>{" "}
-                              HEADQUARTER
-                            </div>
-                            <div className="vr"></div>
-                            <div>
-                              Create Date :{" "}
-                              <span className="fw-medium">15 Sep, 2021</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Row>
-                  </div>
-                  <div className="col-md-auto">
-                    <div className="hstack gap-1 flex-wrap">
-                      <button
-                        type="button"
-                        className="btn py-0 fs-16 favourite-btn active"
-                      >
-                        <i className="ri-star-fill"></i>
-                      </button>
-                      <button
-                        type="button"
-                        className="btn py-0 fs-16 text-body"
-                      >
-                        <i className="ri-share-line"></i>
-                      </button>
-                    </div>
-                  </div>
-                </Row>
-
-                <Nav className="nav-tabs-custom border-bottom-0" role="tablist">
-                  {permissions.companyInfo && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "1" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("1");
-                        }}
-                        href="#"
-                      >
-                        Company Info
-                      </NavLink>
-                    </NavItem>
-                  )}
-                  {(permissions.department && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "2" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("2");
-                        }}
-                        href="#"
-                      >
-                        Departments
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.branch && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "3" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("3");
-                        }}
-                        href="#"
-                      >
-                        Branch
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.attendance && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "4" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("4");
-                        }}
-                        href="#"
-                      >
-                        Attendance
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.payroll && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "5" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("5");
-                        }}
-                        href="#"
-                      >
-                        Payroll
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.customField && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "6" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("6");
-                        }}
-                        href="#"
-                      >
-                        Custom Field
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.roles && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "7" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("7");
-                        }}
-                        href="#"
-                      >
-                        Roles
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.forms && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "8" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("8");
-                        }}
-                        href="#"
-                      >
-                        Forms
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-
-                  {(permissions.locationGroup && (
-                    <NavItem>
-                      <NavLink
-                        className={classnames(
-                          { active: activeTab === "9" },
-                          "fw-semibold",
-                        )}
-                        onClick={() => {
-                          toggleTab("9");
-                        }}
-                        href="#"
-                      >
-                        Location Group
-                      </NavLink>
-                    </NavItem>
-                  )) ||
-                    null}
-                  {/* <NavItem>
-                    <NavLink
-                      className={classnames(
-                        { active: activeTab === "10" },
-                        "fw-semibold",
-                      )}
-                      onClick={() => {
-                        toggleTab("10");
-                      }}
-                      href="#"
-                    >
-                      Custom Status
-                    </NavLink>
-                  </NavItem> */}
-                </Nav>
-              </CardBody>
-            </div>
-          </Card>
-        </Col>
-      </Row>
-      <Row>
-        <Col lg={12}>
-          <TabContent activeTab={activeTab} className="text-muted">
+          <TabContent activeTab={currentTab || activeTab} className="text-muted">
             {(permissions.companyInfo && (
               <TabPane tabId="1">
                 <OrgInfoTab />
@@ -422,12 +273,7 @@ const Section = () => {
               </TabPane>
             )) ||
               null}
-            {(permissions.payroll && (
-              <TabPane tabId="5">
-                <PayRollConfig />
-              </TabPane>
-            )) ||
-              null}
+          
             {(permissions.customField && (
               <TabPane tabId="6">
                 <CustomField />

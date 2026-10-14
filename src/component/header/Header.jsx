@@ -6,9 +6,12 @@ import logoSm from "../../assets/images/logo-sm.png";
 import logoDark from "../../assets/images/logo-dark.png";
 import logoLight from "../../assets/images/logo-light.png";
 import { useDispatch, useSelector, shallowEqual } from "react-redux";
-import Select, { components } from "react-select";
-import { changeSidebarVisibilityAction } from "../../redux/reducers/ChildReducer/LayoutReducer";
-import { Col, Dropdown, DropdownMenu, DropdownToggle, Form } from "reactstrap";
+import Select, { components } from "../../shared/ui/TestableSelect";
+import {
+  changeLeftsidebarSizeTypeAction,
+  changeSidebarVisibilityAction,
+} from "../../redux/reducers/ChildReducer/LayoutReducer";
+import { Dropdown, DropdownMenu, DropdownToggle, Form } from "reactstrap";
 import LightDark from "../../common/js/LightDark";
 import NotificationDropdown from "../../common/js/NotificationDropdown";
 import ProfileDropdown from "../../common/js/ProfileDropdown";
@@ -68,11 +71,12 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
   const [showEmpTeam, setShowEmpTeam] = useState(false);
   const [showEmpAll, setShowEmpAll] = useState(false);
   const [hideTimer, setHideTimer] = useState(false);
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const profile_data =
+    JSON.parse(localStorage.getItem("lint_hr_profile_data")) || {};
 
-  const emp_department = profile_data.primary_department_id_list
-    ? department_data.filter((d) =>
-        (profile_data?.primary_department_id_list).includes(d.id),
+  const emp_department = Array.isArray(profile_data.primary_department_id_list)
+    ? (department_data || []).filter((d) =>
+        profile_data.primary_department_id_list.includes(d.id),
       )
     : [];
 
@@ -100,18 +104,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
     dispatch(changeSidebarVisibilityAction("show"));
 
     if (windowSize > 767) {
-      var myElement = document.querySelector(".hamburger-icon");
-      if (myElement.classList.contains("open")) {
-        localStorage.setItem("is_menu_open", "");
-        localStorage.setItem("left_side_bar_type", leftsidbarSizeTypes.DEFAULT);
-      } else {
-        localStorage.setItem("is_menu_open", "open");
-        localStorage.setItem(
-          "left_side_bar_type",
-          leftsidbarSizeTypes.SMALLICON,
-        );
-      }
-      document.querySelector(".hamburger-icon").classList.toggle("open");
+      document.querySelector(".hamburger-icon")?.classList.toggle("open");
     }
 
     //For collapse vertical and semibox menu
@@ -127,9 +120,16 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
           : document.documentElement.setAttribute("data-sidebar-size", "sm");
       } else if (windowSize > 1025) {
         document.body.classList.remove("vertical-sidebar-enable");
-        document.documentElement.getAttribute("data-sidebar-size") === "lg"
-          ? document.documentElement.setAttribute("data-sidebar-size", "sm")
-          : document.documentElement.setAttribute("data-sidebar-size", "lg");
+        // Persist the size actually applied so a refresh restores it.
+        const nextSize =
+          document.documentElement.getAttribute("data-sidebar-size") === "sm"
+            ? leftsidbarSizeTypes.DEFAULT
+            : leftsidbarSizeTypes.SMALLICON;
+        document.documentElement.setAttribute("data-sidebar-size", nextSize);
+        document
+          .querySelector(".hamburger-icon")
+          ?.classList.toggle("open", nextSize === leftsidbarSizeTypes.SMALLICON);
+        dispatch(changeLeftsidebarSizeTypeAction(nextSize));
       } else if (windowSize <= 767) {
         document.body.classList.add("vertical-sidebar-enable");
         document.documentElement.setAttribute("data-sidebar-size", "lg");
@@ -164,7 +164,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
           <div className="navbar-header">
             <div className="d-flex">
               <div className="navbar-brand-box horizontal-logo">
-                <Link to="/" className="logo logo-dark">
+                <Link to="/" className="logo logo-dark" data-testid="header-logo-dark-link">
                   <span className="logo-sm">
                     <img src={logoSm} alt="" height="22" />
                   </span>
@@ -173,7 +173,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                   </span>
                 </Link>
 
-                <Link to="/" className="logo logo-light">
+                <Link to="/" className="logo logo-light" data-testid="header-logo-light-link">
                   <span className="logo-sm">
                     <img src={logoSm} alt="" height="22" />
                   </span>
@@ -188,6 +188,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
                 type="button"
                 className="btn btn-sm px-3 fs-16 header-item vertical-menu-btn topnav-hamburger"
                 id="topnav-hamburger-icon"
+                data-testid="header-menu-toggle-button"
               >
                 <span className="hamburger-icon ">
                   <span></span>
@@ -197,35 +198,26 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               </button>
               {location.pathname.includes(employee_view_component_name) &&
                 (showEmpAll || showEmpTeam) && (
-                  <div
-                    className="form-icon right"
-                    style={{ marginTop: "17px" }}
-                  >
-                    <Col lg={12}>
-                      <Select
-                        name="employee_attendance"
-                        id="employee_attendance"
-                        options={employeeOptions || []}
-                        components={{
-                          Option: EmployeeDisplayInSelect,
-                        }}
-                        styles={{
-                          control: (provided) => ({
-                            ...provided,
-                            width: "200px",
-                            margin: 0,
-                            padding: 0,
-                          }),
-                        }}
-                        placeholder="Select Employee"
-                        value={
-                          (id &&
-                            employeeOptions.find((e) => e.emp_uuid === id)) ||
-                          []
-                        }
-                        onChange={handleEmployeeChange}
-                      />
-                    </Col>
+                  <div className="hdr-emp-select">
+                    <i className="ri-user-search-line hdr-emp-select-icon"></i>
+                    <Select
+                      testId="header-employee-attendance"
+                      name="employee_attendance"
+                      id="employee_attendance"
+                      classNamePrefix="hdr-emp"
+                      options={employeeOptions || []}
+                      components={{
+                        Option: EmployeeDisplayInSelect,
+                        IndicatorSeparator: null,
+                      }}
+                      placeholder="Select Employee"
+                      value={
+                        (id &&
+                          employeeOptions.find((e) => e.emp_uuid === id)) ||
+                        []
+                      }
+                      onChange={handleEmployeeChange}
+                    />
                   </div>
                 )}
             </div>
@@ -235,14 +227,7 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               style={{ paddingRight: show_attendance_timer ? "0px" : "15px" }}
             >
               {path_list_for_timer_hide.includes(location.pathname) ? null : (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    minWidth: "280px",
-                    marginRight: "10px",
-                  }}
-                >
+                <div style={{ display: "flex", alignItems: "center" }}>
                   <WebCheckInOut
                     showTimer={true}
                     hideTimer={hideTimer}
@@ -269,10 +254,10 @@ const Header = ({ onChangeLayoutMode, layoutModeType, headerClass }) => {
               <TimeLineList />
 
               {/* Dark/Light Mode set */}
-              {/* <LightDark
+              <LightDark
                 layoutMode={layoutModeType}
                 onChangeLayoutMode={onChangeLayoutMode}
-              /> */}
+              />
 
               {/* NotificationDropdown */}
               <NotificationDropdown />

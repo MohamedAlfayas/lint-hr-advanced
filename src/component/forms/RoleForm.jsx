@@ -1,447 +1,488 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useForm, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import { toast } from "react-toastify";
 import {
-  Badge,
+  Alert,
+  Box,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  FormFeedback,
-  Input,
-  Label,
-  ListGroup,
-  ListGroupItem,
-  Nav,
-  NavItem,
-  Form,
-  NavLink,
-  Row,
-  TabContent,
-  TabPane,
-} from "reactstrap";
-
-import { Link } from "react-router-dom";
-import { Api } from "../../common/api/Api";
+  Chip,
+  Grid,
+  InputAdornment,
+  LinearProgress,
+  Paper,
+  Stack,
+  Switch,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import {
   addRole,
   editRole,
 } from "../../redux/reducers/ChildReducer/RoleReducer";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { toast } from "react-toastify";
-import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import classnames from "classnames";
 import { default_roles_list } from "../../common/constant/RoleConstants";
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css"
-/>;
+import SidebarFormLayout from "../../shared/ui/SidebarFormLayout";
+import { FormSection, FormTextField } from "../../shared/ui/form";
+import { testId, itemTestKey } from "../../shared/testing/testId";
+
+const schema = Yup.object({
+  name: Yup.string().trim().required("Please Enter Role Name"),
+  description: Yup.string(),
+});
+
+const toFormValues = (obj) => ({
+  name: obj?.name ?? "",
+  description: obj?.description ?? "",
+  roles_list: obj?.roles_list ?? [],
+});
+
+const TOTAL_PERMISSIONS = default_roles_list.reduce(
+  (sum, group) => sum + (group.permission?.length || 0),
+  0,
+);
+
+// Adds `perm` plus every permission it depends on.
+const addWithDependencies = (list, perm) => {
+  const next = list.includes(perm?.role_uuid) ? [...list] : [...list, perm?.role_uuid];
+  (perm?.dependency_to_element_list || []).forEach((element) => {
+    default_roles_list.forEach((group) => {
+      const dep = (group.permission || []).find((r) => r.element === element);
+      if (dep && !next.includes(dep.role_uuid)) next.push(dep.role_uuid);
+    });
+  });
+  return next;
+};
+
+const isRequiredBy = (perm, list) =>
+  (perm?.dependency_for_uuid_list || []).some((d) => list.includes(d));
 
 const RoleForm = () => {
-  const [roleObj, setRoleObj] = useState({});
-  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
   const dispatch = useDispatch();
+  const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeGroup, setActiveGroup] = useState(default_roles_list[0]?.id);
+  const [search, setSearch] = useState("");
 
-  const [activeVerticalTab, setactiveVerticalTab] = useState(1);
-  const [passedverticalSteps, setPassedverticalSteps] = useState([1]);
-  const inputRef = useRef();
-
-  useEffect(() => {
-   
-    setRoleObj(form_obj);
-  }, [form_obj]);
-
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: roleObj,
-    validationSchema: Yup.object({
-      name: Yup.string().trim().required("Please Enter Role Name"),
-    }),
-    onSubmit: async (values) => {
-      let total_roles_checked = roleObj.roles_list.length;
-
-      if (total_roles_checked === 0) {
-        toast.error("Select Atleast One Permissions");
-      } else {
-        dispatch(setLoaderVisible(true));
-
-        const Api = await PostApi("/role/create-role/", roleObj, false);
-        if (Api.status && Api.status === 200) {
-          roleObj.id === 0
-            ? dispatch(addRole(Api?.data.data))
-            : dispatch(editRole(Api?.data?.data));
-          dispatch(toggleRSBView(false));
-          toast.success(Api?.data?.message);
-        } else {
-          toast.error(Api?.data?.message || Api?.data?.detail);
-        }
-
-        dispatch(setLoaderVisible(false));
-      }
-    },
+  const { control, handleSubmit, reset, setValue } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
   });
 
   useEffect(() => {
-    if (
-      FormikForm.submitCount > 0 &&
-      Object.keys(FormikForm.errors).length > 0
-    ) {
-      const firstErrorField = Object.keys(FormikForm.errors)[0];
-      FormikForm.setFieldTouched(firstErrorField);
-      const errorField = document.querySelector(`[name=${firstErrorField}]`);
-      if (errorField) {
-        errorField.focus();
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset]);
 
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }
-    }
-  }, [
-    FormikForm.submitCount,
-    FormikForm.errors,
-    FormikForm.setFieldTouched,
-    inputRef,
-  ]);
+  const watchedRoles = useWatch({ control, name: "roles_list" });
+  const rolesList = useMemo(() => watchedRoles || [], [watchedRoles]);
+  const isAdmin = form_obj?.is_admin === true;
 
-  const RibbonData = {
-    1: {
-      label: "Master",
-      class: "warning",
-    },
-    2: {
-      label: "Access",
-      class: "info",
-    },
-    3: {
-      label: "",
-      class: "",
-    },
-    4: {
-      label: "Report",
-      class: "success",
-    },
+  const groups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return default_roles_list
+      .map((group) => ({
+        ...group,
+        visible: q
+          ? (group.permission || []).filter(
+              (p) =>
+                (p.notes || "").toLowerCase().includes(q) ||
+                (group.name || "").toLowerCase().includes(q),
+            )
+          : group.permission || [],
+      }))
+      .filter((group) => group.visible.length > 0);
+  }, [search]);
+
+  const countFor = (group) =>
+    isAdmin
+      ? group.permission.length
+      : group.permission.filter((p) => rolesList.includes(String(p.role_uuid)))
+          .length;
+
+  const totalSelected = isAdmin
+    ? TOTAL_PERMISSIONS
+    : default_roles_list.reduce((sum, g) => sum + countFor(g), 0);
+
+  const updateRoles = (next) =>
+    setValue("roles_list", next, { shouldDirty: true });
+
+  const handleToggle = (checked, perm) => {
+    if (checked) updateRoles(addWithDependencies(rolesList, perm));
+    else updateRoles(rolesList.filter((d) => d !== perm.role_uuid));
   };
 
-  const handleCBChange = (elm, ck) => {
-    const role_data = [...roleObj.roles];
-    const filtered_role_data = ck
-      ? [...role_data, elm]
-      : role_data.filter((obj) => obj !== elm);
-    setRoleObj({
-      ...roleObj,
-      roles: filtered_role_data,
-    });
-  };
-
-  function toggleVerticalTab(tab) {
-    if (activeVerticalTab !== tab) {
-      var modifiedSteps = [...passedverticalSteps, tab];
-
-      if (tab >= 1 && tab <= 5) {
-        setactiveVerticalTab(tab);
-        setPassedverticalSteps(modifiedSteps);
-      }
-    }
-  }
-
-  const [focusedRole, setFocusedRole] = useState(null);
-  const [focusedPermission, setFocusedPermission] = useState(null);
-  const handleNavLinkClick = (role) => {
-    setFocusedRole(role.id);
-    setFocusedPermission(
-      role.permission.length > 0 ? role.permission[0].id : null
+  const selectAllInGroup = (group) => {
+    updateRoles(
+      (group.permission || []).reduce(
+        (list, perm) => addWithDependencies(list, perm),
+        rolesList,
+      ),
     );
   };
-  useEffect(() => {
-    if (focusedRole !== null && focusedPermission !== null) {
-      const listGroupItem = document.getElementById(
-        `permission_${focusedRole}_${focusedPermission}`
-      );
-      if (listGroupItem) {
-        listGroupItem.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }
-  }, [focusedPermission, focusedRole]);
 
-  const getCheckedCount = (role_id) => {
-    const thisPermissionList =
-      default_roles_list.find((d) => d.id === parseInt(role_id)).permission ||
-      [];
-    const checkedRoles = !!roleObj?.roles_list ? roleObj?.roles_list : [];
-    const selectedAccessLength = thisPermissionList.filter((t) =>
-      checkedRoles.includes(String(t.role_uuid))
-    ).length;
-    return selectedAccessLength;
+  const clearGroup = (group) => {
+    const groupUuids = (group.permission || []).map((p) => p.role_uuid);
+    const remaining = rolesList.filter((d) => !groupUuids.includes(d));
+    // Keep group permissions that selected permissions elsewhere still depend on.
+    const stillRequired = (group.permission || [])
+      .filter((p) => isRequiredBy(p, remaining))
+      .map((p) => p.role_uuid);
+    updateRoles([...remaining, ...stillRequired]);
   };
 
-  const handleCheckboxChange = (e, perm) => {
-    const { checked } = e.target;
+  const scrollToGroup = (groupId) => {
+    setActiveGroup(groupId);
+    document
+      .getElementById(`perm-group-${groupId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
-    if (checked === true) {
-      let updated_roles_list = [...roleObj?.roles_list, perm?.role_uuid];
-
-      let this_dependency_element_list = perm?.dependency_to_element_list;
-
-      for (var i = 0; i < this_dependency_element_list.length; i++) {
-        for (var j = 0; j < default_roles_list.length; j++) {
-          let this_permission_list = default_roles_list[j].permission || [];
-          let this_role_uuid = this_permission_list.find(
-            (r) => r.element === this_dependency_element_list[i]
-          );
-          if (!!this_role_uuid) {
-            if (
-              updated_roles_list.includes(this_role_uuid?.role_uuid) === false
-            ) {
-              updated_roles_list.push(this_role_uuid?.role_uuid);
-            }
-          }
-        }
-      }
-
-      setRoleObj({
-        ...roleObj,
-        roles_list: updated_roles_list,
-      });
+  const onSubmit = async (values) => {
+    if ((values.roles_list || []).length === 0) {
+      toast.error("Select Atleast One Permissions");
+      return;
+    }
+    setIsSubmitting(true);
+    const res = await PostApi(
+      "/role/create-role/",
+      { ...form_obj, ...values },
+      false,
+    );
+    setIsSubmitting(false);
+    if (res.status && res.status === 200) {
+      form_obj?.id === 0
+        ? dispatch(addRole(res?.data.data))
+        : dispatch(editRole(res?.data?.data));
+      dispatch(toggleRSBView(false));
+      toast.success(res?.data?.message);
     } else {
-      let updated_roles_list = [...roleObj?.roles_list].filter(
-        (d) => d !== perm.role_uuid
-      );
-      setRoleObj({
-        ...roleObj,
-        roles_list: updated_roles_list,
-      });
+      toast.error(res?.data?.message || res?.data?.detail);
     }
   };
 
-  // const handleCheckboxChange = (e, perm, role_id) => {
-  //   const { checked } = e.target;
-
-  //   if (checked === true) {
-  //     let updated_roles_list = [...roleObj?.roles_list, perm?.role_uuid];
-
-  //     let this_permission_list =
-  //       default_roles_list?.find((d) => d.id === role_id).permission || [];
-
-  //     let this_dependency_element_list = perm?.dependency_to_element_list;
-
-  //     for (var i = 0; i < this_dependency_element_list.length; i++) {
-  //       let this_role_uuid = this_permission_list.find(
-  //         (p) => p.element === this_dependency_element_list[i]
-  //       ).role_uuid;
-
-  //       if (!!this_role_uuid) {
-  //         if (updated_roles_list.includes(this_role_uuid) === false) {
-  //           updated_roles_list.push(this_role_uuid);
-  //         }
-  //       }
-  //     }
-
-  //     setRoleObj({
-  //       ...roleObj,
-  //       roles_list: updated_roles_list,
-  //     });
-  //   } else {
-  //     let updated_roles_list = [...roleObj?.roles_list].filter(
-  //       (d) => d !== perm.role_uuid
-  //     );
-  //     setRoleObj({
-  //       ...roleObj,
-  //       roles_list: updated_roles_list,
-  //     });
-  //   }
-  // };
+  const overallPct = TOTAL_PERMISSIONS
+    ? Math.round((totalSelected / TOTAL_PERMISSIONS) * 100)
+    : 0;
 
   return (
-    <React.Fragment>
-      <Form
-        onSubmit={FormikForm.handleSubmit}
-        className="vertical-navs-step form-steps"
-      >
-        <Row>
-          <Col lg={6} xl={6} className="mb-2">
-            <div>
-              <Label htmlFor="roleName" className="form-label">
-                Role Name
-              </Label>
-              <div className="form-icon right">
-                <Input
-                  type="text"
-                  name="name"
-                  className="form-control form-control-icon"
-                  id="roleName"
-                  innerRef={inputRef}
-                  placeholder="Enter Role"
-                  value={roleObj?.name || ""}
-                  onChange={(e) =>
-                    setRoleObj({ ...roleObj, name: e.target.value })
-                  }
-                  // value={"HR"}
-                  invalid={
-                    FormikForm.touched.name && FormikForm.errors.name
-                      ? true
-                      : false
-                  }
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      isSubmitting={isSubmitting}
+      submitLabel={form_obj?.id ? "Update" : "Create"}
+    >
+      <FormSection title="Details">
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormTextField
+              name="name"
+              control={control}
+              label="Role name"
+              placeholder="Enter Role"
+              required
+              autoFocus
+              fullWidth
+              startIcon={<BadgeOutlinedIcon fontSize="small" color="action" />}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormTextField
+              name="description"
+              control={control}
+              label="Description"
+              placeholder="Enter Description"
+              fullWidth
+            />
+          </Grid>
+        </Grid>
+      </FormSection>
+
+      <FormSection title="Permissions">
+        {/* Summary */}
+        <Paper
+          variant="outlined"
+          sx={(theme) => ({
+            p: 2,
+            borderRadius: 3,
+            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)}, ${alpha(theme.palette.success.main, 0.05)})`,
+          })}
+        >
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flex: 1, minWidth: 0 }}>
+              <Box
+                sx={(theme) => ({
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2.5,
+                  flexShrink: 0,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "primary.contrastText",
+                  bgcolor: "primary.main",
+                  boxShadow: `0 6px 14px ${alpha(theme.palette.primary.main, 0.3)}`,
+                })}
+              >
+                <ShieldOutlinedIcon />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Stack direction="row" alignItems="baseline" spacing={0.75}>
+                  <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
+                    {totalSelected}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    of {TOTAL_PERMISSIONS} permissions selected
+                  </Typography>
+                </Stack>
+                <LinearProgress
+                  variant="determinate"
+                  value={overallPct}
+                  color={overallPct > 0 ? "success" : "inherit"}
+                  sx={{ mt: 0.75, height: 6, borderRadius: 3, maxWidth: 320 }}
                 />
-                {!FormikForm.touched.name && !FormikForm.errors.name && (
-                  <i className="ri-building-2-line"></i>
-                )}
-                {FormikForm.touched.name && FormikForm.errors.name ? (
-                  <FormFeedback type="invalid">
-                    {FormikForm.errors.name}
-                  </FormFeedback>
-                ) : null}
-              </div>
-              {!FormikForm.errors.name && (
-                <div id="passwordHelpBlock" className="form-text">
-                  Enter Your Role Name.
-                </div>
-              )}
-            </div>
-          </Col>
+              </Box>
+            </Stack>
+            <TextField
+              size="small"
+              placeholder="Search permissions"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              sx={{ width: { xs: "100%", sm: 240 } }}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchRoundedIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          </Stack>
+        </Paper>
 
-          <Col lg={6} xl={6} className="mb-2">
-            <div>
-              <Label htmlFor="description" className="form-label">
-                Description
-              </Label>
-              <div className="form-icon right">
-                <Input
-                  type="text"
-                  name="description"
-                  className="form-control form-control-icon"
-                  id="description"
-                  placeholder="Enter Description"
-                  value={roleObj?.description || ""}
-                  onChange={(e) =>
-                    setRoleObj({ ...roleObj, description: e.target.value })
-                  }
-                />
-                <i className="ri-building-2-line"></i>
-              </div>
-              <div id="passwordHelpBlock" className="form-text">
-                Enter Description.
-              </div>
-            </div>
-          </Col>
-        </Row>
-        <hr />
+        {isAdmin ? (
+          <Alert severity="info" icon={<LockOutlinedIcon fontSize="small" />} sx={{ borderRadius: 2 }}>
+            The admin role always has every permission. These can't be changed.
+          </Alert>
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            Permissions that others depend on are selected automatically and marked
+            &nbsp;<b>Required</b>.
+          </Typography>
+        )}
 
-        <Col xl={12}>
-          <Row className="gy-5">
-            <Col lg={3} className="border-end">
-              <Nav className="flex-column custom-nav nav-pills sticky-top">
-                <div className="mt-1"></div>
-                {!!default_roles_list &&
-                  default_roles_list.map((role) => (
-                    <NavItem key={role.id}>
-                      <NavLink
-                        href="#"
-                        onClick={() => handleNavLinkClick(role)}
-                        className={`nav-link ${
-                          getCheckedCount(role.id) > 0 ? "active done" : ""
-                        }`}
-                      >
-                        <div>
-                          <span class="step-title me-2">
-                            <i class="ri-close-circle-fill step-icon me-2"></i>
-                            {role.name}
-                          </span>
-                        </div>
-
-                        <Badge
-                          pill
-                          color="success"
-                          className="position-absolute top-0 start-100 translate-middle"
+        <Grid container spacing={2} alignItems="flex-start">
+          {/* Module nav */}
+          <Grid size={{ xs: 12, md: 4 }} sx={{ position: { md: "sticky" }, top: { md: 0 } }}>
+            <Paper variant="outlined" sx={{ borderRadius: 3, p: 1 }}>
+              <Stack spacing={0.5}>
+                {default_roles_list.map((group) => {
+                  const count = countFor(group);
+                  const total = group.permission.length;
+                  const active = activeGroup === group.id;
+                  return (
+                    <Box
+                      key={group.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => scrollToGroup(group.id)}
+                      onKeyDown={(e) => e.key === "Enter" && scrollToGroup(group.id)}
+                      sx={(theme) => ({
+                        px: 1.5,
+                        py: 1,
+                        borderRadius: 2,
+                        cursor: "pointer",
+                        bgcolor: active ? alpha(theme.palette.primary.main, 0.1) : "transparent",
+                        "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.06) },
+                      })}
+                    >
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                        <Typography
+                          variant="body2"
+                          fontWeight={active ? 700 : 500}
+                          color={active ? "primary.main" : "text.primary"}
+                          noWrap
                         >
-                          {getCheckedCount(role.id)} / {role.permission.length}
-                          <span className="visually-hidden">
-                            unread messages
-                          </span>
-                        </Badge>
-                      </NavLink>
-                    </NavItem>
-                  ))}
-              </Nav>
-            </Col>
+                          {group.name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          fontWeight={700}
+                          color={count > 0 ? "success.main" : "text.secondary"}
+                          sx={{ flexShrink: 0 }}
+                        >
+                          {count}/{total}
+                        </Typography>
+                      </Stack>
+                      <LinearProgress
+                        variant="determinate"
+                        value={total ? (count / total) * 100 : 0}
+                        color={count === total ? "success" : "primary"}
+                        sx={{ mt: 0.75, height: 4, borderRadius: 2 }}
+                      />
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Paper>
+          </Grid>
 
-            <Col lg={9}>
-              <div className="px-lg-4">
-                {!!default_roles_list &&
-                  default_roles_list.map((role_list) => (
-                    <div key={role_list.id}>
-                      <div className="mt-4">
-                        <h5>{role_list.name}</h5>
-                      </div>
-                      <ListGroup>
-                        {role_list.permission.map((role) => (
-                          <ListGroupItem
-                            key={role.id}
-                            id={`permission_${role_list.id}_${role.id}`}
-                            className={
-                              focusedRole === role_list.id &&
-                              focusedPermission === role.id
-                                ? "focused"
-                                : ""
-                            }
+          {/* Permission groups */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Stack spacing={2}>
+              {groups.length === 0 && (
+                <Paper variant="outlined" sx={{ borderRadius: 3, p: 4, textAlign: "center" }}>
+                  <SearchRoundedIcon color="disabled" sx={{ fontSize: 36 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No permissions match "{search}".
+                  </Typography>
+                </Paper>
+              )}
+
+              {groups.map((group) => {
+                const count = countFor(group);
+                const total = group.permission.length;
+                const allSelected = count === total;
+                return (
+                  <Paper
+                    key={group.id}
+                    id={`perm-group-${group.id}`}
+                    variant="outlined"
+                    sx={{ borderRadius: 3, overflow: "hidden", scrollMarginTop: 12 }}
+                  >
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                      spacing={1}
+                      sx={(theme) => ({
+                        px: 2,
+                        py: 1.25,
+                        borderBottom: 1,
+                        borderColor: "divider",
+                        bgcolor: alpha(theme.palette.text.primary, 0.02),
+                      })}
+                    >
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" fontWeight={700} noWrap>
+                          {group.name}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={`${count}/${total}`}
+                          color={count > 0 ? "success" : "default"}
+                          variant={count > 0 ? "filled" : "outlined"}
+                          sx={{ height: 20, fontSize: 11, fontWeight: 700 }}
+                        />
+                      </Stack>
+                      {!isAdmin && (
+                        <Button
+                          data-testid={testId("role-clear", itemTestKey(group), "button")}
+                          size="small"
+                          onClick={() =>
+                            allSelected ? clearGroup(group) : selectAllInGroup(group)
+                          }
+                          sx={{ textTransform: "none", fontWeight: 600, flexShrink: 0 }}
+                        >
+                          {allSelected ? "Clear" : "Select all"}
+                        </Button>
+                      )}
+                    </Stack>
+
+                    <Box
+                      sx={{
+                        p: 1,
+                        display: "grid",
+                        gap: 0.75,
+                        gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+                      }}
+                    >
+                      {group.visible.map((perm) => {
+                        const checked = isAdmin || rolesList.includes(perm?.role_uuid);
+                        const required = !isAdmin && isRequiredBy(perm, rolesList);
+                        const disabled = isAdmin || required;
+                        return (
+                          <Box
+                            key={perm.id}
+                            id={`permission_${group.id}_${perm.id}`}
+                            onClick={() => !disabled && handleToggle(!checked, perm)}
+                            sx={(theme) => ({
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              pl: 1.5,
+                              pr: 0.5,
+                              py: 0.5,
+                              borderRadius: 2,
+                              border: 1,
+                              borderColor: checked
+                                ? alpha(theme.palette.success.main, 0.35)
+                                : "divider",
+                              bgcolor: checked
+                                ? alpha(theme.palette.success.main, 0.06)
+                                : "transparent",
+                              cursor: disabled ? "default" : "pointer",
+                              transition: "all .15s ease",
+                              "&:hover": disabled
+                                ? undefined
+                                : { borderColor: alpha(theme.palette.primary.main, 0.45) },
+                            })}
                           >
-                            <label>
-                              <Input
-                                className="form-check-input me-1"
-                                type="checkbox"
-                                disabled={
-                                  !!roleObj?.roles_list
-                                    ? roleObj?.is_admin === true
-                                      ? true
-                                      : (role?.dependency_for_uuid_list).some(
-                                          (d) => roleObj?.roles_list.includes(d)
-                                        )
-                                    : false
-                                }
-                                checked={
-                                  !!roleObj?.roles_list
-                                    ? roleObj?.is_admin === true
-                                      ? true
-                                      : roleObj?.roles_list.includes(
-                                          role?.role_uuid
-                                        )
-                                      ? true
-                                      : false
-                                    : false
-                                }
-                                onChange={(e) => handleCheckboxChange(e, role)}
-                                // onChange={(e) =>
-                                //   handleCheckboxChange(e, role, role_list.id)
-                                // }
-                              />
-                              {role.notes}
-                            </label>
-                          </ListGroupItem>
-                        ))}
-                      </ListGroup>
-                    </div>
-                  ))}
-              </div>
-            </Col>
-            <Col lg={12} className="mt-5 ">
-              <div className="text-end">
-                <Button color="success" type="submit" className="btn-label">
-                  {" "}
-                  <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
-                  Save{" "}
-                </Button>{" "}
-              </div>
-            </Col>
-          </Row>
-        </Col>
-      </Form>
-    </React.Fragment>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                flex: 1,
+                                minWidth: 0,
+                                fontSize: 13,
+                                fontWeight: checked ? 600 : 400,
+                                color: checked ? "text.primary" : "text.secondary",
+                              }}
+                            >
+                              {perm.notes}
+                            </Typography>
+                            {required && (
+                              <Tooltip title="Another selected permission depends on this one">
+                                <Chip
+                                  size="small"
+                                  label="Required"
+                                  icon={<LockOutlinedIcon sx={{ fontSize: "13px !important" }} />}
+                                  sx={{ height: 20, fontSize: 10.5, fontWeight: 600 }}
+                                />
+                              </Tooltip>
+                            )}
+                            <Switch
+                              size="small"
+                              color="success"
+                              checked={checked}
+                              disabled={disabled}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => handleToggle(e.target.checked, perm)}
+                            />
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          </Grid>
+        </Grid>
+      </FormSection>
+    </SidebarFormLayout>
   );
 };
 

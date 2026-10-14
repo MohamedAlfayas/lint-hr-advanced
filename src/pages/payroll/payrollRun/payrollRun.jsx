@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -7,17 +7,16 @@ import {
   CardSubtitle,
   Row,
   Button,
-  Input,
-  Badge,
-  Table,
-  Spinner,
 } from "reactstrap";
-import SimpleBar from "simplebar-react";
+import { IconButton, Tooltip } from "@mui/material";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import AppTable from "../../../shared/ui/table/AppTable";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import PayrollRunModal from "./payrollRunModal";
 import PayrollRunDetails from "./payrollRunDetails";
 import RunStatusActions from "./RunStatusActions";
+import { ApvChip, ApvDate } from "../../../component/common/approval/ApprovalCells";
 
 const MONTH_NAMES = [
   "",
@@ -66,12 +65,11 @@ const getMonthName = (month) => {
 const PayrollRun = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRun, setSelectedRun] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const fetchData = () => {
+  const fetchData = useCallback(() => {
     setLoading(true);
     Api({ method: "GET", url: "payroll/payroll-run/" })
       .then((res) => {
@@ -82,7 +80,7 @@ const PayrollRun = () => {
         toast.error("Failed to load payroll runs");
       })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -94,26 +92,60 @@ const PayrollRun = () => {
   const partiallyPaidCount = records.filter((x) => x.status === "partially_paid").length;
   const paidCount = records.filter((x) => x.status === "paid").length;
 
-  // Search by month name ("january" / "jan"), raw month value, or year.
-  const filteredRecords = records.filter((row) => {
-    const searchLower = searchTerm.trim().toLowerCase();
-    if (!searchLower) return true;
-
-    const monthName = getMonthName(row.month).toLowerCase(); // "january"
-    const monthRaw = row.month ? String(row.month).toLowerCase() : ""; // "1"
-    const yearStr = row.year ? String(row.year) : "";
-
-    return (
-      monthName.includes(searchLower) ||
-      monthRaw.includes(searchLower) ||
-      yearStr.includes(searchLower)
-    );
-  });
-
   const handleViewDetails = (run) => {
     setSelectedRun(run);
     setDetailsOpen(true);
   };
+
+  const columns = useMemo(
+    () => [
+      {
+        id: "month",
+        accessorFn: (row) => getMonthName(row.month) || String(row.month ?? ""),
+        header: "Month",
+        filterVariant: "select",
+        sortingFn: (a, b) => Number(a.original.month) - Number(b.original.month),
+        Cell: ({ cell }) => <ApvChip icon="ri-calendar-2-line">{cell.getValue()}</ApvChip>,
+      },
+      {
+        id: "year",
+        accessorFn: (row) => (row.year != null ? String(row.year) : ""),
+        header: "Year",
+        filterVariant: "select",
+      },
+      {
+        id: "status",
+        accessorFn: (row) => row.status || "",
+        header: "Status",
+        filterVariant: "select",
+        Cell: ({ row }) => (
+          <RunStatusActions
+            run={row.original}
+            onChanged={(nextStatus) => {
+              if (typeof nextStatus === "string") {
+                setRecords((prev) => prev.map((item) => (
+                  String(item.id) === String(row.original.id) ? { ...item, status: nextStatus } : item
+                )));
+                setSelectedRun((prev) => (
+                  prev && String(prev.id) === String(row.original.id) ? { ...prev, status: nextStatus } : prev
+                ));
+              }
+              fetchData();
+            }}
+            size="sm"
+          />
+        ),
+      },
+      {
+        id: "processed_at",
+        accessorFn: (row) => row.processed_at || "",
+        header: "Processed At",
+        exportValue: (row) => fmtDateTime(row.processed_at),
+        Cell: ({ row }) => <ApvDate value={row.original.processed_at} withTime />,
+      },
+    ],
+    [fetchData]
+  );
 
   return (
     <React.Fragment>
@@ -144,7 +176,7 @@ const PayrollRun = () => {
 
       {/* Main Container Layout */}
       <Card className="shadow-none border">
-        <CardHeader className="bg-light d-flex justify-content-between align-items-center">
+        <CardHeader className="surface-muted d-flex justify-content-between align-items-center">
           <div>
             <CardTitle tag="h5" className="mb-0">
               Payroll Run Management
@@ -153,102 +185,30 @@ const PayrollRun = () => {
               Process, verify, and monitor company payouts
             </CardSubtitle>
           </div>
-          <Button color="success" size="sm" onClick={() => setModalOpen(true)}>
+          <Button data-testid="payroll-run-run-payroll-button" color="success" size="sm" onClick={() => setModalOpen(true)}>
             <i className="ri-add-line align-bottom me-1"></i> Run Payroll
           </Button>
         </CardHeader>
 
         <CardBody className="p-4">
-          <div className="d-flex mb-3" style={{ maxWidth: "300px" }}>
-            <Input
-              type="text"
-              placeholder="Search by Month or Year..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="form-control-sm"
-            />
-          </div>
-
-          {loading ? (
-            <div className="text-center py-5">
-              <Spinner color="primary" size="md" />
-              <p className="text-muted mt-2" style={{ fontSize: 13 }}>
-                Fetching Payroll logs...
-              </p>
-            </div>
-          ) : filteredRecords.length === 0 ? (
-            <div className="text-center py-5">
-              <h6 className="text-muted">
-                No payroll run logs match your criteria.
-              </h6>
-            </div>
-          ) : (
-            <SimpleBar
-              style={{ maxHeight: "calc(100vh - 420px)" }}
-              autoHide={false}
-            >
-              <div className="table-responsive">
-                <Table className="align-middle table-nowrap mb-0 border">
-                  <thead
-                    className="table-light text-muted"
-                    style={{
-                      fontSize: 12,
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 1,
-                    }}
-                  >
-                    <tr>
-                      <th>Month</th>
-                      <th>Year</th>
-                      <th>Status</th>
-                      <th>Processed At</th>
-                      <th className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody style={{ fontSize: 13 }}>
-                    {filteredRecords.map((row, index) => (
-                      <tr key={row.id || index}>
-                        <td className="fw-medium">
-                          {getMonthName(row.month) || row.month}
-                        </td>
-                        <td>{row.year}</td>
-                        <td>
-                          <RunStatusActions
-                            run={row}
-                            onChanged={(nextStatus) => {
-                              if (typeof nextStatus === "string") {
-                                setRecords((prev) => prev.map((item) => (
-                                  String(item.id) === String(row.id) ? { ...item, status: nextStatus } : item
-                                )));
-                                setSelectedRun((prev) => (
-                                  prev && String(prev.id) === String(row.id) ? { ...prev, status: nextStatus } : prev
-                                ));
-                              }
-                              fetchData();
-                            }}
-                            size="sm"
-                          />
-                        </td>
-                        <td>{fmtDateTime(row.processed_at) || "—"}</td>
-                        <td className="text-end">
-                          <Button
-                            color="primary"
-                            outline
-                            size="sm"
-                            className="py-1 px-2 me-1"
-                            onClick={() => handleViewDetails(row)}
-                          >
-                            View Details
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            </SimpleBar>
-          )}
+          <AppTable
+            columns={columns}
+            data={records}
+            isLoading={loading}
+            onRefresh={fetchData}
+            exportFileName="payroll-runs"
+            emptyMessage="No payroll run logs match your criteria."
+            enableRowActions
+            positionActionsColumn="last"
+            displayColumnDefOptions={{ "mrt-row-actions": { header: "Actions", size: 90 } }}
+            renderRowActions={({ row }) => (
+              <Tooltip title="View Details">
+                <IconButton data-testid="payroll-run-view-button" size="small" color="primary" onClick={() => handleViewDetails(row.original)}>
+                  <VisibilityOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          />
         </CardBody>
       </Card>
 

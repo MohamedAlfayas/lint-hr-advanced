@@ -20,7 +20,7 @@ import {
   Row,
   UncontrolledDropdown,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
@@ -386,6 +386,7 @@ const HolidayForm = () => {
                   <Label htmlfor="date">Date <span>*</span></Label>
                   {dateRawInvalidText !== null ? (
                     <Input
+                      data-testid="holiday-dd-mm-yyyy-input"
                       type="text"
                       className={`form-control${dateTypeError ? " border-danger" : ""}`}
                       placeholder="DD-MM-YYYY"
@@ -434,6 +435,7 @@ const HolidayForm = () => {
                 <div className={`mb-3`}>
                   <Label>Work Schedule <span>*</span></Label>
                   <Select
+                    testId="holiday-work-schedule-id-list"
                     name="work_schedule_id_list"
                     isMulti
                     options={ws_options || []}
@@ -479,6 +481,7 @@ const HolidayForm = () => {
                     dir="ltr"
                   >
                     <Input
+                      data-testid="holiday-is-rest-checkbox"
                       id="is_rest"
                       type="checkbox"
                       className="form-check-input"
@@ -539,7 +542,7 @@ const HolidayForm = () => {
 
               <Col lg={12}>
                 <div className="text-end">
-                  <Button color="success" type="submit" className="btn-label">
+                  <Button data-testid="holiday-save-button" color="success" type="submit" className="btn-label">
                     {" "}
                     <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>{" "}
                     Save{" "}

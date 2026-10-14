@@ -6,6 +6,12 @@ import { setCustomForm } from "../../redux/reducers/ChildReducer/CustomFormReduc
 import { custom_form_component_name } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../meta/SetLocalStorageData";
+import {
+  ApvActive,
+  ApvChip,
+  ApvReason,
+  ApvTitle,
+} from "../../component/common/approval/ApprovalCells";
 
 const CustomFormTable = () => {
   const dispatch = useDispatch();
@@ -37,35 +43,32 @@ const CustomFormTable = () => {
       Header: "Name",
       filterable: false,
       id: "name",
-      accessor: (obj) => <b>{obj.name}</b>,
+      accessor: (obj) => (
+        <ApvTitle icon="ri-survey-line" title={obj.name} tone="info" />
+      ),
     },
     {
       Header: "Description",
-      accessor: "description",
       filterable: false,
       id: "description",
+      accessor: (obj) => <ApvReason text={obj.description} />,
     },
     {
       Header: "Fields",
       filterable: false,
       id: "fields",
-      accessor: (obj) => <b>{obj.schema?.length || 0}</b>,
+      accessor: (obj) => {
+        const n = obj.schema?.length || 0;
+        return (
+          <ApvChip icon="ri-list-check">{`${n} ${n === 1 ? "Field" : "Fields"}`}</ApvChip>
+        );
+      },
     },
     {
       Header: "Status",
       id: "status",
       filterable: false,
-      accessor: (obj) => {
-        let status = obj.status ? "Active" : "Inactive";
-        let statusClass = obj.status ? "success" : "danger";
-        return (
-          <span
-            className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-          >
-            {status}
-          </span>
-        );
-      },
+      accessor: (obj) => <ApvActive active={obj.status} />,
     },
   ];
 

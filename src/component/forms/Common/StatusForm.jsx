@@ -1,540 +1,192 @@
-import React, { useState, useEffect } from "react";
-
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
-import { Col, Form, FormFeedback, Input, Label, Row, Button } from "reactstrap";
-
-import Select from "react-select";
-
-import { setStatus } from "../../../redux/reducers/ChildReducer/StatusReducer";
-
-import { loadAnimation } from "lottie-web";
-
-import { defineElement } from "lord-icon-element";
-
-import { toast } from "react-toastify";
-
-import { toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
-
-import { useFormik } from "formik";
-
+import { useForm, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import * as Yup from "yup";
-
-import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
-
+import { toast } from "react-toastify";
+import { loadAnimation } from "lottie-web";
+import { defineElement } from "lord-icon-element";
+import LabelOutlinedIcon from "@mui/icons-material/LabelOutlined";
+import { setStatus } from "../../../redux/reducers/ChildReducer/StatusReducer";
+import { toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
 import { PostApi } from "../../../common/api/PostApi";
-
 import { PutApi } from "../../../common/api/PutApi";
-
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
+import SidebarFormLayout from "../../../shared/ui/SidebarFormLayout";
+import { FormSection, FormSwitch, FormTextField } from "../../../shared/ui/form";
+import ColorPickerField, { DEFAULT_COLOR, isBlackOrWhite } from "./ColorPickerField";
 
 defineElement(loadAnimation);
 
-const BLOCKED_COLORS = new Set([
-  "black", "#000", "#000000", "rgb(0,0,0)", "rgba(0,0,0,1)",
-  "white", "#fff", "#ffffff", "rgb(255,255,255)", "rgba(255,255,255,1)",
-]);
+const NAME_MAX = 50;
+const COLOR_MAX = 25;
+const DESCRIPTION_MAX = 200;
+const NAME_CHARS = /[^a-zA-Z0-9\s.,\-&()']/g;
+const COLOR_CHARS = /[^a-zA-Z0-9\s.,\-&()'#]/g;
+const DESCRIPTION_CHARS = /[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g;
 
-const isBlackOrWhite = (value) => {
-  if (!value) return false;
-  const normalized = value.trim().toLowerCase().replace(/\s+/g, "");
-  return BLOCKED_COLORS.has(normalized);
-};
+const schema = Yup.object({
+  name: Yup.string()
+    .matches(
+      /^[a-zA-Z0-9\s.,\-&()']+$/,
+      "Status name can only contain letters, numbers, spaces, and . , - & ( ) '",
+    )
+    .required("Please Enter the status name")
+    .min(1, "Please Enter the status name")
+    .max(NAME_MAX, "Status name is too long. Please keep it within 50 characters.")
+    .test(
+      "not-only-spaces",
+      "Please Enter the status name",
+      (value) => !value || value.trim().length > 0,
+    ),
+  color: Yup.string()
+    .trim()
+    .required("Please enter a value or select a color.")
+    .max(COLOR_MAX, "Color value must not exceed 25 characters.")
+    .test(
+      "not-black-or-white",
+      "Black and white are not allowed as a status color.",
+      (value) => !isBlackOrWhite(value),
+    ),
+  description: Yup.string()
+    .trim()
+    .matches(
+      /^[a-zA-Z0-9\s.,!?'"_\-()&:;/]*$/,
+      "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; /",
+    )
+    .max(DESCRIPTION_MAX, "Description is too long. Please keep it within 200 characters."),
+  status: Yup.boolean(),
+});
 
-const isValidHex = (value) =>
-  !!value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value.trim());
-
-const getSwatchColor = (value) => {
-  if (!isValidHex(value)) return "#0b94a7";
-  if (isBlackOrWhite(value)) return "#0b94a7";
-  return value;
-};
+const toFormValues = (obj) => ({
+  name: obj?.name || "",
+  color: isBlackOrWhite(obj?.color) ? DEFAULT_COLOR : obj?.color || DEFAULT_COLOR,
+  description: obj?.description || "",
+  status: obj?.status !== undefined ? obj.status : true,
+});
 
 const StatusForm = () => {
   const dispatch = useDispatch();
-
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const statusId = form_obj?.id || 0;
 
-  // ================= STATE =================
-  const [statusData, setStatusData] = useState({
-    id: 0,
-    name: "",
-    color: "#0b94a7",
-    description: "",
-    status: true,
+  const { control, handleSubmit, reset } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
   });
 
-   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
-  
-    const [lengthErrors, setLengthErrors] = useState({
-      name: "",
-      color: "",
-      description: "",
-    });
-
-  // ================= EDIT DATA =================
   useEffect(() => {
-    if (form_obj) {
-      setStatusData({
-        id: form_obj.id || 0,
-        name: form_obj.name || "",
-        // color: form_obj.color || "#0b94a7",
-        color: isBlackOrWhite(form_obj.color)
-        ? "#0b94a7"
-        : (form_obj.color || "#0b94a7"),
-        description: form_obj.description || "",
-        status: form_obj.status !== undefined ? form_obj.status : true,
-      });
-      setHasAttemptedSubmit(false);
-      setLengthErrors({ name: "", color: "", description: "" });
-    }
-  }, [form_obj]);
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset]);
 
-  // ================= INPUT CHANGE =================
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+  const status = useWatch({ control, name: "status" });
 
-    // const inputValue =
-    //   name === "name" ? value.replace(/[^a-zA-Z\s\-_]/g, "") : value;
+  const onSubmit = async (values) => {
+    setIsSubmitting(true);
 
-    let inputValue = value;
+    try {
+      const isEdit = statusId && Number(statusId) !== 0;
+      const payload = {
+        id: statusId,
+        ...values,
+        name: values.name.trim(),
+      };
 
-    if (name === "name") {
-      inputValue = value
-        .replace(/^\s+/, "")
-        .replace(/[^a-zA-Z0-9\s.,\-&()']/g, "");
+      const response = isEdit
+        ? await PutApi("task-status/", payload, false)
+        : await PostApi("task-status/", payload, false);
 
-      // if (inputValue.length > 50) {
-      //   FormikForm.setFieldError(
-      //     "name",
-      //     "Status name is too long. Please keep it within 50 characters.",
-      //   );
-      // } else {
-      //   FormikForm.setFieldError("name", undefined);
-      // }
-      if (inputValue.length > 50) {
-        setLengthErrors((prev) => ({
-          ...prev,
-          name: "Priority name is too long. Please keep it within 50 characters.",
-        }));
-      } else {
-        setLengthErrors((prev) => ({ ...prev, name: "" }));
-      }
-    }
+      if (response?.status === 200 || response?.status === 201) {
+        const responseData = response?.data?.data || response?.data;
 
-    if (name === "color") {
-      inputValue = value
-      .replace(/^\s+/, "")
-      .replace(/[^a-zA-Z0-9\s.,\-&()'#]/g, "");
-      if (inputValue.length > 25) {
-        setLengthErrors((prev) => ({
-          ...prev,
-          color: "Color value must not exceed 25 characters.",
-        }));
-      } else if (isBlackOrWhite(inputValue)) {
-        setLengthErrors((prev) => ({
-          ...prev,
-          color: "Black and white are not allowed as a status color.",
-        }));
-      } else {
-        setLengthErrors((prev) => ({ ...prev, color: "" }));
-      }
-    }
-
-    if (name === "description") {
-      inputValue = value
-        .replace(/^\s+/, "")
-        .replace(/[^a-zA-Z0-9\s.,!?'"_\-()&:;/]/g, "");
-
-      if (inputValue.length > 200) {
-      //   FormikForm.setFieldError(
-      //     "description",
-      //     "Description is too long. Please keep it within 200 characters.",
-      //   );
-      // } else {
-      //   FormikForm.setFieldError("description", undefined);
-      // }
-        setLengthErrors((prev) => ({
-            ...prev,
-            description: "Description is too long. Please keep it within 200 characters.",
-          }));
-        } else {
-          setLengthErrors((prev) => ({ ...prev, description: "" }));
+        if (!responseData?.id) {
+          toast.error("Invalid API Response");
+          setIsSubmitting(false);
+          return;
         }
+
+        const oldStatus = GetLocalStorageData("task_status") || [];
+        let updatedStatus = [];
+
+        if (isEdit) {
+          updatedStatus = oldStatus.map((item) =>
+            Number(item.id) === Number(responseData.id) ? responseData : item,
+          );
+          SetLocalStorage("task_status", updatedStatus, 1);
+        } else {
+          updatedStatus = [...oldStatus, responseData];
+          SetLocalStorage("task_status", updatedStatus, 1);
+        }
+
+        dispatch(setStatus(updatedStatus));
+        toast.success(response?.data?.message || "Status Saved Successfully");
+        dispatch(toggleRSBView(false));
+      } else {
+        toast.error(
+          response?.data?.error_message || response?.data?.detail || "Something went wrong!",
+        );
+      }
+    } catch (error) {
+      console.log("ERROR =", error);
+      toast.error("API Error");
     }
 
-    setStatusData((prev) => ({
-      ...prev,
-      [name]: inputValue,
-    }));
-
-    FormikForm.setFieldValue(name, inputValue);
-
-    // if (FormikForm.touched[name]) {
-    if (hasAttemptedSubmit) {
-      FormikForm.validateField(name);
-    }
+    setIsSubmitting(false);
   };
 
-  // ================= FORMIK =================
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-
-    initialValues: statusData,
-
-    validationSchema: Yup.object({
-      name: Yup.string()
-        .matches(
-          /^[a-zA-Z0-9\s.,\-&()']+$/,
-          "Status name can only contain letters, numbers, spaces, and . , - & ( ) '",
-        )
-        .required("Please Enter the status name")
-        .min(1, "Please Enter the status name")
-        .max(
-          50,
-          "Status name is too long. Please keep it within 50 characters.",
-        )
-        .test(
-          "not-only-spaces",
-          "Please Enter the status name",
-          (value) => !value || value.trim().length > 0,
-        ),
-
-      color: Yup.string()
-        .trim()
-        .required("Please enter a value or select a color.")
-        .max(25, "Color value must not exceed 25 characters.")
-        .test(
-          "not-black-or-white",
-          "Black and white are not allowed as a status color.",
-          (value) => !isBlackOrWhite(value),
-        ),
-
-      description: Yup.string()
-        .trim()
-        .matches(
-          /^[a-zA-Z0-9\s.,!?'"_\-()&:;/]*$/,
-          "Description can contain only alphabets, numbers, spaces, and . , ! ? \" ' - _ ( ) & : ; /",
-        )
-        .max(
-          200,
-          "Description is too long. Please keep it within 200 characters.",
-        ),
-    }),
-
-    validateOnMount: false,
-    validateOnBlur: false,
-    validateOnChange: false,
-
-    // ================= SUBMIT =================
-    onSubmit: async () => {
-      const trimmedName = statusData.name?.trim();
-
-      if (!trimmedName) {
-        FormikForm.setFieldTouched("name", true);
-        FormikForm.setFieldError("name", "Please Enter the status name");
-        return;
-      }
-
-      if (trimmedName.length > 50) {
-        FormikForm.setFieldTouched("name", true);
-        FormikForm.setFieldError(
-          "name",
-          "Status name is too long. Please keep it within 50 characters.",
-        );
-        return;
-      }
-
-      if (statusData.description && statusData.description.length > 200) {
-        FormikForm.setFieldTouched("description", true);
-        FormikForm.setFieldError(
-          "description",
-          "Description is too long. Please keep it within 200 characters.",
-        );
-        return;
-      }
-
-      if (!statusData.color?.trim()) {
-        FormikForm.setFieldTouched("color", true);
-        FormikForm.setFieldError(
-          "color",
-          "Please enter a value or select a color.",
-        );
-        return;
-      }
-
-      if (statusData.color.length > 25) {
-        FormikForm.setFieldTouched("color", true);
-        FormikForm.setFieldError(
-          "color",
-          "Color value must not exceed 25 characters.",
-        );
-        return;
-      }
-
-      if (isBlackOrWhite(statusData.color)) {
-        FormikForm.setFieldTouched("color", true);
-        FormikForm.setFieldError(
-          "color",
-          "Black and white are not allowed as a status color.",
-        );
-        return;
-      }
-
-      dispatch(setLoaderVisible(true));
-
-      try {
-        const isEdit = statusData?.id && Number(statusData.id) !== 0;
-
-        const payload = {
-          ...statusData,
-          name: trimmedName,
-        };
-
-        // ================= API =================
-        const response = isEdit
-          ? await PutApi("task-status/", payload, false)
-          : await PostApi("task-status/", payload, false);
-
-        console.log("FULL API RESPONSE =", response);
-
-        // ================= SUCCESS =================
-        if (response?.status === 200 || response?.status === 201) {
-          // IMPORTANT FIX
-          const responseData = response?.data?.data || response?.data;
-
-          console.log("RESPONSE DATA =", responseData);
-
-          if (!responseData?.id) {
-            toast.error("Invalid API Response");
-            dispatch(setLoaderVisible(false));
-            return;
-          }
-
-          // ================= OLD LOCAL =================
-          const oldStatus = GetLocalStorageData("task_status") || [];
-
-          let updatedStatus = [];
-
-          // ================= EDIT =================
-          if (isEdit) {
-            updatedStatus = oldStatus.map((item) =>
-              Number(item.id) === Number(responseData.id) ? responseData : item,
-            );
-            SetLocalStorage("task_status", updatedStatus, 1);
-          }
-
-          // ================= ADD =================
-          else {
-            updatedStatus = [...oldStatus, responseData];
-            SetLocalStorage("task_status", updatedStatus, 1);
-          }
-
-          // ================= REDUX =================
-          dispatch(setStatus(updatedStatus));
-
-          // ================= SUCCESS =================
-          toast.success(response?.data?.message || "Status Saved Successfully");
-
-          dispatch(toggleRSBView(false));
-        } else {
-          toast.error(
-            response?.data?.error_message ||
-              response?.data?.detail ||
-              "Something went wrong!",
-          );
-        }
-      } catch (error) {
-        console.log("ERROR =", error);
-
-        toast.error("API Error");
-      }
-
-      dispatch(setLoaderVisible(false));
-    },
-  });
-
-  const showError = (field) =>
-    !!lengthErrors[field] || (hasAttemptedSubmit && !!FormikForm.errors[field]);
-  const getErrorMessage = (field) => lengthErrors[field] || FormikForm.errors[field];
-  
-
   return (
-    <React.Fragment>
-      <Row>
-        <Col xl={40}>
-          {/* <Form onSubmit={FormikForm.handleSubmit}> */}
-          <Form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setHasAttemptedSubmit(true);
-              FormikForm.handleSubmit(e);
-            }}
-          >
-            <Row>
-              {/* STATUS NAME */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label className="form-label">Status Name *</Label>
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      isSubmitting={isSubmitting}
+      submitLabel={statusId > 0 ? "Update" : "Save"}
+    >
+      <FormSection title="Details">
+        <FormTextField
+          name="name"
+          control={control}
+          label="Status name"
+          placeholder="Status Name"
+          required
+          autoFocus
+          maxLength={NAME_MAX}
+          sanitize={(v) => v.replace(/^\s+/, "").replace(NAME_CHARS, "")}
+          startIcon={<LabelOutlinedIcon fontSize="small" color="action" />}
+        />
+        <ColorPickerField
+          name="color"
+          control={control}
+          label="Color"
+          required
+          placeholder="e.g. lightgreen or #90ee90"
+          helperText='Pick or type a color name / hex code. Invalid values will default to blue ("#0b94a7").'
+          maxLength={COLOR_MAX}
+          sanitize={(v) => v.replace(/^\s+/, "").replace(COLOR_CHARS, "")}
+        />
+        <FormTextField
+          name="description"
+          control={control}
+          label="Description"
+          placeholder="Description (Optional)"
+          multiline
+          minRows={3}
+          maxRows={6}
+          maxLength={DESCRIPTION_MAX}
+          sanitize={(v) => v.replace(/^\s+/, "").replace(DESCRIPTION_CHARS, "")}
+        />
+      </FormSection>
 
-                  <Input
-                    type="text"
-                    name="name"
-                    className="form-control"
-                    placeholder="Status Name"
-                    value={statusData.name}
-                    onChange={handleInputChange}
-                    onBlur={FormikForm.handleBlur}
-                    // invalid={
-                    //   // FormikForm.touched.name &&
-                    //   !!FormikForm.errors.name
-                    // }
-                    invalid={showError("name")}
-                  />
-
-                  <FormFeedback>{getErrorMessage("name")}</FormFeedback>
-                </div>
-              </Col>
-
-              {/* COLOR */}
-              <Col md={12} lg={12} xxl={12}>
-                <div className="mb-3">
-                  <Label htmlFor="color" className="form-label">
-                    Color
-                  </Label>
-                  <div className="d-flex align-items-center gap-3">
-                    <Input
-                      type="color"
-                      name="color"
-                      id="color_picker"
-                      style={{
-                        width: 48,
-                        height: 38,
-                        padding: 2,
-                        cursor: "pointer",
-                      }}
-                      // value={statusData.color || "#0b94a7"}
-                      value={getSwatchColor(statusData.color)}
-                      // onChange={(e) =>
-                      //   setStatusData((prev) => ({
-                      //     ...prev,
-                      //     color: e.target.value,
-                      //   }))
-                      // }
-                      onChange={(e) => {
-                        const picked = e.target.value;
-                        if (isBlackOrWhite(picked)) {
-                          setLengthErrors((prev) => ({
-                            ...prev,
-                            color: "Black and white are not allowed as a status color.",
-                          }));
-                        } else {
-                          setLengthErrors((prev) => ({ ...prev, color: "" }));
-                        }
-                        setStatusData((prev) => ({ ...prev, color: picked }));
-                      }}
-                    />
-                    <Input
-                      type="text"
-                      name="color"
-                      id="color"
-                      className="form-control"
-                      placeholder="e.g. lightgreen or #90ee90"
-                      value={statusData.color || ""}
-                      onChange={handleInputChange}
-                      onBlur={FormikForm.handleBlur}
-                      // invalid={
-                      //   // FormikForm.touched.color &&
-                      //   !!FormikForm.errors.color
-                      // }
-                      invalid={showError("color")}
-                    />
-                  </div>
-                  {/* <div className="form-text">
-                    Pick or type a color name / hex code. Invalid values will default to black (#000000).
-                  </div> */}
-
-                  {showError("color") ? (
-                    <FormFeedback type="invalid" style={{ display: "block" }}>
-                      {getErrorMessage("color")}
-                    </FormFeedback>
-                  ) : (
-                    <div className="form-text">
-                      Pick or type a color name / hex code. Invalid values will
-                      default to blue ("#0b94a7").
-                    </div>
-                  )}
-                </div>
-              </Col>
-
-              {/* DESCRIPTION */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label className="form-label">Description</Label>
-
-                  <Input
-                    type="textarea"
-                    name="description"
-                    className="form-control"
-                    value={statusData.description || ""}
-                    onChange={handleInputChange}
-                    invalid={showError("description")}
-                  />
-                  {showError("description") ? (
-                    <FormFeedback type="invalid">
-                      {getErrorMessage("description")}
-                    </FormFeedback>
-                  ) : (
-                    <div className="form-text">Description (Optional).</div>
-                  )}
-                </div>
-              </Col>
-
-              {statusData?.id > 0 && (
-                <Col md={12}>
-                  <div>
-                    <Label htmlFor="status_toggle" className="form-label">
-                      Status
-                    </Label>
-
-                    <div className="mb-2">
-                      <div
-                        className="form-check form-switch form-switch-md form-switch-success"
-                        dir="ltr"
-                      >
-                        <Input
-                          type="checkbox"
-                          className="form-check-input form-switch-md"
-                          id="status_toggle"
-                          checked={statusData.status || false}
-                          onChange={(e) =>
-                            setStatusData((prev) => ({
-                              ...prev,
-                              status: e.target.checked,
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Col>
-              )}
-
-              {/* SAVE */}
-              <Col lg={12}>
-                <div className="text-end">
-                  <Button color="success" className="btn-label" type="submit">
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2"></i>
-                    Save
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+      {statusId > 0 && (
+        <FormSwitch
+          name="status"
+          control={control}
+          label="Status"
+          description={status ? "Active" : "Inactive"}
+        />
+      )}
+    </SidebarFormLayout>
   );
 };
 

@@ -1,6 +1,20 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { Col, Form, FormFeedback, Input, Label, Row, Button } from "reactstrap";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import dayjs from "dayjs";
+import {
+  Autocomplete,
+  Chip,
+  Grid,
+  InputAdornment,
+  TextField,
+} from "@mui/material";
+import { DateTimePicker as MuiDateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import withFieldClickOpen from "../../../shared/ui/form/withFieldClickOpen";
+import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import {
   addTask,
   editTask,
@@ -10,32 +24,35 @@ import {
 } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
 import { toast } from "react-toastify";
 import { toggleRSBView } from "../../../redux/reducers/ChildReducer/RightSideBarReducer";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../../common/api/PostApi";
 import { PutApi } from "../../../common/api/PutApi";
 import { loadAnimation } from "lottie-web";
 import { defineElement } from "lord-icon-element";
-import Select from "react-select";
-import AsyncSelect from "react-select/async";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { SetLocalStorage } from "../../../meta/SetLocalStorageData";
-import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
 import { Api } from "../../../common/api/Api";
+import { DateTimeFormat } from "../../../common/constant/Constants";
+import SidebarFormLayout from "../../../shared/ui/SidebarFormLayout";
+import {
+  EmployeeAvatar,
+  renderEmployeeOption,
+} from "../employee/EmployeeOption";
+import {
+  FormAutocomplete,
+  FormSection,
+  FormSwitch,
+  FormTextField,
+  FormToggleGroup,
+} from "../../../shared/ui/form";
 
 defineElement(loadAnimation);
 
-// ─── Shared react-select styles (red border on validation error) ──────────────
-const selectStyles = (touched, error) => ({
-  control: (provided, state) => ({
-    ...provided,
-    borderColor:
-      !state.isFocused && touched && error
-        ? "red !important"
-        : provided.borderColor,
-  }),
-});
+const DateTimePicker = withFieldClickOpen(MuiDateTimePicker);
+
+const TITLE_MAX = 100;
+const DESCRIPTION_MAX = 500;
+const TITLE_CHARS = /[^A-Za-z0-9\s.,&()'-]/g;
+const DESCRIPTION_CHARS = /[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g;
 
 // ─── Related To options ───────────────────────────────────────────────────────
 const relatedToOptions = [
@@ -73,6 +90,87 @@ const defaultTaskData = {
   client_location: null, // ✅ NEW FIELD
 };
 
+const schema = Yup.object({
+  title: Yup.string()
+    .trim()
+    .matches(/^[A-Za-z0-9\s.,&()'-]+$/, "Task Title contains invalid characters")
+    .required("Please enter a valid task title.")
+    .test(
+      "task-title-length",
+      "Task Title cannot exceed 100 characters",
+      (value) => !value || value.length <= TITLE_MAX,
+    ),
+  related_to: Yup.string().required("Please Select Related To"),
+  assigned_to: Yup.number().nullable().required("Please Select Assigned To"),
+  points: Yup.string()
+    .required("Please Select Points")
+    .oneOf(["1", "2", "3", "4", "5"], "Please Select a valid Points value"),
+  task_status: Yup.number().nullable().required("Please Select Task Status"),
+  task_priority: Yup.number()
+    .nullable()
+    .required("Please Select Task Priority"),
+  end_time: Yup.string()
+    .nullable()
+    .test(
+      "end-after-start",
+      "Deadline cannot be before the start date.",
+      function (value) {
+        const { start_time } = this.parent;
+        if (!value || !start_time) return true;
+        return new Date(value) >= new Date(start_time);
+      },
+    ),
+  description: Yup.string()
+    .trim()
+    .matches(
+      /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
+      "Description contains invalid characters",
+    )
+    .test(
+      "description-length",
+      "Description cannot exceed 500 characters",
+      (value) => !value || value.length <= DESCRIPTION_MAX,
+    ),
+  // ✅ NEW: required only when related_to === "client" and requires_field_visit is checked
+  client_location: Yup.number()
+    .nullable()
+    .when(["related_to", "requires_field_visit"], {
+      is: (related_to, requires_field_visit) =>
+        related_to === "client" && !!requires_field_visit,
+      then: (schema) => schema.required("Please Select Client Location"),
+      otherwise: (schema) => schema.notRequired(),
+    }),
+});
+
+// ─── form_obj -> task state (create, edit, or "add from project page") ───────
+const toTaskData = (form_obj) => {
+  if (form_obj && Object.keys(form_obj).length > 0 && form_obj.id) {
+    return {
+      ...defaultTaskData,
+      ...form_obj,
+      related_to: form_obj.related_to || "custom",
+      points: form_obj.points ? String(form_obj.points) : "1",
+      collaborators_id_list: form_obj.collaborators_id_list || [],
+      collaborator_details: form_obj.collaborator_details || [],
+      requires_field_visit: !!form_obj.requires_field_visit, // ✅ NEW FIELD
+      // ✅ API returns client_location as a full object ({id, type, type_id, name, ...})
+      // when editing, but we only ever store/send the plain id internally.
+      client_location:
+        form_obj.client_location && typeof form_obj.client_location === "object"
+          ? (form_obj.client_location.id ?? null)
+          : (form_obj.client_location ?? null),
+    };
+  }
+  if (form_obj && form_obj.project) {
+    return {
+      ...defaultTaskData,
+      related_to: "project",
+      project: Number(form_obj.project),
+    };
+  }
+  return defaultTaskData;
+};
+
 // ─── Build employee option object (normalised shape) ─────────────────────────
 const buildEmployeeOption = (emp) => ({
   ...emp,
@@ -84,11 +182,89 @@ const buildEmployeeOption = (emp) => ({
     `Employee ${emp.id}`,
 });
 
+const employeeOptionLabel = (o) =>
+  o?.label ? `${o.label}${o.emp_id ? ` - ${o.emp_id}` : ""}` : "";
+
+// ISO string <-> dayjs for the date-time pickers
+const toPickerValue = (isoStr) => {
+  if (!isoStr) return null;
+  const d = dayjs(isoStr);
+  return d.isValid() ? d : null;
+};
+const fromPickerValue = (value) =>
+  value && value.isValid()
+    ? value.second(0).millisecond(0).toDate().toISOString()
+    : "";
+
 const TaskListForm = () => {
   const dispatch = useDispatch();
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [taskData, setTaskData] = useState(defaultTaskData);
+  const baseTaskData = useMemo(() => toTaskData(form_obj), [form_obj]);
+
+  const { control, handleSubmit, reset, setValue, watch } = useForm({
+    resolver: yupResolver(schema, undefined, { raw: true }),
+    mode: "onTouched",
+    defaultValues: baseTaskData,
+  });
+
+  useEffect(() => {
+    reset(baseTaskData);
+  }, [baseTaskData, reset]);
+
+  // User-driven dependent resets (not triggered by reset()/setValue()).
+  useEffect(() => {
+    const subscription = watch((values, { name, type }) => {
+      if (type !== "change") return;
+      if (name === "related_to") {
+        const nextRelatedTo = values.related_to;
+        setValue("project", null);
+        setValue("client", null);
+        // ✅ reset the toggle + location whenever we leave "client"
+        if (nextRelatedTo !== "client") {
+          setValue("requires_field_visit", false);
+          setValue("client_location", null);
+        }
+      } else if (name === "client") {
+        // ✅ location options depend on client, reset selection
+        setValue("client_location", null);
+      } else if (name === "requires_field_visit" && !values.requires_field_visit) {
+        // ✅ clear location if the toggle is switched off
+        setValue("client_location", null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setValue]);
+
+  const [
+    relatedTo,
+    project,
+    client,
+    requiresFieldVisit,
+    taskStatus,
+    taskPriority,
+    startTime,
+    endTime,
+    status,
+    collaboratorIds,
+    collaboratorDetails,
+  ] = useWatch({
+    control,
+    name: [
+      "related_to",
+      "project",
+      "client",
+      "requires_field_visit",
+      "task_status",
+      "task_priority",
+      "start_time",
+      "end_time",
+      "status",
+      "collaborators_id_list",
+      "collaborator_details",
+    ],
+  });
 
   // ─── Initial collaborator options from localStorage ───────────────────────
   const buildDefaultCollaboratorOptions = useCallback(() => {
@@ -130,7 +306,7 @@ const TaskListForm = () => {
       .filter((c) => c.value !== undefined && c.value !== null);
   };
 
-   // ✅ Client locations come from the selected client's entity_location_details
+  // ✅ Client locations come from the selected client's entity_location_details
   // (saved by ClientForm -> Add Location). Falls back to "entity_locations".
   const buildClientLocationOptions = (clientId) => {
     if (clientId === null || clientId === undefined || clientId === "")
@@ -155,7 +331,8 @@ const TaskListForm = () => {
       .map((l) => {
         const id = l.id;
         const address = l.address || l.accurate_address || "";
-        const label = [l.name, address].filter(Boolean).join(", ") || `Location ${id}`;
+        const label =
+          [l.name, address].filter(Boolean).join(", ") || `Location ${id}`;
         return { ...l, id, value: id, label };
       })
       .filter((l) => l.value !== undefined && l.value !== null);
@@ -164,21 +341,21 @@ const TaskListForm = () => {
   const buildTaskStatusOptions = () => {
     const list = GetLocalStorageData("task_status") || [];
     return list
-      .filter((s) => s.status !== false || s.id === taskData.task_status)
+      .filter((s) => s.status !== false || s.id === taskStatus)
       .map((s) => ({ ...s, value: s.id, label: s.name || s.title }));
   };
 
   const buildTaskPriorityOptions = () => {
     const list = GetLocalStorageData("task_priority") || [];
     return list
-      .filter((p) => p.status !== false || p.id === taskData.task_priority)
+      .filter((p) => p.status !== false || p.id === taskPriority)
       .map((p) => ({ ...p, value: p.id, label: p.name }));
   };
 
   const employeeOptions = buildEmployeeOptions();
   const projectOptions = buildProjectOptions();
   const clientOptions = buildClientOptions();
-  const clientLocationOptions = buildClientLocationOptions(taskData.client); // ✅ NEW
+  const clientLocationOptions = buildClientLocationOptions(client); // ✅ NEW
   const taskStatusOptions = buildTaskStatusOptions();
   const taskPriorityOptions = buildTaskPriorityOptions();
 
@@ -204,263 +381,35 @@ const TaskListForm = () => {
     [buildDefaultCollaboratorOptions],
   );
 
-  // ─── Sync form_obj into local state ──────────────────────────────────────
+  const [collaboratorInput, setCollaboratorInput] = useState("");
+  const [collaboratorOptions, setCollaboratorOptions] = useState(
+    buildDefaultCollaboratorOptions,
+  );
+  const [collaboratorsLoading, setCollaboratorsLoading] = useState(false);
+
   useEffect(() => {
-    if (form_obj && Object.keys(form_obj).length > 0 && form_obj.id) {
-      setTaskData({
-        ...defaultTaskData,
-        ...form_obj,
-        related_to: form_obj.related_to || "custom",
-        points: form_obj.points ? String(form_obj.points) : "1",
-        collaborators_id_list: form_obj.collaborators_id_list || [],
-        collaborator_details: form_obj.collaborator_details || [],
-        requires_field_visit: !!form_obj.requires_field_visit, // ✅ NEW FIELD
-        // ✅ API returns client_location as a full object ({id, type, type_id, name, ...})
-        // when editing, but we only ever store/send the plain id internally.
-        client_location:
-          form_obj.client_location &&
-          typeof form_obj.client_location === "object"
-            ? (form_obj.client_location.id ?? null)
-            : (form_obj.client_location ?? null),
-      });
-    } else if (form_obj && form_obj.project) {
-      setTaskData({
-        ...defaultTaskData,
-        related_to: "project",
-        project: Number(form_obj.project),
-      });
-    } else {
-      setTaskData(defaultTaskData);
-    }
-  }, [form_obj]);
+    let active = true;
+    setCollaboratorsLoading(true);
+    loadCollaboratorOptions(collaboratorInput).then((options) => {
+      if (!active) return;
+      setCollaboratorOptions(options);
+      setCollaboratorsLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [collaboratorInput, loadCollaboratorOptions]);
 
-  const handleInputChange = (e) => {
-    const { name } = e.target;
-    let value = e.target.value;
-
-    if (name === "title") {
-      value = value.replace(/[^A-Za-z0-9\s.,&()'-]/g, "");
-    } else if (name === "description") {
-      value = value.replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;/]/g, "");
-    }
-
-    setTaskData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    FormikForm.setFieldValue(name, value);
-    FormikForm.setFieldTouched(name, true, false);
-
-    if (name === "title") {
-      if (value.length > 100) {
-        FormikForm.setFieldError(
-          "title",
-          "Task Title cannot exceed 100 characters",
-        );
-      } else {
-        FormikForm.setFieldError("title", undefined);
-      }
-    }
-
-    if (name === "description") {
-      if (value.length > 500) {
-        FormikForm.setFieldError(
-          "description",
-          "Description cannot exceed 500 characters",
-        );
-      } else {
-        FormikForm.setFieldError("description", undefined);
-      }
-    }
-
-    if (FormikForm.touched[name]) {
-      FormikForm.validateField(name);
-    }
-  };
-
-  // ─── Formik ──────────────────────────────────────────────────────────────
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: taskData,
-    validationSchema: Yup.object({
-      title: Yup.string()
-        .trim()
-        .matches(
-          /^[A-Za-z0-9\s.,&()'-]+$/,
-          "Task Title contains invalid characters",
-        )
-        .required("Please enter a valid task title.")
-        .test(
-          "task-title-length",
-          "Task Title cannot exceed 100 characters",
-          (value) => !value || value.length <= 100,
-        ),
-      related_to: Yup.string().required("Please Select Related To"),
-      assigned_to: Yup.number()
-        .nullable()
-        .required("Please Select Assigned To"),
-      points: Yup.string()
-        .required("Please Select Points")
-        .oneOf(["1", "2", "3", "4", "5"], "Please Select a valid Points value"),
-      task_status: Yup.number()
-        .nullable()
-        .required("Please Select Task Status"),
-
-      task_priority: Yup.number()
-        .nullable()
-        .required("Please Select Task Priority"),
-      end_time: Yup.string()
-        .nullable()
-        .test(
-          "end-after-start",
-          "Deadline cannot be before the start date.",
-          function (value) {
-            const { start_time } = this.parent;
-            if (!value || !start_time) return true;
-            return new Date(value) >= new Date(start_time);
-          },
-        ),
-      description: Yup.string()
-        .trim()
-        .matches(
-          /^[A-Za-z0-9\s.,!?'"\-_()&:;/]*$/,
-          "Description contains invalid characters",
-        )
-        .test(
-          "description-length",
-          "Description cannot exceed 500 characters",
-          (value) => !value || value.length <= 500,
-        ),
-      // ✅ NEW: required only when related_to === "client" and requires_field_visit is checked
-      client_location: Yup.number()
-        .nullable()
-        .when(["related_to", "requires_field_visit"], {
-          is: (related_to, requires_field_visit) =>
-            related_to === "client" && !!requires_field_visit,
-          then: (schema) => schema.required("Please Select Client Location"),
-          otherwise: (schema) => schema.notRequired(),
-        }),
-    }),
-
-    onSubmit: async () => {
-      const trimmedTitle = taskData.title.trim();
-
-      if (!trimmedTitle) {
-        FormikForm.setFieldTouched("title", true);
-        FormikForm.setFieldError("title", "Please enter a valid task title.");
-        return;
-      }
-      dispatch(setLoaderVisible(true));
-
-      try {
-        const isEdit = !!(taskData?.id && taskData.id !== 0);
-
-        const needsFieldVisit =
-          taskData.related_to === "client" && !!taskData.requires_field_visit;
-
-        const payload = {
-          title: trimmedTitle,
-          description: taskData.description || "",
-          related_to: taskData.related_to,
-          project:
-            taskData.related_to === "project" ? taskData.project || null : null,
-          client:
-            taskData.related_to === "client" ? taskData.client || null : null,
-          points: taskData.points || null,
-          assigned_to: taskData.assigned_to || null,
-          collaborators_id_list: taskData.collaborators_id_list || [],
-          task_status: taskData.task_status || null,
-          task_priority: taskData.task_priority || null,
-          start_time: taskData.start_time || null,
-          end_time: taskData.end_time || null,
-          status: taskData.status,
-          // ✅ NEW FIELD — only meaningful (and only ever true) for Client tasks
-          requires_field_visit: needsFieldVisit,
-          // ✅ NEW FIELD — id only, sent only when a field visit is required
-          client_location: needsFieldVisit
-            ? taskData.client_location || null
-            : null,
-        };
-
-        if (isEdit) payload.id = taskData.id;
-
-        // ── Optimistic update for edit ──────────────────────────────────────
-        if (isEdit) {
-          dispatch(editTask({ ...taskData, ...payload }));
-        }
-
-        const response = isEdit
-          ? await PutApi(`task/`, payload, false)
-          : await PostApi("task/", payload, false);
-
-        if (response?.status === 200 || response?.status === 201) {
-          const responseData = response?.data?.data?.task_data;
-
-          if (responseData) {
-            dispatch(isEdit ? editTask(responseData) : addTask(responseData));
-
-            // ✅ Immediately sync project progress in Redux
-            // API returns updated task_status_details inside project_data on every task save
-            const projectData = response?.data?.data?.project_data;
-            if (projectData) {
-              dispatch(editProject(projectData));
-            }
-
-            // ── Sync localStorage ─────────────────────────────────────────
-            const oldTasks = GetLocalStorageData("tasks") || [];
-            const updatedTasks = isEdit
-              ? oldTasks.map((item) =>
-                  item.id === responseData.id ? responseData : item,
-                )
-              : [...oldTasks, responseData];
-            SetLocalStorage("tasks", updatedTasks, 1);
-          }
-
-          toast.success(response?.data?.message || "Saved successfully");
-          dispatch(toggleRSBView(false));
-        } else {
-          // ── Revert optimistic update on failure ───────────────────────
-          if (isEdit) {
-            dispatch(editTask(taskData));
-          }
-          toast.error(response?.data?.message || "Something went wrong");
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error("API Error");
-      }
-
-      dispatch(setLoaderVisible(false));
-    },
-  });
-
-  // ─── Derived select values ────────────────────────────────────────────────
-  const relatedToValue =
-    relatedToOptions.find((o) => o.value === taskData.related_to) ||
-    relatedToOptions[0];
-
+  // ─── Derived values ───────────────────────────────────────────────────────
   const projectValue =
-    projectOptions.find((o) => o.id === taskData.project) || null;
-
-  const clientValue =
-    clientOptions.find((o) => o.id === taskData.client) || null;
-
-  // ✅ NEW
-  const clientLocationValue =
-    clientLocationOptions.find(
-      (o) => Number(o.id) === Number(taskData.client_location),
-    ) || null;
-
-  const assignedToValue =
-    employeeOptions.find((e) => e.id === taskData.assigned_to) || null;
+    projectOptions.find((o) => o.id === project) || null;
 
   // ─── Collaborators: resolve selected values ───────────────────────────────
   const collaboratorsValue = (() => {
-    const ids = taskData.collaborators_id_list || [];
+    const ids = collaboratorIds || [];
     if (!ids.length) return [];
 
-    const details = taskData.collaborator_details || [];
+    const details = collaboratorDetails || [];
     if (details.length) {
       return details.filter((d) => ids.includes(d.id)).map(buildEmployeeOption);
     }
@@ -468,668 +417,434 @@ const TaskListForm = () => {
     return employeeOptions.filter((e) => ids.includes(e.id));
   })();
 
-  const taskStatusValue =
-    taskStatusOptions.find((s) => s.id === taskData.task_status) || null;
+  const endBeforeStart =
+    !!startTime && !!endTime && new Date(endTime) < new Date(startTime);
 
-  const taskPriorityValue =
-    taskPriorityOptions.find((p) => p.id === taskData.task_priority) || null;
+  const showProject = relatedTo === "project";
+  const showClient = relatedTo === "client";
+  const showClientLocation = showClient && !!requiresFieldVisit; // ✅ NEW
+  const isEditMode = baseTaskData.id > 0;
 
-  const pointsValue =
-    pointsOptions.find((p) => p.value === String(taskData.points)) ||
-    pointsOptions[0];
+  const onSubmit = async (values) => {
+    const taskData = { ...baseTaskData, ...values };
+    const trimmedTitle = taskData.title.trim();
 
-  // ─── Helper: format datetime-local value ─────────────────────────────────
-  const toDatetimeLocal = (isoStr) => {
-    if (!isoStr) return "";
-    const date = new Date(isoStr);
-    if (isNaN(date.getTime())) return "";
+    setIsSubmitting(true);
 
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
+    try {
+      const isEdit = !!(taskData?.id && taskData.id !== 0);
 
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+      const needsFieldVisit =
+        taskData.related_to === "client" && !!taskData.requires_field_visit;
+
+      const payload = {
+        title: trimmedTitle,
+        description: taskData.description || "",
+        related_to: taskData.related_to,
+        project:
+          taskData.related_to === "project" ? taskData.project || null : null,
+        client:
+          taskData.related_to === "client" ? taskData.client || null : null,
+        points: taskData.points || null,
+        assigned_to: taskData.assigned_to || null,
+        collaborators_id_list: taskData.collaborators_id_list || [],
+        task_status: taskData.task_status || null,
+        task_priority: taskData.task_priority || null,
+        start_time: taskData.start_time || null,
+        end_time: taskData.end_time || null,
+        status: taskData.status,
+        // ✅ NEW FIELD — only meaningful (and only ever true) for Client tasks
+        requires_field_visit: needsFieldVisit,
+        // ✅ NEW FIELD — id only, sent only when a field visit is required
+        client_location: needsFieldVisit
+          ? taskData.client_location || null
+          : null,
+      };
+
+      if (isEdit) payload.id = taskData.id;
+
+      // ── Optimistic update for edit ──────────────────────────────────────
+      if (isEdit) {
+        dispatch(editTask({ ...taskData, ...payload }));
+      }
+
+      const response = isEdit
+        ? await PutApi(`task/`, payload, false)
+        : await PostApi("task/", payload, false);
+
+      if (response?.status === 200 || response?.status === 201) {
+        const responseData = response?.data?.data?.task_data;
+
+        if (responseData) {
+          dispatch(isEdit ? editTask(responseData) : addTask(responseData));
+
+          // ✅ Immediately sync project progress in Redux
+          // API returns updated task_status_details inside project_data on every task save
+          const projectData = response?.data?.data?.project_data;
+          if (projectData) {
+            dispatch(editProject(projectData));
+          }
+
+          // ── Sync localStorage ─────────────────────────────────────────
+          const oldTasks = GetLocalStorageData("tasks") || [];
+          const updatedTasks = isEdit
+            ? oldTasks.map((item) =>
+                item.id === responseData.id ? responseData : item,
+              )
+            : [...oldTasks, responseData];
+          SetLocalStorage("tasks", updatedTasks, 1);
+        }
+
+        toast.success(response?.data?.message || "Saved successfully");
+        dispatch(toggleRSBView(false));
+      } else {
+        // ── Revert optimistic update on failure ───────────────────────
+        if (isEdit) {
+          dispatch(editTask(taskData));
+        }
+        toast.error(response?.data?.message || "Something went wrong");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("API Error");
+    }
+
+    setIsSubmitting(false);
   };
 
-  const showProject = taskData.related_to === "project";
-  const showClient = taskData.related_to === "client";
-  const showClientLocation = showClient && !!taskData.requires_field_visit; // ✅ NEW
-
   return (
-    <React.Fragment>
-      <Row>
-        <Col xl={40}>
-          <Form onSubmit={FormikForm.handleSubmit}>
-            <Row>
-              {/* ── Title ─────────────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="title" className="form-label">
-                    Task Title *
-                  </Label>
-                  <div className="form-icon right">
-                    <Input
-                      type="text"
-                      name="title"
-                      id="title"
-                      className="form-control"
-                      placeholder="Task Title"
-                      value={taskData.title || ""}
-                      onChange={handleInputChange}
-                      invalid={!!FormikForm.errors.title}
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      isSubmitting={isSubmitting}
+      submitLabel="Save"
+    >
+      <FormSection title="Details">
+        <FormTextField
+          name="title"
+          control={control}
+          label="Task Title"
+          placeholder="Task Title"
+          required
+          autoFocus
+          helperText="Enter Task Title."
+          maxLength={TITLE_MAX}
+          sanitize={(v) => v.replace(TITLE_CHARS, "")}
+          startIcon={<AssignmentOutlinedIcon fontSize="small" color="action" />}
+        />
+        <FormTextField
+          name="description"
+          control={control}
+          label="Description"
+          placeholder="Task description..."
+          helperText="Enter task description (optional)."
+          multiline
+          minRows={3}
+          maxRows={8}
+          maxLength={DESCRIPTION_MAX}
+          sanitize={(v) => v.replace(DESCRIPTION_CHARS, "")}
+        />
+      </FormSection>
+
+      <FormSection title="Related to">
+        {isProjectLocked ? (
+          <TextField
+            label="Related To"
+            value={
+              relatedToOptions.find((o) => o.value === relatedTo)?.label ||
+              relatedToOptions[0].label
+            }
+            disabled
+            required
+            helperText='Locked to "Project" — adding task from project page.'
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <LockOutlinedIcon fontSize="small" color="action" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        ) : (
+          <FormToggleGroup
+            name="related_to"
+            control={control}
+            label="Related To"
+            options={relatedToOptions}
+            getOptionValue={(o) => o.value}
+            required
+            helperText="Select whether task relates to In House, a Project, or Client."
+          />
+        )}
+
+        {/* ── Project ──────────────────────────────────────────── */}
+        {showProject &&
+          (isProjectLocked ? (
+            <TextField
+              label="Project"
+              value={projectValue?.label || `Project #${project}`}
+              disabled
+              helperText="Project is pre-selected from the current project page."
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <LockOutlinedIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+          ) : (
+            <FormAutocomplete
+              name="project"
+              control={control}
+              label="Project"
+              placeholder="Select Project"
+              options={projectOptions}
+              helperText="Select a project."
+            />
+          ))}
+
+        {/* ── Client ───────────────────────────────────────────── */}
+        {showClient && (
+          <FormAutocomplete
+            name="client"
+            control={control}
+            label="Client"
+            placeholder="Select Client"
+            options={clientOptions}
+            helperText="Select a client."
+          />
+        )}
+
+        {/* ── Requires Field Visit (Client tasks only) ──────────── */}
+        {showClient && (
+          <FormSwitch
+            name="requires_field_visit"
+            control={control}
+            label="Requires Field Visit"
+            description={
+              requiresFieldVisit
+                ? "Yes — this task requires an on-site visit."
+                : "No — this task does not require an on-site visit."
+            }
+          />
+        )}
+
+        {/* ── Client Location (only when Requires Field Visit is on) ─ */}
+        {showClientLocation && (
+          <FormAutocomplete
+            name="client_location"
+            control={control}
+            label="Client Location"
+            required
+            disabled={!client}
+            placeholder={
+              client ? "Select Client Location" : "Select a Client first"
+            }
+            noOptionsText="No locations found for this client"
+            options={clientLocationOptions}
+            helperText="Select the client site location for this visit."
+          />
+        )}
+      </FormSection>
+
+      <FormSection title="Assignment">
+        <FormAutocomplete
+          name="assigned_to"
+          control={control}
+          label="Assigned To"
+          placeholder="Select Employee"
+          required
+          options={employeeOptions}
+          getOptionLabel={employeeOptionLabel}
+          helperText="Select who this task is assigned to."
+        />
+
+        {/* ── Collaborators (async search) ─────────────────────── */}
+        <Controller
+          name="collaborators_id_list"
+          control={control}
+          render={({ field }) => (
+            <Autocomplete
+              multiple
+              disableCloseOnSelect
+              filterSelectedOptions
+              limitTags={3}
+              options={[
+                ...collaboratorOptions,
+                ...collaboratorsValue.filter(
+                  (v) => !collaboratorOptions.some((o) => o.id === v.id),
+                ),
+              ]}
+              value={collaboratorsValue}
+              loading={collaboratorsLoading}
+              loadingText="Searching..."
+              noOptionsText={
+                collaboratorInput ? "No employees found" : "Type to search"
+              }
+              filterOptions={(options) => options}
+              getOptionLabel={employeeOptionLabel}
+              isOptionEqualToValue={(o, v) => o.id === v.id}
+              onInputChange={(_, inputValue) =>
+                setCollaboratorInput(inputValue)
+              }
+              onChange={(_, selected) => {
+                field.onChange(selected ? selected.map((o) => o.id) : []);
+                setValue(
+                  "collaborator_details",
+                  selected ? selected.map((o) => ({ ...o })) : [],
+                );
+              }}
+              onBlur={field.onBlur}
+              renderOption={renderEmployeeOption()}
+              renderValue={(value, getItemProps) =>
+                value.map((option, index) => {
+                  const { key, ...itemProps } = getItemProps({ index });
+                  return (
+                    <Chip
+                      key={key}
+                      {...itemProps}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      label={option.label}
+                      avatar={<EmployeeAvatar option={option} size={20} />}
                     />
-                    {!FormikForm.touched.title && !FormikForm.errors.title && (
-                      <i className="ri-task-line" />
-                    )}
-                    {FormikForm.errors.title && (
-                      <FormFeedback type="invalid">
-                        {FormikForm.errors.title}
-                      </FormFeedback>
-                    )}
-                  </div>
-                  {!FormikForm.errors.title && (
-                    <div className="form-text">Enter Task Title.</div>
-                  )}
-                </div>
-              </Col>
-
-              {/* ── Description ──────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="description" className="form-label">
-                    Description
-                  </Label>
-                  <Input
-                    type="textarea"
-                    name="description"
-                    id="description"
-                    className="form-control"
-                    placeholder="Task description..."
-                    rows={3}
-                    value={taskData.description || ""}
-                    onChange={handleInputChange}
-                    invalid={!!FormikForm.errors.description}
-                  />
-                  {FormikForm.errors.description ? (
-                    <FormFeedback type="invalid">
-                      {FormikForm.errors.description}
-                    </FormFeedback>
-                  ) : (
-                    <div className="form-text">
-                      Enter task description (optional).
-                    </div>
-                  )}
-                </div>
-              </Col>
-
-              {/* ── Related To ───────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="related_to" className="form-label">
-                    Related To *
-                  </Label>
-                  <Select
-                    id="related_to"
-                    name="related_to"
-                    options={relatedToOptions}
-                    className="basic-single-select"
-                    classNamePrefix="lc-select"
-                    placeholder="Select Related To"
-                    isDisabled={isProjectLocked}
-                    styles={selectStyles(
-                      FormikForm.touched.related_to,
-                      FormikForm.errors.related_to,
-                    )}
-                    value={relatedToValue}
-                    onChange={(selected) => {
-                      const nextRelatedTo = selected
-                        ? selected.value
-                        : "custom";
-                      setTaskData((prev) => ({
-                        ...prev,
-                        related_to: nextRelatedTo,
-                        project: null,
-                        client: null,
-                        // ✅ reset the toggle + location whenever we leave "client"
-                        requires_field_visit:
-                          nextRelatedTo === "client"
-                            ? prev.requires_field_visit
-                            : false,
-                        client_location:
-                          nextRelatedTo === "client"
-                            ? prev.client_location
-                            : null,
-                      }));
-                    }}
-                  />
-                  {isProjectLocked && (
-                    <div className="form-text text-muted">
-                      <i className="ri-lock-line me-1" />
-                      Locked to "Project" — adding task from project page.
-                    </div>
-                  )}
-                  {!isProjectLocked &&
-                    FormikForm.touched.related_to &&
-                    FormikForm.errors.related_to && (
-                      <div className="text-danger small mt-1">
-                        {FormikForm.errors.related_to}
-                      </div>
-                    )}
-                  {!isProjectLocked &&
-                    !(
-                      FormikForm.touched.related_to &&
-                      FormikForm.errors.related_to
-                    ) && (
-                      <div className="form-text">
-                        Select whether task relates to In House, a Project, or
-                        Client.
-                      </div>
-                    )}
-                </div>
-              </Col>
-
-              {/* ── Project ──────────────────────────────────────────── */}
-              {showProject && (
-                <Col md={12}>
-                  <div className="mb-3">
-                    <Label htmlFor="project" className="form-label">
-                      Project
-                    </Label>
-
-                    {isProjectLocked ? (
-                      <>
-                        <div
-                          className="form-control d-flex align-items-center"
-                          style={{
-                            backgroundColor: "#f8f9fa",
-                            cursor: "not-allowed",
-                            color: "#495057",
-                          }}
-                        >
-                          <i className="ri-projector-line me-2 text-primary" />
-                          <span>
-                            {projectValue?.label ||
-                              `Project #${taskData.project}`}
-                          </span>
-                          <i className="ri-lock-line ms-auto text-muted" />
-                        </div>
-                        <div className="form-text text-muted">
-                          Project is pre-selected from the current project page.
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <Select
-                          id="project"
-                          name="project"
-                          isClearable
-                          options={projectOptions}
-                          className="basic-single-select"
-                          classNamePrefix="lc-select"
-                          placeholder="Select Project"
-                          value={projectValue}
-                          onChange={(selected) => {
-                            setTaskData((prev) => ({
-                              ...prev,
-                              project: selected ? selected.id : null,
-                            }));
-                          }}
-                        />
-                        <div className="form-text">Select a project.</div>
-                      </>
-                    )}
-                  </div>
-                </Col>
+                  );
+                })
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  inputRef={field.ref}
+                  label="Collaborators"
+                  placeholder={
+                    collaboratorsValue.length
+                      ? undefined
+                      : "Search collaborators..."
+                  }
+                  helperText="Select or search collaborators (optional)."
+                />
               )}
+            />
+          )}
+        />
+      </FormSection>
 
-              {/* ── Client ───────────────────────────────────────────── */}
-              {showClient && (
-                <Col md={12}>
-                  <div className="mb-3">
-                    <Label htmlFor="client" className="form-label">
-                      Client
-                    </Label>
-                    <Select
-                      id="client"
-                      name="client"
-                      isClearable
-                      options={clientOptions}
-                      className="basic-single-select"
-                      classNamePrefix="lc-select"
-                      placeholder="Select Client"
-                      value={clientValue}
-                      onChange={(selected) => {
-                        const val = selected ? selected.id : null;
-                        setTaskData((prev) => ({
-                          ...prev,
-                          client: val,
-                          // ✅ location options depend on client, reset selection
-                          client_location: null,
-                        }));
-                        FormikForm.setFieldValue("client_location", null);
-                      }}
-                    />
-                    <div className="form-text">Select a client.</div>
-                  </div>
-                </Col>
+      <FormSection title="Tracking">
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormAutocomplete
+              name="task_status"
+              control={control}
+              label="Task Status"
+              placeholder="Select Status"
+              required
+              options={taskStatusOptions}
+              helperText="Select current task status."
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormAutocomplete
+              name="task_priority"
+              control={control}
+              label="Task Priority"
+              placeholder="Select Priority"
+              required
+              options={taskPriorityOptions}
+              helperText="Select task priority level."
+            />
+          </Grid>
+        </Grid>
+
+        <FormToggleGroup
+          name="points"
+          control={control}
+          label="Points"
+          options={pointsOptions}
+          getOptionValue={(o) => o.value}
+          getOptionLabel={(o) => o.value}
+          required
+          helperText="Story points for this task (required)."
+        />
+
+        {/* STATUS - SHOW ONLY IN EDIT MODE */}
+        {isEditMode && (
+          <FormSwitch
+            name="status"
+            control={control}
+            label="Status"
+            description={status ? "Active" : "Inactive"}
+          />
+        )}
+      </FormSection>
+
+      <FormSection title="Schedule">
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="start_time"
+              control={control}
+              render={({ field }) => (
+                <DateTimePicker
+                  label="Start Date & Time"
+                  format={DateTimeFormat}
+                  ampm={false}
+                  value={toPickerValue(field.value)}
+                  onChange={(next) => {
+                    if (next && !next.isValid()) return;
+                    field.onChange(fromPickerValue(next));
+                  }}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      fullWidth: true,
+                      onBlur: field.onBlur,
+                      helperText: "Task start date and time (optional).",
+                    },
+                    field: { clearable: true },
+                  }}
+                />
               )}
-
-              {/* ── Requires Field Visit (Client tasks only) ──────────── */}
-              {showClient && (
-                <Col md={12}>
-                  <div className="mb-3">
-                    <Label
-                      htmlFor="requires_field_visit"
-                      className="form-label"
-                    >
-                      Requires Field Visit
-                    </Label>
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        type="checkbox"
-                        id="requires_field_visit"
-                        className="form-check-input"
-                        checked={!!taskData.requires_field_visit}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setTaskData((prev) => ({
-                            ...prev,
-                            requires_field_visit: checked,
-                            // ✅ clear location if the toggle is switched off
-                            client_location: checked
-                              ? prev.client_location
-                              : null,
-                          }));
-                          if (!checked) {
-                            FormikForm.setFieldValue("client_location", null);
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="form-text">
-                      {taskData.requires_field_visit
-                        ? "Yes — this task requires an on-site visit."
-                        : "No — this task does not require an on-site visit."}
-                    </div>
-                  </div>
-                </Col>
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Controller
+              name="end_time"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <DateTimePicker
+                  label="End Date & Time"
+                  format={DateTimeFormat}
+                  ampm={false}
+                  value={toPickerValue(field.value)}
+                  onChange={(next) => {
+                    if (next && !next.isValid()) return;
+                    field.onChange(fromPickerValue(next));
+                  }}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      fullWidth: true,
+                      onBlur: field.onBlur,
+                      error: endBeforeStart || !!error,
+                      helperText: endBeforeStart
+                        ? "Deadline cannot be before the start date."
+                        : error?.message ||
+                          "Task deadline date and time (optional).",
+                    },
+                    field: { clearable: true },
+                  }}
+                />
               )}
-
-              {/* ── Client Location (only when Requires Field Visit is on) ─ */}
-              {showClientLocation && (
-                <Col md={12}>
-                  <div className="mb-3">
-                    <Label htmlFor="client_location" className="form-label">
-                      Client Location *
-                    </Label>
-                    <Select
-                      id="client_location"
-                      name="client_location"
-                      isClearable
-                      isDisabled={!taskData.client}
-                      options={clientLocationOptions}
-                      className="basic-single-select"
-                      classNamePrefix="lc-select"
-                      placeholder={
-                        taskData.client
-                          ? "Select Client Location"
-                          : "Select a Client first"
-                      }
-                      noOptionsMessage={() =>
-                        "No locations found for this client"
-                      }
-                      styles={selectStyles(
-                        FormikForm.touched.client_location,
-                        FormikForm.errors.client_location,
-                      )}
-                      value={clientLocationValue}
-                      onChange={(selected) => {
-                        const val = selected ? selected.id : null;
-                        setTaskData((prev) => ({
-                          ...prev,
-                          client_location: val,
-                        }));
-                        FormikForm.setFieldValue("client_location", val);
-                        FormikForm.setFieldTouched(
-                          "client_location",
-                          true,
-                          false,
-                        );
-                      }}
-                    />
-                    {FormikForm.touched.client_location &&
-                    FormikForm.errors.client_location ? (
-                      <div className="text-danger small mt-1">
-                        {FormikForm.errors.client_location}
-                      </div>
-                    ) : (
-                      <div className="form-text">
-                        Select the client site location for this visit.
-                      </div>
-                    )}
-                  </div>
-                </Col>
-              )}
-
-              {/* ── Assigned To ──────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="assigned_to" className="form-label">
-                    Assigned To *
-                  </Label>
-                  <Select
-                    id="assigned_to"
-                    name="assigned_to"
-                    isClearable
-                    options={employeeOptions}
-                    components={{ Option: EmployeeDisplayInSelect }}
-                    className="basic-single-select"
-                    classNamePrefix="lc-select"
-                    placeholder="Select Employee"
-                    styles={selectStyles(
-                      FormikForm.touched.assigned_to,
-                      FormikForm.errors.assigned_to,
-                    )}
-                    value={assignedToValue}
-                    onChange={(selected) => {
-                      setTaskData((prev) => ({
-                        ...prev,
-                        assigned_to: selected ? selected.id : null,
-                      }));
-                    }}
-                  />
-                  {FormikForm.touched.assigned_to &&
-                  FormikForm.errors.assigned_to ? (
-                    <div className="text-danger small mt-1">
-                      {FormikForm.errors.assigned_to}
-                    </div>
-                  ) : (
-                    <div className="form-text">
-                      Select who this task is assigned to.
-                    </div>
-                  )}
-                </div>
-              </Col>
-
-              {/* ── Collaborators (AsyncSelect) ───────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="collaborators_id_list" className="form-label">
-                    Collaborators
-                  </Label>
-                  <AsyncSelect
-                    id="collaborators_id_list"
-                    name="collaborators_id_list"
-                    isMulti
-                    isClearable
-                    cacheOptions
-                    defaultOptions={buildDefaultCollaboratorOptions()}
-                    loadOptions={loadCollaboratorOptions}
-                    components={{ Option: EmployeeDisplayInSelect }}
-                    className="basic-multi-select"
-                    classNamePrefix="lc-select"
-                    placeholder="Search collaborators..."
-                    noOptionsMessage={({ inputValue }) =>
-                      inputValue ? "No employees found" : "Type to search"
-                    }
-                    loadingMessage={() => "Searching..."}
-                    value={collaboratorsValue}
-                    onChange={(selected) => {
-                      setTaskData((prev) => ({
-                        ...prev,
-                        collaborators_id_list: selected
-                          ? selected.map((o) => o.id)
-                          : [],
-                        collaborator_details: selected
-                          ? selected.map((o) => ({ ...o }))
-                          : [],
-                      }));
-                    }}
-                  />
-                  <div className="form-text">
-                    Select or search collaborators (optional).
-                  </div>
-                </div>
-              </Col>
-
-              {/* ── Task Status ───────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="task_status" className="form-label">
-                    Task Status <span>*</span>
-                  </Label>
-                  <Select
-                    id="task_status"
-                    name="task_status"
-                    isClearable
-                    options={taskStatusOptions}
-                    className="basic-single-select"
-                    classNamePrefix="lc-select"
-                    placeholder="Select Status"
-                    value={taskStatusValue}
-                    styles={selectStyles(
-                      FormikForm.touched.task_status,
-                      FormikForm.errors.task_status,
-                    )}
-                    onChange={(selected) => {
-                      setTaskData((prev) => ({
-                        ...prev,
-                        task_status: selected ? selected.id : null,
-                      }));
-
-                      FormikForm.setFieldValue(
-                        "task_status",
-                        selected ? selected.id : null,
-                      );
-                    }}
-                  />
-                  {FormikForm.touched.task_status &&
-                  FormikForm.errors.task_status ? (
-                    <div className="text-danger small mt-1">
-                      {FormikForm.errors.task_status}
-                    </div>
-                  ) : (
-                    <div className="form-text">Select current task status.</div>
-                  )}
-                </div>
-              </Col>
-
-              {/* ── Task Priority ─────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="task_priority" className="form-label">
-                    Task Priority<span>*</span>
-                  </Label>
-                  <Select
-                    id="task_priority"
-                    name="task_priority"
-                    isClearable
-                    options={taskPriorityOptions}
-                    className="basic-single-select"
-                    classNamePrefix="lc-select"
-                    placeholder="Select Priority"
-                    value={taskPriorityValue}
-                    styles={selectStyles(
-                      FormikForm.touched.task_priority,
-                      FormikForm.errors.task_priority,
-                    )}
-                    onChange={(selected) => {
-                      setTaskData((prev) => ({
-                        ...prev,
-                        task_priority: selected ? selected.id : null,
-                      }));
-
-                      FormikForm.setFieldValue(
-                        "task_priority",
-                        selected ? selected.id : null,
-                      );
-                    }}
-                  />
-                  {FormikForm.touched.task_priority &&
-                  FormikForm.errors.task_priority ? (
-                    <div className="text-danger small mt-1">
-                      {FormikForm.errors.task_priority}
-                    </div>
-                  ) : (
-                    <div className="form-text">Select task priority level.</div>
-                  )}
-                </div>
-              </Col>
-
-              {/* ── Points ───────────────────────────────────────────── */}
-              <Col md={12}>
-                <div className="mb-3">
-                  <Label htmlFor="points" className="form-label">
-                    Points *
-                  </Label>
-                  <Select
-                    id="points"
-                    name="points"
-                    options={pointsOptions}
-                    className="basic-single-select"
-                    classNamePrefix="lc-select"
-                    placeholder="Select Points (1–5)"
-                    styles={selectStyles(
-                      FormikForm.touched.points,
-                      FormikForm.errors.points,
-                    )}
-                    value={pointsValue}
-                    onChange={(selected) => {
-                      const val = selected ? selected.value : "1";
-                      setTaskData((prev) => ({ ...prev, points: val }));
-                      FormikForm.setFieldValue("points", val);
-                    }}
-                  />
-                  {FormikForm.touched.points && FormikForm.errors.points ? (
-                    <div className="text-danger small mt-1">
-                      {FormikForm.errors.points}
-                    </div>
-                  ) : (
-                    <div className="form-text">
-                      Story points for this task (required).
-                    </div>
-                  )}
-                </div>
-              </Col>
-
-              {/* ── Start Date & Time ─────────────────────────────────── */}
-              <Col md={6}>
-                <div className="mb-3">
-                  <Label htmlFor="start_time" className="form-label">
-                    Start Date & Time
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    name="start_time"
-                    id="start_time"
-                    className="form-control"
-                    value={toDatetimeLocal(taskData.start_time)}
-                    onChange={(e) => {
-                      const val = e.target.value
-                        ? new Date(e.target.value).toISOString()
-                        : "";
-                      setTaskData((prev) => ({ ...prev, start_time: val }));
-                    }}
-                  />
-                  <div className="form-text">
-                    Task start date and time (optional).
-                  </div>
-                </div>
-              </Col>
-
-              {/* ── End Date & Time ───────────────────────────────────── */}
-              <Col md={6}>
-                <div className="mb-3">
-                  <Label htmlFor="end_time" className="form-label">
-                    End Date & Time
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    name="end_time"
-                    id="end_time"
-                    className="form-control"
-                    value={toDatetimeLocal(taskData.end_time)}
-                    invalid={
-                      !!taskData.start_time &&
-                      !!taskData.end_time &&
-                      new Date(taskData.end_time) <
-                        new Date(taskData.start_time)
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value
-                        ? new Date(e.target.value).toISOString()
-                        : "";
-                      setTaskData((prev) => ({ ...prev, end_time: val }));
-                      FormikForm.setFieldValue("end_time", val);
-                    }}
-                  />
-                  {taskData.start_time &&
-                  taskData.end_time &&
-                  new Date(taskData.end_time) <
-                    new Date(taskData.start_time) ? (
-                    <FormFeedback type="invalid" className="d-block">
-                      Deadline cannot be before the start date.
-                    </FormFeedback>
-                  ) : (
-                    <div className="form-text">
-                      Task deadline date and time (optional).
-                    </div>
-                  )}
-                </div>
-              </Col>
-
-              {/* STATUS - SHOW ONLY IN EDIT MODE */}
-              {taskData.id > 0 && (
-                <Col md={12}>
-                  <div className="mb-3">
-                    <Label htmlFor="task_status_toggle" className="form-label">
-                      Status
-                    </Label>
-
-                    <div
-                      className="form-check form-switch form-switch-md form-switch-success"
-                      dir="ltr"
-                    >
-                      <Input
-                        type="checkbox"
-                        id="task_status_toggle"
-                        className="form-check-input"
-                        checked={taskData.status || false}
-                        onChange={(e) =>
-                          setTaskData((prev) => ({
-                            ...prev,
-                            status: e.target.checked,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="form-text">
-                      {taskData.status ? "Active" : "Inactive"}
-                    </div>
-                  </div>
-                </Col>
-              )}
-
-              {/* ── Submit ────────────────────────────────────────────── */}
-              <Col lg={12}>
-                <div className="text-end">
-                  <Button color="success" className="btn-label" type="submit">
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
-                    Save
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+            />
+          </Grid>
+        </Grid>
+      </FormSection>
+    </SidebarFormLayout>
   );
 };
 

@@ -7,6 +7,8 @@ import * as Sentry from "@sentry/react";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import appstore from "./redux/store/appstore";
+import AppThemeProvider from "./shared/theme/AppThemeProvider";
+import "./common/js/swalTheme";
 
 const platform = process.env.REACT_APP_LC_PLATFORM || "local";
 
@@ -32,11 +34,13 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
   <Provider store={appstore}>
-    <BrowserRouter>
-      <Sentry.ErrorBoundary fallback={<h2></h2>}>
-        <App />
-      </Sentry.ErrorBoundary>
-    </BrowserRouter>
+    <AppThemeProvider>
+      <BrowserRouter>
+        <Sentry.ErrorBoundary fallback={<h2></h2>}>
+          <App />
+        </Sentry.ErrorBoundary>
+      </BrowserRouter>
+    </AppThemeProvider>
   </Provider>,
 );
 

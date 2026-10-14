@@ -6,6 +6,7 @@ import {
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import { required, runChecks } from "./validators";
+import { testId } from "../../../shared/testing/testId";
 
 const SectionLabel = ({ children }) => (
   <p className="text-uppercase fw-semibold text-muted mb-2" style={{ fontSize: 11, letterSpacing: "0.8px" }}>
@@ -28,7 +29,7 @@ const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span style={{
       display: "inline-block", width: 36, height: 20, borderRadius: 12,
-      background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0,
+      background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0,
     }}>
       <span style={{
         position: "absolute", top: 3, left: checked ? 18 : 3,
@@ -131,7 +132,7 @@ const LeavePolicySettings = () => {
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
               Configure how leave balances and LOP deductions are handled.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="leave-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
             </Button>
           </div>
@@ -152,10 +153,10 @@ const LeavePolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
+              <Button data-testid="leave-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}>
+              <Button data-testid="leave-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
                 <i className="ri-add-line fs-14"></i> New Version
               </Button>
             </>
@@ -194,7 +195,7 @@ const LeavePolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
-              <Input type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
+              <Input data-testid="leave-policy-effective-date-input" type="date" value={form.effective_date || ""} onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
             ) : (
               <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>
             )}
@@ -202,7 +203,7 @@ const LeavePolicySettings = () => {
           <SettingRow label="Status" last>
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
+                <Input data-testid="leave-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={!!form.is_active} onChange={() => handleToggle("is_active")} />
                 <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>{form.is_active ? "Active" : "Inactive"}</Label>
               </div>
             ) : (
@@ -220,7 +221,7 @@ const LeavePolicySettings = () => {
               <SettingRow key={key} label={label} last={i === arr.length - 1}>
                 {isEditing ? (
                   <div className="form-check form-switch mb-0">
-                    <Input className="form-check-input" type="checkbox"
+                    <Input className="form-check-input" type="checkbox" data-testid={testId("leave-policy", key, "checkbox")}
                       checked={!!form[key]}
                       disabled={
                         (key === "allow_negative_leave_balance" && form.convert_excess_leave_to_lop) ||
@@ -237,8 +238,8 @@ const LeavePolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="leave-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
+            <Button data-testid="leave-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line align-middle me-1"></i>
               {loading ? "Saving…" : "Save Changes"}
             </Button>

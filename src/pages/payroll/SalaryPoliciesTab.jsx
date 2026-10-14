@@ -14,7 +14,7 @@ const SalaryPoliciesTab = ({ onAddPolicy }) => {
       </div>
 
       <div className="flex-grow-1 ms-3">
-        <Button color="primary" onClick={() => onAddPolicy(0)}>
+        <Button data-testid="salary-policies-add-button" color="primary" onClick={() => onAddPolicy(0)}>
           <i className="ri-add-line align-bottom me-1"></i>
           Add
         </Button>

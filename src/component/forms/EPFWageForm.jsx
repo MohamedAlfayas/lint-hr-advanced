@@ -1,203 +1,137 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import Select from "react-select";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Col,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownToggle,
-  Form,
-  Input,
-  Label,
-  Row,
-  UncontrolledDropdown,
-} from "reactstrap";
+import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
+import { Controller, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import { Grid, Paper, Radio, RadioGroup, Stack, Typography } from "@mui/material";
+import SidebarFormLayout from "../../shared/ui/SidebarFormLayout";
+import { FormSection, FormToggleGroup } from "../../shared/ui/form";
+
+const deduction_cycle_option = [
+  { id: "1", label: "Monthly", value: "Monthly" },
+  { id: "2", label: "Weekly", value: "Weekly" },
+];
+
+const epf_methods = [
+  {
+    id: "1",
+    label: "Method 1",
+    employee: "12% of Actual PF Wage",
+    employer: "12% of Actual PF Wage",
+  },
+  {
+    id: "2",
+    label: "Method 2",
+    employee: "12% of Actual PF Wage",
+    employer: "3.67% of PF Wage restricted at ₹ 15000",
+  },
+  {
+    id: "3",
+    label: "Method 3",
+    employee: "12% of PF Wage restricted at ₹ 15000",
+    employer: "3.67% of PF Wage restricted at ₹ 15000",
+  },
+];
+
+const schema = Yup.object({
+  epf_type_id: Yup.string().nullable(),
+  epf_method: Yup.string().nullable(),
+});
+
+const toFormValues = (obj) => ({
+  epf_type_id: obj?.epf_type_id ?? null,
+  epf_method: obj ? "1" : null,
+});
 
 const EPFWageForm = () => {
   const { form_obj } = useSelector((state) => state.RightSideBarReducer);
-  const [EPFField, setEPFField] = useState(form_obj);
 
-  const deduction_cycle_option = useMemo(
-    () => [
-      { id: "1", label: "Monthly", value: "Monthly" },
-      { id: "2", label: "Weekly", value: "Weekly" },
-    ],
-    []
-  );
+  const { control, handleSubmit, reset } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
+  });
+
+  useEffect(() => {
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset]);
+
+  const onSubmit = () => {};
 
   return (
-    <React.Fragment>
-      <Row>
-        <Col md={12} lg={12} xxl={12} className="folder-card" key={1}>
-          <Form action="javascript:void(0)">
-            <Col md={12} lg={12} xxl={12}>
-              <div className="mb-3">
-                <Label>Deduction Cycle</Label>
-                <Select
-                  required
-                  isMulti={false}
-                  options={deduction_cycle_option || []}
-                  placeholder="Select Leave Type"
-                  className="basic-multi-select"
-                  value={
-                    EPFField
-                      ? deduction_cycle_option.find(
-                          (d) => d.id === EPFField.epf_type_id
-                        )
-                      : []
-                  }
-                />
-              </div>
-              <div id="passwordHelpBlock" className="form-text">
-                Please select type of leave.
-              </div>
-            </Col>
-            <Card className="bg-light shadow-none" id={"folder-2"}>
-              <CardBody>
-                <div className="d-flex mb-1">
-                  <div className="form-check form-check-danger mb-3 fs-15 flex-grow-1">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      value={
-                        EPFField
-                          ? deduction_cycle_option.find(
-                              (d) => d.id === EPFField.epf_cycle
-                            )
-                          : []
-                      }
-                      name="EPFmethods"
-                      id={"folderlistCheckbox_1"}
-                      checked={EPFField}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor={"folderlistCheckbox_1"}
+    <SidebarFormLayout onSubmit={handleSubmit(onSubmit)} hideSubmit>
+      <FormToggleGroup
+        name="epf_type_id"
+        control={control}
+        label="Deduction Cycle"
+        options={deduction_cycle_option}
+        required
+        helperText="Please select deduction cycle."
+      />
+
+      <FormSection title="EPF contribution method">
+        <Controller
+          name="epf_method"
+          control={control}
+          render={({ field }) => (
+            <RadioGroup
+              name={field.name}
+              value={field.value ?? ""}
+              onChange={(e) => field.onChange(e.target.value)}
+              onBlur={field.onBlur}
+            >
+              <Stack spacing={1.5}>
+                {epf_methods.map((method) => {
+                  const checked = field.value === method.id;
+                  return (
+                    <Paper
+                      key={method.id}
+                      variant="outlined"
+                      component="label"
+                      sx={{
+                        p: 2,
+                        cursor: "pointer",
+                        borderRadius: 2,
+                        transition: "border-color .15s ease, background-color .15s ease",
+                        ...(checked && {
+                          borderColor: "primary.main",
+                          bgcolor: (t) => `${t.palette.primary.main}0d`,
+                        }),
+                      }}
                     >
-                      Method 1
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <Row className="gy-3">
-                    <Col xs={6}>
-                      <div>
-                        <p className="text-muted mb-1">
-                          Employee's Contribution
-                        </p>
-                        <h5 className="fs-14">12% of Actual PF Wage</h5>
-                      </div>
-                    </Col>
-                    <Col xs={6}>
-                      <div>
-                        <p className="text-muted mb-1">
-                          Employer's Contribution
-                        </p>
-                        <h5 className="fs-14">12% of Actual PF Wage</h5>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-              </CardBody>
-            </Card>
-            <Card className="bg-light shadow-none" id={"folder-2"}>
-              <CardBody>
-                <div className="d-flex mb-1">
-                  <div className="form-check form-check-danger mb-3 fs-15 flex-grow-1">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      value=""
-                      name="EPFmethods"
-                      id={"folderlistCheckbox_2"}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor={"folderlistCheckbox_2"}
-                    >
-                      Method 2
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <Row className="gy-3">
-                    <Col xs={6}>
-                      <div>
-                        <p className="text-muted mb-1">
-                          Employee's Contribution
-                        </p>
-                        <h5 className="fs-14">12% of Actual PF Wage</h5>
-                      </div>
-                    </Col>
-                    <Col xs={6}>
-                      <div>
-                        <p className="text-muted mb-1">
-                          Employer's Contribution
-                        </p>
-                        <h5 className="fs-14">
-                          3.67% of PF Wage restricted at ₹ 15000
-                        </h5>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-              </CardBody>
-            </Card>
-            <Card className="bg-light shadow-none" id={"folder-3"}>
-              <CardBody>
-                <div className="d-flex mb-1">
-                  <div className="form-check form-check-danger mb-3 fs-15 flex-grow-1">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      value=""
-                      name="EPFmethods"
-                      id={"folderlistCheckbox_3"}
-                    />
-                    <label
-                      className="form-check-label"
-                      htmlFor={"folderlistCheckbox_3"}
-                    >
-                      Method 3
-                    </label>
-                  </div>
-                </div>
-                <div>
-                  <Row className="gy-3">
-                    <Col xs={6}>
-                      <div>
-                        <p className="text-muted mb-1">
-                          Employee's Contribution
-                        </p>
-                        <h5 className="fs-14">
-                          12% of PF Wage restricted at ₹ 15000
-                        </h5>
-                      </div>
-                    </Col>
-                    <Col xs={6}>
-                      <div>
-                        <p className="text-muted mb-1">
-                          Employer's Contribution
-                        </p>
-                        <h5 className="fs-14">
-                          3.67% of PF Wage restricted at ₹ 15000
-                        </h5>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-              </CardBody>
-            </Card>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                        <Radio size="small" value={method.id} sx={{ p: 0.5 }} />
+                        <Typography variant="body2" fontWeight={600}>
+                          {method.label}
+                        </Typography>
+                      </Stack>
+                      <Grid container spacing={2}>
+                        <Grid size={{ xs: 6 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Employee's Contribution
+                          </Typography>
+                          <Typography variant="body2" fontWeight={500}>
+                            {method.employee}
+                          </Typography>
+                        </Grid>
+                        <Grid size={{ xs: 6 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Employer's Contribution
+                          </Typography>
+                          <Typography variant="body2" fontWeight={500}>
+                            {method.employer}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            </RadioGroup>
+          )}
+        />
+      </FormSection>
+    </SidebarFormLayout>
   );
 };
 

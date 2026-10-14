@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { ListSkeleton } from "../../../component/common/skeleton/Skeleton";
 import {
-  Modal, ModalHeader, ModalBody, Table, Spinner, Badge, Row, Col, Button,
+  Modal, ModalHeader, ModalBody, Table, Badge, Row, Col, Button,
 } from "reactstrap";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 // Old-vs-current view for one payslip's rerun history.
 // GET payroll/employee-payslip-revisions/?payslip_id=<id>
@@ -76,8 +79,8 @@ const PayslipRevisionHistory = ({ isOpen, toggle, payslip }) => {
   if (!payslip) return null;
 
   return (
-    <Modal isOpen={isOpen} toggle={toggle} size="lg" centered>
-      <ModalHeader toggle={toggle} className="bg-light p-3">
+    <Modal data-testid="payslip-history-payslip-history-dialog" isOpen={isOpen} toggle={toggle} size="lg" centered>
+      <ModalHeader close={<ModalCloseButton onClick={toggle} testId="payslip-history-payslip-history-close-button" />} toggle={toggle} className="surface-muted p-3">
         Payslip History — {payslip.employee_name}
         {payslip.pay_period && (
           <span className="text-muted ms-2" style={{ fontSize: 12, fontWeight: 400 }}>
@@ -88,7 +91,7 @@ const PayslipRevisionHistory = ({ isOpen, toggle, payslip }) => {
 
       <ModalBody className="p-4" style={{ maxHeight: "75vh", overflowY: "auto" }}>
         {loading ? (
-          <div className="text-center py-4"><Spinner color="primary" size="sm" /></div>
+          <ListSkeleton rows={4} testId="payslip-revision-loading-skeleton" label="Loading revisions" />
         ) : revisions.length === 0 ? (
           <p className="text-muted text-center py-4 mb-0">
             No prior versions — this payslip has only ever been computed once.
@@ -96,7 +99,7 @@ const PayslipRevisionHistory = ({ isOpen, toggle, payslip }) => {
         ) : (
           <>
             {/* ── Current (live) ── */}
-            <div className="border rounded p-3 mb-3 bg-light">
+            <div className="border rounded p-3 mb-3 surface-muted">
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <Badge color="success">Current</Badge>
                 <span className="text-muted" style={{ fontSize: 11 }}>{payslip.status}</span>
@@ -142,6 +145,7 @@ const PayslipRevisionHistory = ({ isOpen, toggle, payslip }) => {
                   </Row>
 
                   <Button
+                    data-testid={testId("payslip-history-payslip-history-hide-components", itemTestKey(rev), "button")}
                     color="link" size="sm" className="p-0 mt-2 text-decoration-none"
                     onClick={() => setExpandedId(expandedId === rev.id ? null : rev.id)}
                   >
@@ -150,7 +154,7 @@ const PayslipRevisionHistory = ({ isOpen, toggle, payslip }) => {
 
                   {expandedId === rev.id && (
                     <Table size="sm" bordered className="mt-2 mb-0" style={{ fontSize: 12 }}>
-                      <thead className="table-light">
+                      <thead className="table-surface">
                         <tr>
                           <th>Component</th>
                           <th>Type</th>

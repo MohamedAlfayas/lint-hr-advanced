@@ -8,16 +8,12 @@ import React, {
 import {
   Alert,
   Button,
+  Container,
   Dropdown,
   DropdownItem,
   DropdownMenu,
   DropdownToggle,
   Input,
-  InputGroup,
-  InputGroupText,
-  Nav,
-  NavItem,
-  NavLink,
   Spinner,
 } from "reactstrap";
 import { useDispatch } from "react-redux";
@@ -27,6 +23,7 @@ import {
   decrementUnreadCount,
   setUnreadCount,
 } from "../../redux/reducers/ChildReducer/NotificationReducer";
+import { testId, itemTestKey } from "../../shared/testing/testId";
 
 /* ------------------------------------------------------------------ */
 /* API config                                                          */
@@ -80,6 +77,18 @@ const formatTime = (iso) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const dayGroup = (iso) => {
+  const d = new Date(iso);
+  if (!iso || Number.isNaN(d.getTime())) return "Earlier";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (d >= today) return "Today";
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d >= yesterday) return "Yesterday";
+  return "Earlier";
 };
 
 const SORT_OPTIONS = [
@@ -150,38 +159,6 @@ const CheckIcon = () => (
     <polyline points="12 16 13 17 22 6" />
   </svg>
 );
-const SparkIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#6d4cf5"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
-  </svg>
-);
-const LayoutIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <line x1="12" y1="4" x2="12" y2="20" />
-  </svg>
-);
-
 /* Notification-type icons (shared wrapper) */
 const Svg = ({ size = 16, children }) => (
   <svg
@@ -242,89 +219,148 @@ const BellIcon = (p) => (
 
 /* Icon + colors per notification type. Add keys here for new backend types. */
 const TYPE_META = {
-  attendance: { Icon: ClockIcon, bg: "#e0f6f2", color: "#0ab39c" },
-  reminder: { Icon: ClockIcon, bg: "#e0f6f2", color: "#0ab39c" },
-  leave: { Icon: CalendarIcon, bg: "#fff4dc", color: "#f7a41d" },
-  task: { Icon: TaskIcon, bg: "#e8ecfb", color: "#405189" },
-  meeting: { Icon: MeetingIcon, bg: "#efe9ff", color: "#7c5cf5" },
-  blocker: { Icon: AlertIcon, bg: "#fde8e8", color: "#f06548" },
-  default: { Icon: BellIcon, bg: "#f0f0f4", color: "#6b6b76" },
+  attendance: { Icon: ClockIcon, bg: "rgba(10,179,156,.13)", color: "#0ab39c" },
+  reminder: { Icon: ClockIcon, bg: "rgba(10,179,156,.13)", color: "#0ab39c" },
+  leave: { Icon: CalendarIcon, bg: "rgba(247,164,29,.15)", color: "#f7a41d" },
+  task: { Icon: TaskIcon, bg: "rgba(64,81,137,.12)", color: "#6a7cc4" },
+  meeting: { Icon: MeetingIcon, bg: "rgba(124,92,245,.13)", color: "#7c5cf5" },
+  blocker: { Icon: AlertIcon, bg: "rgba(240,101,72,.13)", color: "#f06548" },
+  default: { Icon: BellIcon, bg: "rgba(135,138,153,.15)", color: "#878a99" },
 };
 
 const typeMeta = (type) =>
   TYPE_META[String(type || "").toLowerCase()] || TYPE_META.default;
 
+/* Falls back to keywords in the title when the backend type is missing/unknown. */
+const resolveType = (n) => {
+  const type = String(n?.type || "").toLowerCase();
+  if (TYPE_META[type] && type !== "default") return type;
+  const title = String(n?.title || "").toLowerCase();
+  const match = Object.keys(TYPE_META).find(
+    (key) => key !== "default" && title.includes(key),
+  );
+  return match || type || "general";
+};
+
 /* ------------------------------------------------------------------ */
 /* Styles                                                              */
 /* ------------------------------------------------------------------ */
 const styles = `
-.ntf-page { background:#fff; min-height:100vh; padding:20px 24px; color:#1f1f1f; font-size:13px; }
-.ntf-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
-.ntf-title { font-size:16px; font-weight:600; margin:0; }
-.ntf-header-actions { display:flex; align-items:center; gap:10px; }
-.ntf-icon-btn { width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid #e3e3e8; background:#fff; border-radius:6px; color:#444; }
-.ntf-icon-btn:hover { background:#f5f5f8; }
-.ntf-icon-btn.is-accent { background:#f1edff; border-color:#e2dbff; }
-.ntf-divider { width:1px; height:22px; background:#e3e3e8; }
-.ntf-avatar { width:32px; height:32px; border-radius:50%; background:#f28c4b; color:#fff; font-weight:600; font-size:13px; display:inline-flex; align-items:center; justify-content:center; }
-.ntf-user-toggle { background:transparent !important; border:0 !important; box-shadow:none !important; padding:0 !important; display:inline-flex; align-items:center; gap:6px; color:#555 !important; }
+.ntf-page {
+  --ntf-bg:var(--vz-secondary-bg); --ntf-text:var(--vz-heading-color, var(--vz-body-color)); --ntf-muted:var(--vz-secondary-color);
+  --ntf-border:var(--vz-border-color); --ntf-hover:rgba(var(--vz-primary-rgb), .04);
+  --ntf-skel-a:#efeff3; --ntf-skel-b:#f8f8fb;
+  color:var(--ntf-text); font-size:13px;
+}
+[data-bs-theme="dark"] .ntf-page { --ntf-skel-a:#2a2f34; --ntf-skel-b:#32383e; }
 
-.ntf-tabs { border-bottom:1px solid #ececf1; margin-bottom:14px; }
-.ntf-tabs .nav-link { padding:6px 0; margin-right:18px; font-size:12px; font-weight:500; color:#8a8a94; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; cursor:pointer; }
-.ntf-tabs .nav-link.active { color:#1f1f1f; font-weight:600; border-bottom-color:#7c5cf5; background:transparent; }
+.ntf-card { background:var(--ntf-bg); border:1px solid var(--ntf-border); border-radius:16px; box-shadow:0 2px 10px rgba(15,23,42,.04); overflow:hidden; }
 
-.ntf-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
-.ntf-search { max-width:260px; width:100%; }
-.ntf-search .input-group-text { background:#fff; border:1px solid #e3e3e8; border-right:0; color:#8a8a94; padding:0 8px 0 10px; border-radius:6px 0 0 6px; }
-.ntf-search .form-control { border:1px solid #e3e3e8; border-left:0; font-size:12px; height:30px; box-shadow:none; border-radius:0 6px 6px 0; }
-.ntf-search .form-control::placeholder { color:#9a9aa5; }
-.ntf-toolbar-right { display:flex; align-items:center; gap:8px; }
-.ntf-outline-btn { background:#fff !important; border:1px solid #e3e3e8 !important; color:#1f1f1f !important; font-size:12px; font-weight:500; height:30px; padding:0 12px !important; border-radius:6px !important; display:inline-flex; align-items:center; justify-content:center; gap:8px; box-shadow:none !important; }
-.ntf-outline-btn:hover { background:#f7f7fa !important; }
-.ntf-outline-btn:disabled { opacity:.5; }
+/* Header */
+.ntf-hero {
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:20px 22px;
+  background:var(--app-head-tint), var(--vz-secondary-bg);
+  border-bottom:1px solid var(--ntf-border);
+}
+.ntf-hero-left { display:flex; align-items:center; gap:14px; min-width:0; }
+.ntf-hero-icon {
+  position:relative; width:46px; height:46px; flex:0 0 46px; border-radius:13px;
+  display:inline-flex; align-items:center; justify-content:center; color:#fff;
+  background:linear-gradient(135deg, var(--vz-success), color-mix(in srgb, var(--vz-success) 55%, var(--vz-info)));
+  box-shadow:0 6px 16px color-mix(in srgb, var(--vz-success) 32%, transparent);
+}
+.ntf-hero-badge {
+  position:absolute; top:-6px; right:-6px; min-width:20px; height:20px; padding:0 5px; border-radius:999px;
+  background:var(--vz-danger); color:#fff; font-size:11px; font-weight:700; line-height:20px; text-align:center;
+  border:2px solid var(--ntf-bg);
+}
+.ntf-title { font-size:18px; font-weight:700; margin:0; color:var(--ntf-text); }
+.ntf-subtitle { font-size:12.5px; color:var(--ntf-muted); margin-top:2px; }
+.ntf-primary-btn {
+  display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 14px; border-radius:10px;
+  border:1px solid transparent; background:var(--vz-success); color:#fff; font-size:13px; font-weight:600;
+  box-shadow:0 6px 14px color-mix(in srgb, var(--vz-success) 30%, transparent); transition:all .15s ease;
+}
+.ntf-primary-btn:hover:not(:disabled) { transform:translateY(-1px); color:#fff; background:color-mix(in srgb, var(--vz-success) 88%, #000); }
+.ntf-primary-btn:disabled { opacity:.5; box-shadow:none; cursor:not-allowed; }
 
-.ntf-list { list-style:none; margin:0; padding:0; }
+/* Toolbar */
+.ntf-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 22px; border-bottom:1px solid var(--ntf-border); }
+.ntf-seg { display:inline-flex; padding:4px; gap:4px; border-radius:12px; background:var(--vz-tertiary-bg, var(--vz-light)); }
+.ntf-seg-btn {
+  display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 14px; border:0; border-radius:9px;
+  background:transparent; color:var(--ntf-muted); font-size:13px; font-weight:500; transition:all .15s ease;
+}
+.ntf-seg-btn:hover { color:var(--ntf-text); }
+.ntf-seg-btn.is-active { background:var(--ntf-bg); color:var(--vz-primary); font-weight:600; box-shadow:0 1px 4px rgba(15,23,42,.1); }
+.ntf-seg-count { min-width:20px; height:18px; padding:0 6px; border-radius:999px; font-size:11px; font-weight:700; line-height:18px; text-align:center; background:rgba(var(--vz-primary-rgb), .12); color:var(--vz-primary); }
+.ntf-toolbar-right { display:flex; align-items:center; gap:8px; flex:1; justify-content:flex-end; }
+.ntf-search { position:relative; max-width:300px; width:100%; }
+.ntf-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ntf-muted); display:inline-flex; }
+.ntf-search .form-control {
+  height:36px; padding-left:34px; border-radius:10px; font-size:13px;
+  background:var(--vz-tertiary-bg, var(--vz-light)); border:1px solid var(--ntf-border); color:var(--ntf-text);
+}
+.ntf-search .form-control:focus { border-color:rgba(var(--vz-primary-rgb), .5); box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb), .12); }
+.ntf-outline-btn {
+  background:var(--ntf-bg) !important; border:1px solid var(--ntf-border) !important; color:var(--ntf-text) !important;
+  font-size:13px; font-weight:500; height:36px; padding:0 12px !important; border-radius:10px !important;
+  display:inline-flex; align-items:center; gap:6px; box-shadow:none !important; white-space:nowrap;
+}
+.ntf-outline-btn:hover { border-color:rgba(var(--vz-primary-rgb), .5) !important; color:var(--vz-primary) !important; }
 
-/* Row */
-.ntf-row { position:relative; display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid #f0f0f4; transition:background-color .15s ease, opacity .15s ease; }
-.ntf-row:last-child { border-bottom:0; }
-.ntf-row:hover { background:#f4f5f9; }
-.ntf-row.is-unread { background:rgba(64,81,137,.04); cursor:pointer; }
-.ntf-row.is-unread:hover, .ntf-row.is-unread:focus { background:rgba(64,81,137,.09); outline:none; }
-.ntf-row.is-seen { opacity:.72; background:transparent; }
-.ntf-row.is-seen .ntf-row-title { font-weight:500; color:#8a8a94; }
+/* List */
+.ntf-content { padding:8px 22px 18px; }
+.ntf-group-label { display:flex; align-items:center; gap:10px; margin:14px 0 8px; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--ntf-muted); }
+.ntf-group-label::after { content:""; flex:1; height:1px; background:var(--ntf-border); }
+.ntf-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
 
-.ntf-icon { flex:0 0 40px; width:40px; height:40px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; }
-.ntf-icon-skel { flex:0 0 40px; width:40px; height:40px; border-radius:50%; }
+.ntf-row {
+  position:relative; display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:12px;
+  border:1px solid var(--ntf-border); background:var(--ntf-bg); transition:border-color .15s ease, background-color .15s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.ntf-row:hover { border-color:rgba(var(--vz-primary-rgb), .3); box-shadow:0 4px 14px rgba(15,23,42,.06); }
+.ntf-row.is-unread { cursor:pointer; background:rgba(var(--vz-primary-rgb), .045); border-color:rgba(var(--vz-primary-rgb), .18); }
+.ntf-row.is-unread::before { content:""; position:absolute; left:-1px; top:12px; bottom:12px; width:3px; border-radius:0 3px 3px 0; background:var(--vz-primary); }
+.ntf-row.is-unread:focus { outline:none; box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb), .15); }
+.ntf-row.is-seen { opacity:.7; }
+.ntf-row.is-seen .ntf-row-title { font-weight:500; color:var(--ntf-muted); }
+
+.ntf-icon { flex:0 0 42px; width:42px; height:42px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; }
+.ntf-icon-skel { flex:0 0 42px; width:42px; height:42px; border-radius:12px; }
 .ntf-body { flex:1; min-width:0; }
-.ntf-row-title { font-size:13px; font-weight:600; color:#1f1f1f; margin:0 0 3px; }
-.ntf-row-desc { font-size:12px; color:#8a8a94; margin:0 0 6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.ntf-time { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:500; letter-spacing:.3px; text-transform:uppercase; color:#7b7b86; }
+.ntf-row-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:3px; }
+.ntf-row-title { font-size:14px; font-weight:600; color:var(--ntf-text); margin:0; }
+.ntf-type { padding:1px 8px; border-radius:999px; font-size:10.5px; font-weight:600; letter-spacing:.2px; }
+.ntf-row-desc { font-size:13px; color:var(--ntf-muted); margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ntf-time { flex:0 0 auto; display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ntf-muted); white-space:nowrap; }
 
-/* Right side: unread dot, swaps to the menu on hover */
 .ntf-side { position:relative; flex:0 0 32px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; }
-.ntf-dot { width:8px; height:8px; border-radius:50%; background:#405189; transition:opacity .15s ease; }
-.ntf-side .dropdown { position:absolute; top:0; right:0; bottom:0; left:0; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s ease; }
+.ntf-dot { width:9px; height:9px; border-radius:50%; background:var(--vz-primary); box-shadow:0 0 0 4px rgba(var(--vz-primary-rgb), .15); transition:opacity .15s ease; }
+.ntf-side .dropdown { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s ease; }
 .ntf-row:hover .ntf-side .dropdown, .ntf-side .dropdown.show, .ntf-side .dropdown:focus-within { opacity:1; }
 .ntf-row:hover .ntf-dot, .ntf-side:focus-within .ntf-dot, .ntf-side:has(.dropdown.show) .ntf-dot { opacity:0; }
+.ntf-check { display:inline-flex; color:var(--vz-success); padding:2px 6px; }
+.ntf-more-toggle { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; background:transparent !important; border:0 !important; border-radius:8px !important; box-shadow:none !important; color:var(--ntf-muted) !important; padding:0 !important; }
+.ntf-more-toggle:hover { background:rgba(var(--vz-primary-rgb), .08) !important; color:var(--vz-primary) !important; }
 
-.ntf-check { display:inline-flex; color:#0ab39c; padding:2px 6px; }
-.ntf-more-toggle { background:transparent !important; border:0 !important; box-shadow:none !important; color:#555 !important; padding:2px 6px !important; }
-.ntf-more-toggle:hover { color:#000 !important; }
-.ntf-empty { text-align:center; padding:56px 0; color:#8a8a94; font-size:13px; }
-.ntf-end { text-align:center; padding:16px 0 8px; font-size:11px; color:#9a9aa5; }
+.ntf-empty { display:flex; flex-direction:column; align-items:center; text-align:center; padding:56px 16px; }
+.ntf-empty-icon { width:72px; height:72px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:14px; color:var(--vz-success); background:rgba(var(--vz-success-rgb), .12); }
+.ntf-empty-title { font-size:16px; font-weight:600; color:var(--ntf-text); }
+.ntf-empty-sub { font-size:13px; color:var(--ntf-muted); margin-top:4px; }
+.ntf-end { text-align:center; padding:16px 0 4px; font-size:12px; color:var(--ntf-muted); }
 
-.ntf-skel { display:block; border-radius:4px; background:linear-gradient(90deg,#efeff3 25%,#f8f8fb 37%,#efeff3 63%); background-size:400% 100%; animation:ntf-shimmer 1.4s ease infinite; }
+.ntf-skel { display:block; border-radius:4px; background:linear-gradient(90deg,var(--ntf-skel-a) 25%,var(--ntf-skel-b) 37%,var(--ntf-skel-a) 63%); background-size:400% 100%; animation:ntf-shimmer 1.4s ease infinite; }
 .ntf-skel-row { pointer-events:none; }
-.ntf-skel-row:hover { background:transparent; }
 @keyframes ntf-shimmer { 0% { background-position:100% 50%; } 100% { background-position:0 50%; } }
 @media (prefers-reduced-motion: reduce) { .ntf-skel { animation:none; } }
 
 @media (max-width: 768px) {
-  .ntf-page { padding:16px 12px; }
-  .ntf-toolbar { flex-direction:column; align-items:stretch; }
+  .ntf-hero, .ntf-toolbar { padding:14px; }
+  .ntf-content { padding:4px 14px 14px; }
+  .ntf-toolbar-right { flex-basis:100%; }
   .ntf-search { max-width:100%; }
-  .ntf-toolbar-right { justify-content:space-between; }
+  .ntf-time { display:none; }
 }
 `;
 
@@ -374,6 +410,7 @@ const RowMenu = ({ notification, onMarkRead }) => {
   return (
     <Dropdown isOpen={open} toggle={() => setOpen((v) => !v)}>
       <DropdownToggle
+        data-testid={testId("notifications-row", notification.id, "more-actions-trigger")}
         tag="button"
         type="button"
         className="btn ntf-more-toggle"
@@ -382,7 +419,7 @@ const RowMenu = ({ notification, onMarkRead }) => {
         <DotsIcon />
       </DropdownToggle>
       <DropdownMenu end container="body">
-        <DropdownItem onClick={() => onMarkRead(notification.id)}>
+        <DropdownItem data-testid={testId("notifications-row", notification.id, "mark-as-read-option")} onClick={() => onMarkRead(notification.id)}>
           Mark as read
         </DropdownItem>
       </DropdownMenu>
@@ -409,7 +446,6 @@ const Notifications = () => {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
   const [sortOpen, setSortOpen] = useState(false);
-  const [userOpen, setUserOpen] = useState(false);
 
   const abortRef = useRef(null);
 
@@ -573,225 +609,283 @@ const Notifications = () => {
     });
   }, [items, query, sort]);
 
-  const emptyText = query
-    ? "No notifications match your search."
+  const emptyState = query
+    ? {
+        icon: <SearchIcon />,
+        title: "No results",
+        sub: "No notifications match your search.",
+      }
     : activeTab === "unread"
-      ? "You\u2019re all caught up."
-      : "No read notifications yet.";
+      ? {
+          icon: <CheckIcon />,
+          title: "You\u2019re all caught up",
+          sub: "New notifications will show up here.",
+        }
+      : {
+          icon: <BellIcon size={28} />,
+          title: "Nothing here yet",
+          sub: "Notifications you have read will appear here.",
+        };
+
+  const groups = useMemo(() => {
+    const out = [];
+    visible.forEach((n) => {
+      const label = dayGroup(n.created_on);
+      const last = out[out.length - 1];
+      if (last && last.label === label) last.items.push(n);
+      else out.push({ label, items: [n] });
+    });
+    return out;
+  }, [visible]);
+
+  const unreadCount = activeTab === "unread" ? count : null;
+  const hasUnread = items.some((n) => !n.is_read);
 
   return (
+    <div className="page-content">
+    <Container fluid>
     <div className="ntf-page">
       <style>{styles}</style>
 
-      {/* Header */}
-      <div className="ntf-header">
-        <h1 className="ntf-title">Notifications</h1>
-        <div className="ntf-header-actions">
-          <Button
-            type="button"
-            className="ntf-icon-btn is-accent"
-            aria-label="AI assistant"
-          >
-            <SparkIcon />
-          </Button>
-          <Button
-            type="button"
-            className="ntf-icon-btn"
-            aria-label="Toggle layout"
-          >
-            <LayoutIcon />
-          </Button>
-          <span className="ntf-divider" />
-          <Dropdown isOpen={userOpen} toggle={() => setUserOpen((v) => !v)}>
-            <DropdownToggle
-              tag="button"
-              type="button"
-              className="btn ntf-user-toggle"
-              aria-label="User menu"
-            >
-              <span className="ntf-avatar">J</span>
-              <ChevronDown />
-            </DropdownToggle>
-            <DropdownMenu end>
-              <DropdownItem>Profile</DropdownItem>
-              <DropdownItem>Settings</DropdownItem>
-              <DropdownItem divider />
-              <DropdownItem>Sign out</DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Nav className="ntf-tabs" tabs>
-        <NavItem>
-          <NavLink
-            className={activeTab === "unread" ? "active" : ""}
-            onClick={() => setActiveTab("unread")}
-          >
-            Unread
-          </NavLink>
-        </NavItem>
-        <NavItem>
-          <NavLink
-            className={activeTab === "read" ? "active" : ""}
-            onClick={() => setActiveTab("read")}
-          >
-            Read
-          </NavLink>
-        </NavItem>
-      </Nav>
-
-      {/* Toolbar */}
-      <div className="ntf-toolbar">
-        <InputGroup className="ntf-search">
-          <InputGroupText>
-            <SearchIcon />
-          </InputGroupText>
-          <Input
-            type="text"
-            placeholder="Search for notification"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search for notification"
-          />
-        </InputGroup>
-
-        <div className="ntf-toolbar-right">
-          <Dropdown isOpen={sortOpen} toggle={() => setSortOpen((v) => !v)}>
-            <DropdownToggle
-              tag="button"
-              type="button"
-              className="btn ntf-outline-btn"
-            >
-              Date and time <ChevronDown />
-            </DropdownToggle>
-            <DropdownMenu end>
-              {SORT_OPTIONS.map((opt) => (
-                <DropdownItem
-                  key={opt.value}
-                  active={sort === opt.value}
-                  onClick={() => setSort(opt.value)}
-                >
-                  {opt.label}
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
-
-          <Button
-            type="button"
-            className="ntf-outline-btn"
-            onClick={handleMarkAllRead}
-            disabled={markingAll || loading || !items.some((n) => !n.is_read)}
-          >
-            {markingAll ? <Spinner size="sm" /> : "Mark all as read"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Error */}
-      {error && (
-        <Alert
-          color="danger"
-          className="py-2 d-flex align-items-center justify-content-between"
-          toggle={() => setError("")}
-        >
-          <span>{error}</span>
-          {items.length === 0 && (
-            <Button
-              size="sm"
-              color="danger"
-              outline
-              className="ms-3"
-              onClick={() => fetchPage(1)}
-            >
-              Retry
-            </Button>
-          )}
-        </Alert>
-      )}
-
-      {/* List */}
-      {loading ? (
-        <SkeletonList count={8} />
-      ) : visible.length === 0 ? (
-        !error && <div className="ntf-empty">{emptyText}</div>
-      ) : (
-        <ul className="ntf-list">
-          {visible.map((n) => {
-            const { Icon, bg, color } = typeMeta(n.type);
-            return (
-              <li
-                key={n.id}
-                className={`ntf-row ${
-                  n.is_read
-                    ? activeTab === "unread"
-                      ? "is-seen"
-                      : ""
-                    : "is-unread"
-                }`}
-                role={n.is_read ? undefined : "button"}
-                tabIndex={n.is_read ? undefined : 0}
-                onClick={() => handleMarkRead(n.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleMarkRead(n.id);
-                  }
-                }}
-              >
-                <span
-                  className="ntf-icon"
-                  style={{ background: bg, color }}
-                  title={typeLabel(n.type)}
-                >
-                  <Icon size={18} />
+      <div className="ntf-card">
+        {/* Header */}
+        <div className="ntf-hero">
+          <div className="ntf-hero-left">
+            <span className="ntf-hero-icon">
+              <BellIcon size={22} />
+              {unreadCount > 0 && (
+                <span className="ntf-hero-badge">
+                  {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
+              )}
+            </span>
+            <div className="min-w-0">
+              <h1 className="ntf-title">Notifications</h1>
+              <div className="ntf-subtitle">
+                {unreadCount > 0
+                  ? `You have ${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`
+                  : "Stay updated with your latest activity"}
+              </div>
+            </div>
+          </div>
 
-                <div className="ntf-body">
-                  <p className="ntf-row-title">{n.title}</p>
-                  <p className="ntf-row-desc">{n.message}</p>
-                  <span
-                    className="ntf-time"
-                    title={
-                      n.created_on
-                        ? new Date(n.created_on).toLocaleString()
-                        : ""
-                    }
-                  >
-                    <ClockIcon size={11} />
-                    {formatTime(n.created_on)}
-                  </span>
-                </div>
+          <button
+            data-testid="notifications-mark-all-as-read-button"
+            type="button"
+            className="ntf-primary-btn"
+            onClick={handleMarkAllRead}
+            disabled={markingAll || loading || !hasUnread}
+          >
+            {markingAll ? <Spinner size="sm" /> : <CheckIcon />}
+            Mark all as read
+          </button>
+        </div>
 
-                <div
-                  className="ntf-side"
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => e.stopPropagation()}
-                >
-                  {!n.is_read && (
-                    <span className="ntf-dot" aria-label="Unread" />
-                  )}
-                  <RowMenu notification={n} onMarkRead={handleMarkRead} />
-                </div>
-              </li>
-            );
-          })}
-          {loadingMore &&
-            Array.from({ length: 3 }).map((_, i) => (
-              <SkeletonRow key={`sk-${i}`} index={i} />
+        {/* Toolbar */}
+        <div className="ntf-toolbar">
+          <div className="ntf-seg" role="tablist">
+            {[
+              { id: "unread", label: "Unread" },
+              { id: "read", label: "Read" },
+            ].map((tab) => (
+              <button
+                data-testid={testId("notifications", itemTestKey(tab), "button")}
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`ntf-seg-btn ${activeTab === tab.id ? "is-active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+                {tab.id === "unread" && unreadCount > 0 && (
+                  <span className="ntf-seg-count">{unreadCount}</span>
+                )}
+              </button>
             ))}
-        </ul>
-      )}
+          </div>
 
-      {/* Infinite scroll sentinel + end state */}
-      {!loading && hasMore && (
-        <div ref={sentinelRef} style={{ height: 1 }} aria-hidden="true" />
-      )}
-      {!loading && !hasMore && items.length > 0 && totalPages > 1 && (
-        <div className="ntf-end">You&rsquo;ve reached the end</div>
-      )}
+          <div className="ntf-toolbar-right">
+            <div className="ntf-search">
+              <span className="ntf-search-icon">
+                <SearchIcon />
+              </span>
+              <Input
+                data-testid="notifications-search-notifications-input"
+                type="text"
+                placeholder="Search notifications"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Search notifications"
+              />
+            </div>
+
+            <Dropdown isOpen={sortOpen} toggle={() => setSortOpen((v) => !v)}>
+              <DropdownToggle
+                tag="button"
+                type="button"
+                data-testid="notifications-sort-trigger"
+                className="btn ntf-outline-btn"
+              >
+                {SORT_OPTIONS.find((o) => o.value === sort)?.label}
+                <ChevronDown />
+              </DropdownToggle>
+              <DropdownMenu end>
+                {SORT_OPTIONS.map((opt) => (
+                  <DropdownItem
+                    data-testid={testId("notifications-sort-option", opt.value)}
+                    key={opt.value}
+                    active={sort === opt.value}
+                    onClick={() => setSort(opt.value)}
+                  >
+                    {opt.label}
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          </div>
+        </div>
+
+        <div className="ntf-content">
+          {/* Error */}
+          {error && (
+            <Alert
+              color="danger"
+              className="py-2 mt-3 d-flex align-items-center justify-content-between"
+              toggle={() => setError("")}
+            >
+              <span>{error}</span>
+              {items.length === 0 && (
+                <Button
+                  data-testid="notifications-retry-button"
+                  size="sm"
+                  color="danger"
+                  outline
+                  className="ms-3"
+                  onClick={() => fetchPage(1)}
+                >
+                  Retry
+                </Button>
+              )}
+            </Alert>
+          )}
+
+          {/* List */}
+          {loading ? (
+            <div className="mt-3">
+              <SkeletonList count={6} />
+            </div>
+          ) : visible.length === 0 ? (
+            !error && (
+              <div className="ntf-empty">
+                <span className="ntf-empty-icon">{emptyState.icon}</span>
+                <div className="ntf-empty-title">{emptyState.title}</div>
+                <div className="ntf-empty-sub">{emptyState.sub}</div>
+              </div>
+            )
+          ) : (
+            <>
+              {groups.map((group) => (
+                <section key={group.label}>
+                  <div className="ntf-group-label">{group.label}</div>
+                  <ul className="ntf-list">
+                    {group.items.map((n) => {
+                      const { Icon, bg, color } = typeMeta(resolveType(n));
+                      return (
+                        <li
+                          key={n.id}
+                          className={`ntf-row ${
+                            n.is_read
+                              ? activeTab === "unread"
+                                ? "is-seen"
+                                : ""
+                              : "is-unread"
+                          }`}
+                          role={n.is_read ? undefined : "button"}
+                          tabIndex={n.is_read ? undefined : 0}
+                          onClick={() => handleMarkRead(n.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleMarkRead(n.id);
+                            }
+                          }}
+                        >
+                          <span
+                            className="ntf-icon"
+                            style={{ background: bg, color }}
+                            title={typeLabel(resolveType(n))}
+                          >
+                            <Icon size={19} />
+                          </span>
+
+                          <div className="ntf-body">
+                            <div className="ntf-row-head">
+                              <p className="ntf-row-title">{n.title}</p>
+                              <span
+                                className="ntf-type"
+                                style={{ background: bg, color }}
+                              >
+                                {typeLabel(resolveType(n))}
+                              </span>
+                            </div>
+                            <p className="ntf-row-desc" title={n.message}>
+                              {n.message}
+                            </p>
+                          </div>
+
+                          <span
+                            className="ntf-time"
+                            title={
+                              n.created_on
+                                ? new Date(n.created_on).toLocaleString()
+                                : ""
+                            }
+                          >
+                            <ClockIcon size={12} />
+                            {formatTime(n.created_on)}
+                          </span>
+
+                          <div
+                            className="ntf-side"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            {!n.is_read && (
+                              <span className="ntf-dot" aria-label="Unread" />
+                            )}
+                            <RowMenu
+                              notification={n}
+                              onMarkRead={handleMarkRead}
+                            />
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+              {loadingMore && (
+                <ul className="ntf-list mt-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <SkeletonRow key={`sk-${i}`} index={i} />
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {/* Infinite scroll sentinel + end state */}
+          {!loading && hasMore && (
+            <div ref={sentinelRef} style={{ height: 1 }} aria-hidden="true" />
+          )}
+          {!loading && !hasMore && items.length > 0 && totalPages > 1 && (
+            <div className="ntf-end">You&rsquo;ve reached the end</div>
+          )}
+        </div>
+      </div>
+    </div>
+    </Container>
     </div>
   );
 };

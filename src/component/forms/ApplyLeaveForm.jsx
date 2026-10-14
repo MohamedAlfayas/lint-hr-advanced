@@ -1,11 +1,26 @@
-import axios from "axios";
-import { FilePond } from "filepond";
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import { Button, Col, Form, Input, FormFeedback, Label, Row } from "reactstrap";
-import Select from "react-select";
-import { Api } from "../../common/api/Api";
+import { Controller, useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as Yup from "yup";
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Chip,
+  FormHelperText,
+  Grid,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
+import { TimePicker as MuiTimePicker } from "@mui/x-date-pickers/TimePicker";
+import withFieldClickOpen from "../../shared/ui/form/withFieldClickOpen";
+import { alpha } from "@mui/material/styles";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
+import EventAvailableRoundedIcon from "@mui/icons-material/EventAvailableRounded";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { toggleRSBView } from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import {
@@ -15,26 +30,16 @@ import {
 import {
   ConvertDateFormat,
   ConvertISODateFormat,
-  ConvertDayNameFromISO,
-  convertFromToDateFormat,
-  convertDate,
   timeConvert,
-  DateFormated,
 } from "../../common/js/ConvertDateFormat";
-import Flatpickr from "react-flatpickr";
 import {
-  single_day_type_leave,
-  multiple_day_type_leave,
   leave_type_day_unit,
   leave_type_hour_unit,
   day_type,
 } from "../../common/constant/Constants";
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
-import { DatePicker, Space, TimePicker, Tooltip } from "antd";
+import { DatePicker, Tooltip } from "antd";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { DateFormat, DateTimeFormat } from "../../common/constant/Constants";
@@ -44,8 +49,79 @@ import {
 } from "../../common/js/ConvertDateTimeFormat";
 import { setLeaveTypeForCurrentEmployee } from "../../redux/reducers/ChildReducer/LeaveTypeReducer";
 import { setHoliday } from "../../redux/reducers/ChildReducer/HolidayReducer";
+import SidebarFormLayout from "../../shared/ui/SidebarFormLayout";
+import { FormTextField } from "../../shared/ui/form";
 
 dayjs.extend(customParseFormat);
+
+const REASON_MAX = 250;
+const REASON_CHARS = /[^A-Za-z0-9\s.,!?'"\-_()&:;]/g;
+
+const schema = Yup.object({
+  leave_type_id: Yup.number()
+    .typeError("Select Leave Type")
+    .required("Select Leave Type")
+    .min(1, "Please Select Leave Type"),
+  reason: Yup.string()
+    .trim()
+    .required("Reason is required")
+    .min(2, "Reason must be at least 2 characters")
+    .max(REASON_MAX, "Reason cannot exceed 250 characters")
+    .matches(
+      /^[A-Za-z0-9\s.,!?'"\-_()&:;]+$/,
+      "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; are allowed",
+    )
+    .test(
+      "not-empty-space",
+      "Reason cannot contain only spaces",
+      (value) => value && value.trim().length > 0,
+    ),
+});
+
+const toFormValues = (obj) => ({
+  leave_type_id: obj?.leave_type_id ?? null,
+  reason: obj?.reason ?? "",
+});
+
+// antd pickers sized to match the small MUI inputs
+const ANT_PICKER_STYLE = { width: "100%", height: 44 };
+const TimePicker = withFieldClickOpen(MuiTimePicker);
+
+const TIME_PICKER_PROPS = {
+  format: "HH:mm",
+  ampm: false,
+  timeSteps: { minutes: 1 },
+};
+const timeFieldSlotProps = (clearable) => ({
+  textField: { size: "small", fullWidth: true },
+  ...(clearable && { field: { clearable: true } }),
+});
+
+const FieldLabel = ({ children, required }) => (
+  <Typography
+    variant="body2"
+    color="text.secondary"
+    sx={{ mb: 0.75, fontSize: 13 }}
+  >
+    {children}
+    {required && " *"}
+  </Typography>
+);
+
+const FieldHint = ({ children, error }) => (
+  <FormHelperText error={error} sx={{ mx: 0.25 }}>
+    {children}
+  </FormHelperText>
+);
+
+const ReadOnlyField = ({ label, value, helperText }) => (
+  <TextField
+    label={label}
+    value={value}
+    helperText={helperText}
+    slotProps={{ input: { readOnly: true } }}
+  />
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: derive shift start/end from work-schedule workday array
@@ -138,10 +214,13 @@ const checkPermissionAllowed = (leaveTypeObj, requestedStart, requestedEnd) => {
 //   form is opened from an attendance row), the leave date is fixed to it and
 //   cannot be changed. Only the time (hour-unit leave) / day duration can be
 //   adjusted. When omitted, the form behaves exactly as before.
+//   onCancel (optional) — Cancel button handler; defaults to closing the
+//   right sidebar.
 // ─────────────────────────────────────────────────────────────────────────────
-const ApplyLeaveForm = ({ lockedDate = null }) => {
+const ApplyLeaveForm = ({ lockedDate = null, onCancel }) => {
   const dispatch = useDispatch();
   const [leaveapplyObj, setLeaveApplyObj] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     dispatch(setHoliday(GetLocalStorageData("holiday")));
@@ -160,6 +239,7 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
   const [hourDiff, setHourDiff] = useState(null);
   const [inBetweenDays, setInBetweenDays] = useState([]);
   const [leaveBalanceCount, setLeaveBalanceCount] = useState(0);
+  const balanceTone = Number(leaveBalanceCount) > 0 ? "success" : "error";
   const [timeError, setTimeError] = useState("");
 
   const [isRestrictedLeave, setIsRestrictedLeave] = useState(false);
@@ -174,6 +254,16 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
   const [halfDayEndTime, setHalfDayEndTime] = useState(null);
 
   const [halfDayBoundaries, setHalfDayBoundaries] = useState(null);
+
+  const { control, handleSubmit, reset } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onTouched",
+    defaultValues: toFormValues(form_obj),
+  });
+
+  useEffect(() => {
+    reset(toFormValues(form_obj));
+  }, [form_obj, reset]);
 
   // ── Locked date (fixed leave date when opened from an attendance row) ────
   // lockedISO         -> "YYYY-MM-DD" (used for comparisons / in_between_dates)
@@ -251,21 +341,58 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
   // Returns { style, tooltip } for a given ISO date, or null if no highlight needed
   const getDateCellInfo = (currentISO) => {
     if (holidayMap[currentISO]) {
-      return {
-        style: { backgroundColor: "#23bba6", color: "#fff" }, // yellow = holiday
-        tooltip: holidayMap[currentISO],
-      };
+      return { kind: "holiday", tooltip: holidayMap[currentISO] };
     }
     if (appliedLeaveMap[currentISO]) {
-      console.log(appliedLeaveMap, "appliedLeaveMap");
-
-      return {
-        style: { backgroundColor: "#405189", color: "#fff" }, // red = already applied
-        tooltip: appliedLeaveMap[currentISO],
-      };
+      return { kind: "applied", tooltip: appliedLeaveMap[currentISO] };
     }
     return null;
   };
+
+  const pickerLegend = () => (
+    <div className="lv-legend">
+      <span>
+        <i className="is-holiday" />
+        Holiday
+      </span>
+      <span>
+        <i className="is-applied" />
+        Already applied
+      </span>
+      <span>
+        <i className="is-today" />
+        Today
+      </span>
+      <span>
+        <i className="is-selected" />
+        Selected
+      </span>
+    </div>
+  );
+
+  // antd cellRender that colours holidays / already-applied dates with a tooltip
+  const renderDateCell =
+    (extraStyle = {}) =>
+    (current, info) => {
+      if (info.type !== "date" || !current?.format) {
+        return info.originNode;
+      }
+      const currentISO = current.format("YYYY-MM-DD");
+      const cellInfo = getDateCellInfo(currentISO);
+      if (cellInfo) {
+        return (
+          <Tooltip title={cellInfo.tooltip}>
+            <div
+              className={`ant-picker-cell-inner lv-mark is-${cellInfo.kind}`}
+              style={extraStyle}
+            >
+              {current.date()}
+            </div>
+          </Tooltip>
+        );
+      }
+      return info.originNode;
+    };
 
   const { leave_type_for_current_employee } = useSelector(
     (state) => state.LeaveTypeReducer,
@@ -274,7 +401,7 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
   const leaveTypeOptions = leave_type_for_current_employee.map((item) => ({
     value: item.leave_type.id,
     label: item.leave_type.name,
-    balance_leave_count: item.available_count,
+    balance_leave_count: item.paid_balance_count ?? item.available_count,
     unit: item.leave_type.unit,
     full_obj: item,
   }));
@@ -331,7 +458,9 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
             (d) => d.leave_type?.id === form_obj.leave_type_id,
           );
           if (leave_type_record) {
-            setLeaveBalanceCount(leave_type_record.available_count);
+            setLeaveBalanceCount(
+              leave_type_record.paid_balance_count ?? leave_type_record.available_count,
+            );
             handleStartEndDatesChange(leave_type_record, true);
             setSelectedLeaveTypeObj(leave_type_record);
 
@@ -386,7 +515,6 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
       }
     },
     [form_obj],
-    restrictedHolidayOptions,
   ); // eslint-disable-line
 
   const handleLeaveTypeChange = (selectedOption) => {
@@ -579,44 +707,6 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
     );
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === "reason") {
-      const filteredValue = value
-        .replace(/^\s+/, "")
-        .replace(/[^A-Za-z0-9\s.,!?'"\-_()&:;]/g, "");
-
-      setLeaveApplyObj({
-        ...leaveapplyObj,
-        reason: filteredValue,
-      });
-
-      FormikForm.setFieldValue("reason", filteredValue);
-      FormikForm.setFieldTouched("reason", true, false);
-
-      if (filteredValue.length > 250) {
-        FormikForm.setFieldError(
-          "reason",
-          "Reason cannot exceed 250 characters.",
-        );
-      } else if (filteredValue.trim() === "") {
-        FormikForm.setFieldError("reason", "Reason is required");
-      } else {
-        FormikForm.setFieldError("reason", undefined);
-      }
-
-      return;
-    } else {
-      setLeaveApplyObj({
-        ...leaveapplyObj,
-        [name]: value,
-      });
-
-      FormikForm.setFieldValue(name, value);
-    }
-  };
-
   const handleDayType = (e) => {
     const value = e?.value || null;
     const updatedDaysCount = value === 1 ? 1 : value === 2 ? 0.5 : 0;
@@ -805,896 +895,650 @@ const ApplyLeaveForm = ({ lockedDate = null }) => {
   const currentUnit =
     selectedLeaveTypeObj?.leave_type?.unit || selectedLeaveTypeObj?.unit;
 
-  const FormikForm = useFormik({
-    enableReinitialize: true,
-    initialValues: leaveapplyObj,
-    validationSchema: Yup.object({
-      leave_type_id: Yup.number()
-        .required("Select Leave Type")
-        .min(1, "Please Select Leave Type"),
-      reason: Yup.string()
-        .trim()
-        .required("Reason is required")
-        .min(2, "Reason must be at least 2 characters")
-        .max(250, "Reason cannot exceed 250 characters")
-        .matches(
-          /^[A-Za-z0-9\s.,!?'"\-_()&:;]+$/,
-          "Only alphabets, numbers, spaces and . , ! ? ' \" - _ ( ) & : ; are allowed",
-        )
-        .test(
-          "not-empty-space",
-          "Reason cannot contain only spaces",
-          (value) => value && value.trim().length > 0,
-        ),
-    }),
-    onSubmit: async (values) => {
-      values.reason = values.reason.trim();
-      if (isCompOffLeave && !compOffWorkDate) {
-        setCompOffDateError("Please select the Work Date");
-        toast.error("Please select the Work Date for Comp-Off leave");
+  const onSubmit = async (formValues) => {
+    const values = { ...leaveapplyObj, reason: formValues.reason.trim() };
+    if (isCompOffLeave && !compOffWorkDate) {
+      setCompOffDateError("Please select the Work Date");
+      toast.error("Please select the Work Date for Comp-Off leave");
+      return;
+    }
+    if (values.day_type === 2) {
+      if (!halfDayStartTime) {
+        toast.error("Please select Start Time");
         return;
       }
-      if (values.day_type === 2) {
-        if (!halfDayStartTime) {
-          toast.error("Please select Start Time");
-          return;
-        }
-        if (!halfDayEndTime) {
-          toast.error("Please select End Time");
-          return;
-        }
-        if (timeError) {
-          toast.error(timeError);
-          return;
-        }
-      }
-
-      const finalLeaveObj = {
-        ...values,
-        ...(isCompOffLeave && {
-          comp_off_work_date: compOffWorkDate.format("YYYY-MM-DD"),
-        }),
-        start:
-          values.day_type === 2
-            ? halfDayStartTime.format("YYYY-MM-DD HH:mm:00")
-            : values.start,
-        end:
-          values.day_type === 2
-            ? halfDayEndTime.format("YYYY-MM-DD HH:mm:00")
-            : values.end,
-      };
-
-      if (isRestrictedLeave) {
-        delete finalLeaveObj.in_between_dates;
-      }
-
-      dispatch(setLoaderVisible(true));
-
-      if (
-        !finalLeaveObj.requested_leave_count ||
-        finalLeaveObj.requested_leave_count === 0
-      ) {
-        toast.error("Selected Hour Can't Be Zero");
-        dispatch(setLoaderVisible(false));
+      if (!halfDayEndTime) {
+        toast.error("Please select End Time");
         return;
       }
+      if (timeError) {
+        toast.error(timeError);
+        return;
+      }
+    }
 
-      try {
-        const ApiRes = await PostApi(
-          "leave/leave-application/create/",
-          finalLeaveObj,
-          false,
-        );
+    const finalLeaveObj = {
+      ...values,
+      ...(isCompOffLeave && {
+        comp_off_work_date: compOffWorkDate.format("YYYY-MM-DD"),
+      }),
+      start:
+        values.day_type === 2
+          ? halfDayStartTime.format("YYYY-MM-DD HH:mm:00")
+          : values.start,
+      end:
+        values.day_type === 2
+          ? halfDayEndTime.format("YYYY-MM-DD HH:mm:00")
+          : values.end,
+    };
 
-        if (ApiRes.status === 200) {
-          if (leaveapplyObj.id === 0) {
-            dispatch(addLeaveApplication(ApiRes?.data.data));
-          } else {
-            dispatch(editLeaveApplication(ApiRes?.data?.data));
-          }
-          dispatch(
-            setLeaveTypeForCurrentEmployee(
-              ApiRes?.data?.leave_type_for_employee || [],
-            ),
-          );
-          dispatch(toggleRSBView(false));
-          toast.success(ApiRes?.data?.message);
+    if (isRestrictedLeave) {
+      delete finalLeaveObj.in_between_dates;
+    }
+
+    setIsSubmitting(true);
+
+    if (
+      !finalLeaveObj.requested_leave_count ||
+      finalLeaveObj.requested_leave_count === 0
+    ) {
+      toast.error("Selected Hour Can't Be Zero");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const ApiRes = await PostApi(
+        "leave/leave-application/create/",
+        finalLeaveObj,
+        false,
+      );
+
+      if (ApiRes.status === 200) {
+        if (leaveapplyObj.id === 0) {
+          dispatch(addLeaveApplication(ApiRes?.data.data));
         } else {
-          toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
+          dispatch(editLeaveApplication(ApiRes?.data?.data));
         }
-      } catch (error) {
-        console.error(error);
-        toast.error("Something went wrong!");
-      } finally {
-        dispatch(setLoaderVisible(false));
+        dispatch(
+          setLeaveTypeForCurrentEmployee(
+            ApiRes?.data?.leave_type_for_employee || [],
+          ),
+        );
+        dispatch(toggleRSBView(false));
+        toast.success(ApiRes?.data?.message);
+      } else {
+        toast.error(ApiRes?.data?.message || ApiRes?.data?.detail);
       }
-    },
-  });
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong!");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toPickerDate = (value) =>
+    value
+      ? dayjs(ConvertDateFormat(ConvertISODateFormat(value)), DateFormat)
+      : null;
+
+  const toPickerDateTime = (value) =>
+    value
+      ? dayjs(
+          ConvertToDateTimeFormat(ConvertToISODateTimeFormat(value)),
+          DateTimeFormat,
+        )
+      : null;
+
+  const renderDayDuration = () => (
+    <Box>
+      <FieldLabel>Day Duration</FieldLabel>
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        color="primary"
+        value={leaveapplyObj?.day_type ?? null}
+        onChange={(_, next) => {
+          if (next === null) return;
+          handleDayType({ value: next });
+        }}
+        sx={{ "& .MuiToggleButton-root": { px: 2, py: 0.75, fontSize: 13 } }}
+      >
+        {(day_type || []).map((o) => (
+          <ToggleButton key={o.value} value={o.value}>
+            {o.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </Box>
+  );
+
+  const showDayUnitPicker =
+    !!currentUnit && currentUnit === leave_type_day_unit && !isRestrictedLeave;
+  const showHourUnitPicker =
+    !!currentUnit && currentUnit === leave_type_hour_unit;
+  // Restricted leave takes its date from the chosen holiday, so it has no duration fields.
+  const showDurationSection =
+    !isRestrictedLeave &&
+    (showDayUnitPicker || showHourUnitPicker || leaveapplyObj?.day_type === 2);
+
+  const reasonField = (
+    <FormTextField
+      name="reason"
+      control={control}
+      label="Reason"
+      placeholder="Enter Reason"
+      required
+      multiline
+      minRows={3}
+      maxRows={6}
+      maxLength={REASON_MAX}
+      sanitize={(v) => v.replace(/^\s+/, "").replace(REASON_CHARS, "")}
+    />
+  );
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <React.Fragment>
-      <Row>
-        <Col>
-          <Form onSubmit={FormikForm.handleSubmit} action="javascript:void(0)">
-            <Row className="g-3">
-              {/* ── Leave Type ── */}
-              <Col lg={12}>
-                <div className="mb-3">
-                  <Label>Leave Type *</Label>
-                  <Select
-                    name="leave_type_id"
-                    isMulti={false}
-                    options={leaveTypeOptions}
-                    isSearchable={true}
-                    filterOption={(option, inputValue) =>
-                      option.label
-                        .toLowerCase()
-                        .includes(inputValue.toLowerCase())
-                    }
-                    noOptionsMessage={() => "No records found"}
-                    styles={{
-                      control: (provided, state) => ({
-                        ...provided,
-                        borderColor:
-                          !state.isFocused &&
-                          FormikForm.touched.leave_type_id &&
-                          FormikForm.errors.leave_type_id
-                            ? "red !important"
-                            : provided.borderColor,
-                      }),
-                    }}
+    <SidebarFormLayout
+      onSubmit={handleSubmit(onSubmit)}
+      isSubmitting={isSubmitting}
+      submitLabel="Apply"
+      onCancel={onCancel}
+    >
+      <Stack spacing={2.5}>
+        <Controller
+          name="leave_type_id"
+          control={control}
+          render={({ field, fieldState: { error } }) => (
+            <Autocomplete
+              options={leaveTypeOptions}
+              value={
+                leaveTypeOptions.find((o) => o.value === field.value) || null
+              }
+              getOptionLabel={(o) => o?.label ?? ""}
+              isOptionEqualToValue={(o, v) => o.value === v.value}
+              noOptionsText="No records found"
+              disableClearable
+              onChange={(_, selected) => {
+                field.onChange(selected ? selected.value : null);
+                handleLeaveTypeChange(selected);
+              }}
+              onBlur={field.onBlur}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  inputRef={field.ref}
+                  label="Leave Type"
+                  placeholder="Select Leave Type"
+                  required
+                  error={!!error}
+                  helperText={error?.message}
+                />
+              )}
+            />
+          )}
+        />
+
+        {!!currentUnit && !isRestrictedLeave && !isCompOffLeave && (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1.25}
+            sx={{
+              px: 1.5,
+              py: 1.25,
+              borderRadius: 3,
+              border: 1,
+              borderColor: (t) => alpha(t.palette[balanceTone].main, 0.3),
+              bgcolor: (t) => alpha(t.palette[balanceTone].main, 0.08),
+            }}
+          >
+            <EventAvailableRoundedIcon fontSize="small" color={balanceTone} />
+            <Typography variant="body2" sx={{ flex: 1, color: "text.secondary" }}>
+              Available balance
+              {balanceTone === "error" && " · further leave will be unpaid"}
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: `${balanceTone}.main` }}>
+              {leaveBalanceCount === null || leaveBalanceCount === undefined
+                ? "—"
+                : `${leaveBalanceCount} ${currentUnit === leave_type_hour_unit ? "hrs" : "days"}`}
+            </Typography>
+          </Stack>
+        )}
+
+        {/* ── Restricted Holiday Selection ── */}
+        {isRestrictedLeave && (
+          <>
+            <Autocomplete
+              options={restrictedHolidayOptions}
+              value={selectedRestrictedHoliday}
+              getOptionLabel={(o) => o?.label ?? ""}
+              isOptionEqualToValue={(o, v) => o.value === v.value}
+              disableClearable
+              onChange={(_, selected) =>
+                handleRestrictedHolidayChange(selected)
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Restricted Holiday"
+                  placeholder="Select Restricted Holiday"
+                  required
+                  helperText={
+                    restrictedHolidayOptions.length === 0
+                      ? lockedISO
+                        ? "No restricted holiday falls on the selected date."
+                        : "No restricted holidays available for your work schedule."
+                      : undefined
+                  }
+                  slotProps={{
+                    ...params.slotProps,
+                    formHelperText: { sx: { color: "warning.main" } },
+                  }}
+                />
+              )}
+            />
+
+            {leaveapplyObj?.start && (
+              <TextField
+                label="Date"
+                value={ConvertDateFormat(leaveapplyObj.start)}
+                disabled
+              />
+            )}
+          </>
+        )}
+      </Stack>
+
+      {showDurationSection && (
+        <Stack spacing={2.5}>
+          {/* ── Day-unit: date pickers ── */}
+          {showDayUnitPicker &&
+            (isCompOffLeave ? (
+              <>
+                <Box>
+                  <FieldLabel>Leave Start Date / Leave End Date</FieldLabel>
+                  <Grid container spacing={2}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <DatePicker
+                        name="start_date"
+                        format={DateFormat}
+                        placeholder="Start Date"
+                        disabled={!!lockedISO}
+                        disabledDate={disabledDate}
+                        inputReadOnly={true}
+                        // pointerEvents re-enables hover even though the disabled <td> ancestor has pointer-events: none
+                        cellRender={renderDateCell({ pointerEvents: "auto" })}
+                        style={ANT_PICKER_STYLE}
+                        value={toPickerDate(leaveapplyObj?.start)}
+                        onChange={(date, dateStr) => {
+                          const isoDate = !dateStr
+                            ? null
+                            : ConvertISODateFormat(ConvertDateFormat(dateStr));
+                          setLeaveApplyObj((prev) => ({
+                            ...prev,
+                            start: isoDate,
+                            end: isoDate,
+                            day_type: 1,
+                            requested_leave_count: isoDate ? 1 : 0,
+                            in_between_dates: isoDate ? [isoDate] : [],
+                          }));
+                          setDaysCount(isoDate ? 1 : "");
+                          setCompOffWorkDate(null);
+                          setCompOffDateError("");
+                        }}
+                      />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <DatePicker
+                        name="end_date"
+                        format={DateFormat}
+                        placeholder="End Date"
+                        disabled={true}
+                        style={ANT_PICKER_STYLE}
+                        value={toPickerDate(leaveapplyObj?.end)}
+                      />
+                    </Grid>
+                  </Grid>
+                  <FieldHint>
+                    {lockedISO
+                      ? "Leave date is fixed to the selected attendance date"
+                      : "End Date auto-selects same as Start Date"}
+                  </FieldHint>
+                </Box>
+
+                {leaveapplyObj?.start && (
+                  <Box>
+                    <FieldLabel>Worked On (Comp-Off Day)</FieldLabel>
+                    <DatePicker
+                      name="comp_off_work_date"
+                      format={DateFormat}
+                      placeholder="Select Work Date"
+                      disabledDate={disabledDateForCompOff}
+                      inputReadOnly={true}
+                      cellRender={renderDateCell()}
+                      renderExtraFooter={pickerLegend}
+                      style={ANT_PICKER_STYLE}
+                      value={compOffWorkDate}
+                      onChange={(date, dateStr) => {
+                        if (!dateStr) {
+                          setCompOffWorkDate(null);
+                          return;
+                        }
+                        setCompOffWorkDate(dayjs(dateStr, DateFormat));
+                        setCompOffDateError("");
+                      }}
+                    />
+                    {compOffDateError ? (
+                      <FieldHint error>{compOffDateError}</FieldHint>
+                    ) : (
+                      <FieldHint>
+                        Please select the Work Date (day you worked for this
+                        comp-off)
+                      </FieldHint>
+                    )}
+                  </Box>
+                )}
+
+                {leaveapplyObj?.start && compOffWorkDate && renderDayDuration()}
+              </>
+            ) : (
+              <>
+                <Box>
+                  <FieldLabel>Select Date</FieldLabel>
+                  <RangePicker
+                    name="multiple_date"
+                    format={DateFormat}
+                    placeholder={["Start Date", "End Date"]}
+                    disabled={!!lockedISO}
+                    disabledDate={disabledDate}
+                    inputReadOnly={true}
+                    cellRender={renderDateCell()}
+                    renderExtraFooter={pickerLegend}
+                    style={ANT_PICKER_STYLE}
+                    onChange={handleMultiDayChange}
                     value={
-                      leaveapplyObj?.leave_type_id
-                        ? leaveTypeOptions.find(
-                            (d) => d.value === leaveapplyObj.leave_type_id,
-                          ) || null
+                      !!leaveapplyObj?.start && !!leaveapplyObj?.end
+                        ? [
+                            toPickerDate(leaveapplyObj?.start),
+                            toPickerDate(leaveapplyObj?.end),
+                          ]
                         : null
                     }
-                    onChange={handleLeaveTypeChange}
-                    placeholder="Select Leave Type"
-                    className="basic-multi-select"
-                    classNamePrefix="lc-select"
                   />
-                  {FormikForm.touched.leave_type_id &&
-                  FormikForm.errors.leave_type_id ? (
-                    <div className="lc_form_error_text">
-                      {FormikForm.errors.leave_type_id}
-                    </div>
-                  ) : null}
-                </div>
-              </Col>
-
-              {/* ── Restricted Holiday Selection ── */}
-              {isRestrictedLeave && (
-                <Col lg={12}>
-                  <div className="mb-3">
-                    <Label>Select Restricted Holiday *</Label>
-                    <Select
-                      name="restricted_holiday"
-                      isMulti={false}
-                      options={restrictedHolidayOptions}
-                      value={selectedRestrictedHoliday}
-                      onChange={handleRestrictedHolidayChange}
-                      placeholder="Select Restricted Holiday"
-                      className="basic-multi-select"
-                      classNamePrefix="lc-select"
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    spacing={1}
+                    sx={{ mt: 0.75 }}
+                  >
+                    <FieldHint>
+                      {lockedISO
+                        ? "Leave date is fixed to the selected attendance date"
+                        : "Please select Start & End Date"}
+                    </FieldHint>
+                    <Chip
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      label={`${daysCount || 0} Days`}
                     />
-                    {restrictedHolidayOptions.length === 0 && (
-                      <div className="form-text text-warning">
-                        {lockedISO
-                          ? "No restricted holiday falls on the selected date."
-                          : "No restricted holidays available for your work schedule."}
-                      </div>
-                    )}
-                  </div>
+                  </Stack>
+                </Box>
 
-                  {leaveapplyObj?.start && (
-                    <div className="mb-3">
-                      <Label>Date</Label>
-                      <Input
-                        type="text"
-                        value={ConvertDateFormat(leaveapplyObj.start)}
-                        disabled
-                      />
-                    </div>
-                  )}
-                </Col>
+                {(daysCount === 1 || daysCount === 0.5) && renderDayDuration()}
+              </>
+            ))}
+
+          {/* ── Half-day time pickers (day_type === 2) ── */}
+          {leaveapplyObj?.day_type === 2 && (
+            <Stack spacing={2}>
+              {shiftBoundaryHint && (
+                <Stack direction="row" spacing={0.75} alignItems="center">
+                  <AccessTimeRoundedIcon fontSize="small" color="action" />
+                  <Typography variant="caption" color="text.secondary">
+                    {shiftBoundaryHint}
+                  </Typography>
+                </Stack>
               )}
 
-              {/* ── Day-unit: date range picker ── */}
-              {!!currentUnit &&
-                currentUnit === leave_type_day_unit &&
-                !isRestrictedLeave && (
-                  <Col lg={12}>
-                    {isCompOffLeave ? (
-                      <>
-                        <Label className="form-label">
-                          Date Leave Start Date / Leave End Date{" "}
-                        </Label>
-                        <div className="row g-2 mb-3">
-                          <Col md={6}>
-                            <DatePicker
-                              name="start_date"
-                              format={DateFormat}
-                              placeholder="Start Date"
-                              disabled={!!lockedISO}
-                              disabledDate={disabledDate}
-                              inputReadOnly={true}
-                              cellRender={(current, info) => {
-                                if (info.type !== "date" || !current?.format) {
-                                  return info.originNode;
-                                }
-                                const currentISO = current.format("YYYY-MM-DD");
-                                const cellInfo = getDateCellInfo(currentISO);
-                                if (cellInfo) {
-                                  return (
-                                    <Tooltip title={cellInfo.tooltip}>
-                                      <div
-                                        className="ant-picker-cell-inner"
-                                        style={{
-                                          ...cellInfo.style,
-                                          borderRadius: "4px",
-                                          pointerEvents: "auto", // ← re-enables hover even though the disabled <td> ancestor has pointer-events: none
-                                        }}
-                                      >
-                                        {current.date()}
-                                      </div>
-                                    </Tooltip>
-                                  );
-                                }
-                                return info.originNode;
-                              }}
-                              style={{ width: "100%" }}
-                              value={
-                                leaveapplyObj?.start
-                                  ? dayjs(
-                                      ConvertDateFormat(
-                                        ConvertISODateFormat(
-                                          leaveapplyObj.start,
-                                        ),
-                                      ),
-                                      DateFormat,
-                                    )
-                                  : null
-                              }
-                              onChange={(date, dateStr) => {
-                                const isoDate = !dateStr
-                                  ? null
-                                  : ConvertISODateFormat(
-                                      ConvertDateFormat(dateStr),
-                                    );
-                                setLeaveApplyObj((prev) => ({
-                                  ...prev,
-                                  start: isoDate,
-                                  end: isoDate,
-                                  day_type: 1,
-                                  requested_leave_count: isoDate ? 1 : 0,
-                                  in_between_dates: isoDate ? [isoDate] : [],
-                                }));
-                                setDaysCount(isoDate ? 1 : "");
-                                setCompOffWorkDate(null);
-                                setCompOffDateError("");
-                              }}
-                            />
-                          </Col>
-
-                          <Col md={6}>
-                            <DatePicker
-                              name="end_date"
-                              format={DateFormat}
-                              placeholder="End Date"
-                              disabled={true}
-                              style={{ width: "100%" }}
-                              value={
-                                leaveapplyObj?.end
-                                  ? dayjs(
-                                      ConvertDateFormat(
-                                        ConvertISODateFormat(leaveapplyObj.end),
-                                      ),
-                                      DateFormat,
-                                    )
-                                  : null
-                              }
-                            />
-                          </Col>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text mb-3">
-                          {lockedISO
-                            ? "Leave date is fixed to the selected attendance date"
-                            : "End Date auto-selects same as Start Date"}
-                        </div>
-
-                        {leaveapplyObj?.start && (
-                          <>
-                            <Label className="form-label">
-                              Worked On (Comp-Off Day)
-                            </Label>
-                            <DatePicker
-                              name="comp_off_work_date"
-                              format={DateFormat}
-                              placeholder="Select Work Date"
-                              disabledDate={disabledDateForCompOff}
-                              inputReadOnly={true}
-                              cellRender={(current, info) => {
-                                if (info.type !== "date" || !current?.format) {
-                                  return info.originNode;
-                                }
-                                const currentISO = current.format("YYYY-MM-DD");
-                                const cellInfo = getDateCellInfo(currentISO);
-                                if (cellInfo) {
-                                  return (
-                                    <Tooltip title={cellInfo.tooltip}>
-                                      <div
-                                        className="ant-picker-cell-inner"
-                                        style={{
-                                          ...cellInfo.style,
-                                          borderRadius: "4px",
-                                        }}
-                                      >
-                                        {current.date()}
-                                      </div>
-                                    </Tooltip>
-                                  );
-                                }
-                                return info.originNode;
-                              }}
-                              style={{ width: "100%" }}
-                              value={compOffWorkDate}
-                              onChange={(date, dateStr) => {
-                                if (!dateStr) {
-                                  setCompOffWorkDate(null);
-                                  return;
-                                }
-                                setCompOffWorkDate(dayjs(dateStr, DateFormat));
-                                setCompOffDateError("");
-                              }}
-                            />
-                            {compOffDateError ? (
-                              <div className="lc_form_error_text">
-                                {compOffDateError}
-                              </div>
-                            ) : (
-                              <div id="passwordHelpBlock" className="form-text">
-                                Please select the Work Date (day you worked for
-                                this comp-off)
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {leaveapplyObj?.start && compOffWorkDate && (
-                          <div className="input-group mt-3">
-                            <Col lg={12}>
-                              <Label className="form-label">Day Duration</Label>
-                            </Col>
-                            <Col lg={6}>
-                              <Select
-                                name="day_type"
-                                isMulti={false}
-                                options={day_type || []}
-                                isSearchable={true}
-                                filterOption={(option, inputValue) =>
-                                  option.label
-                                    .toLowerCase()
-                                    .includes(inputValue.toLowerCase())
-                                }
-                                noOptionsMessage={() => "No records found"}
-                                placeholder="Select Day Type"
-                                className="basic-multi-select"
-                                classNamePrefix="lc-select"
-                                value={
-                                  leaveapplyObj?.day_type
-                                    ? day_type.find(
-                                        (d) =>
-                                          d.value === leaveapplyObj?.day_type,
-                                      )
-                                    : null
-                                }
-                                onChange={handleDayType}
-                              />
-                            </Col>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="input-group">
-                          <div className="input-group">
-                            <Label className="form-label">Select Date</Label>
-                          </div>
-                          <RangePicker
-                            name="multiple_date"
-                            format={DateFormat}
-                            placeholder={["Start Date", "End Date"]}
-                            disabled={!!lockedISO}
-                            disabledDate={disabledDate}
-                            inputReadOnly={true}
-                            cellRender={(current, info) => {
-                              if (info.type !== "date" || !current?.format) {
-                                return info.originNode;
-                              }
-                              const currentISO = current.format("YYYY-MM-DD");
-                              const cellInfo = getDateCellInfo(currentISO);
-                              if (cellInfo) {
-                                return (
-                                  <Tooltip title={cellInfo.tooltip}>
-                                    <div
-                                      className="ant-picker-cell-inner"
-                                      style={{
-                                        ...cellInfo.style,
-                                        borderRadius: "4px",
-                                      }}
-                                    >
-                                      {current.date()}
-                                    </div>
-                                  </Tooltip>
-                                );
-                              }
-                              return info.originNode;
-                            }}
-                            onChange={handleMultiDayChange}
-                            value={
-                              !!leaveapplyObj?.start && !!leaveapplyObj?.end
-                                ? [
-                                    dayjs(
-                                      ConvertDateFormat(
-                                        ConvertISODateFormat(
-                                          leaveapplyObj?.start,
-                                        ),
-                                      ),
-                                      DateFormat,
-                                    ),
-                                    dayjs(
-                                      ConvertDateFormat(
-                                        ConvertISODateFormat(
-                                          leaveapplyObj?.end,
-                                        ),
-                                      ),
-                                      DateFormat,
-                                    ),
-                                  ]
-                                : null
-                            }
-                          />
-                          <span className="input-group-text">
-                            {daysCount} Days
-                          </span>
-                        </div>
-                        <div id="passwordHelpBlock" className="form-text">
-                          {lockedISO
-                            ? "Leave date is fixed to the selected attendance date"
-                            : "Please select Start & End Date"}
-                        </div>
-
-                        {(daysCount === 1 || daysCount === 0.5) && (
-                          <div className="input-group mt-3">
-                            <Col lg={12}>
-                              <Label className="form-label">Day Duration</Label>
-                            </Col>
-                            <Col lg={6}>
-                              <Select
-                                name="day_type"
-                                isMulti={false}
-                                options={day_type || []}
-                                isSearchable={true}
-                                filterOption={(option, inputValue) =>
-                                  option.label
-                                    .toLowerCase()
-                                    .includes(inputValue.toLowerCase())
-                                }
-                                noOptionsMessage={() => "No records found"}
-                                placeholder="Select Day Type"
-                                className="basic-multi-select"
-                                classNamePrefix="lc-select"
-                                value={
-                                  leaveapplyObj?.day_type
-                                    ? day_type.find(
-                                        (d) =>
-                                          d.value === leaveapplyObj?.day_type,
-                                      )
-                                    : null
-                                }
-                                onChange={handleDayType}
-                              />
-                            </Col>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </Col>
-                )}
-
-              {/* ── Half-day time pickers (day_type === 2) ── */}
-              {leaveapplyObj?.day_type === 2 && (
-                <Col lg={12}>
-                  <div className="row mt-3 align-items-end">
-                    {shiftBoundaryHint && (
-                      <Col md={12} className="mb-2">
-                        <small className="text-muted">
-                          <i className="ri-time-line me-1" />
-                          {shiftBoundaryHint}
-                        </small>
-                      </Col>
-                    )}
-
-                    {halfDayBoundaries && (
-                      <Col md={12} className="mb-3">
-                        <Label className="form-label d-block">
-                          Quick Select Half
-                        </Label>
-                        <div className="d-flex gap-2 flex-wrap">
-                          <button
-                            type="button"
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => {
-                              setHalfDayStartTime(
-                                halfDayBoundaries.firstHalfStart,
-                              );
-                              setHalfDayEndTime(halfDayBoundaries.firstHalfEnd);
-                              setTimeError("");
-                            }}
-                          >
-                            First Half (
-                            {halfDayBoundaries.firstHalfStart.format("HH:mm")}
-                            &nbsp;–&nbsp;
-                            {halfDayBoundaries.firstHalfEnd.format("HH:mm")})
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-secondary btn-sm"
-                            onClick={() => {
-                              setHalfDayStartTime(
-                                halfDayBoundaries.secondHalfStart,
-                              );
-                              setHalfDayEndTime(
-                                halfDayBoundaries.secondHalfEnd,
-                              );
-                              setTimeError("");
-                            }}
-                          >
-                            Second Half (
-                            {halfDayBoundaries.secondHalfStart.format("HH:mm")}
-                            &nbsp;–&nbsp;
-                            {halfDayBoundaries.secondHalfEnd.format("HH:mm")}
-                            {shiftInfo?.crossesMidnight ? " +1d" : ""})
-                          </button>
-                        </div>
-                      </Col>
-                    )}
-
-                    <Col md={4}>
-                      <Label className="form-label">Start Time</Label>
-                      <TimePicker
-                        value={halfDayStartTime || null}
-                        format="HH:mm"
-                        minuteStep={1}
-                        showSecond={false}
-                        popupClassName="hide-picker-footer"
-                        onSelect={handleHalfDayStartTimeChange} 
-                        // showNow={false}          // ← hides "Now"
-                        // needConfirm={false}      // ← hides "OK" (antd ≥ 5.14)
-                        onChange={handleHalfDayStartTimeChange}
-                        style={{ width: "100%" }}
-                        placeholder="Select start time"
-                        // needConfirm={false}
-                      />
-                    </Col>
-
-                    <Col md={4}>
-                      <Label className="form-label">
-                        End Time
-                        {shiftInfo?.crossesMidnight && (
-                          <small className="text-muted ms-1">
-                            (may be next day)
-                          </small>
-                        )}
-                      </Label>
-                      <TimePicker
-                        value={
-                          halfDayEndTime
-                            ? dayjs(halfDayEndTime.format("HH:mm"), "HH:mm")
-                            : null
-                        }
-                        format="HH:mm"
-                        minuteStep={1}
-                        showSecond={false}
-                        disabled={!halfDayStartTime}
-                        popupClassName="hide-picker-footer"
-                        onSelect={handleHalfDayEndTimeChange}
-                        onChange={handleHalfDayEndTimeChange}
-                        style={{ width: "100%" }}
-                        placeholder="Select end time"
-                        // needConfirm={false}
-                      />
-                    </Col>
-
-                    <Col md={3}>
-                      <Label className="form-label">Total Hours</Label>
-                      <span className="form-control text-center">
-                        {computedHalfDayHours} h
-                        {shiftInfo?.crossesMidnight &&
-                          halfDayStartTime &&
-                          halfDayEndTime &&
-                          halfDayEndTime.date() !== halfDayStartTime.date() && (
-                            <small className="text-info ms-1">(next day)</small>
-                          )}
-                      </span>
-                    </Col>
-
-                    {timeError && (
-                      <Col md={12}>
-                        <div className="text-danger mt-2">{timeError}</div>
-                      </Col>
-                    )}
-
-                    {halfDayBoundaries && (
-                      <Col md={12} className="mt-2">
-                        <small className="text-muted">
-                          Shift total:{" "}
-                          {halfDayBoundaries.secondHalfEnd.diff(
-                            halfDayBoundaries.firstHalfStart,
-                            "minute",
-                          )}{" "}
-                          mins &nbsp;|&nbsp; Each half ≈{" "}
-                          {halfDayBoundaries.firstHalfEnd.diff(
-                            halfDayBoundaries.firstHalfStart,
-                            "minute",
-                          )}{" "}
-                          mins
-                        </small>
-                      </Col>
-                    )}
-                  </div>
-                </Col>
+              {halfDayBoundaries && (
+                <Box>
+                  <FieldLabel>Quick Select Half</FieldLabel>
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                    <Button
+                      data-testid="leave-application-first-half-button"
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => {
+                        setHalfDayStartTime(halfDayBoundaries.firstHalfStart);
+                        setHalfDayEndTime(halfDayBoundaries.firstHalfEnd);
+                        setTimeError("");
+                      }}
+                    >
+                      First Half (
+                      {halfDayBoundaries.firstHalfStart.format("HH:mm")}
+                      &nbsp;–&nbsp;
+                      {halfDayBoundaries.firstHalfEnd.format("HH:mm")})
+                    </Button>
+                    <Button
+                      data-testid="leave-application-second-half-button"
+                      size="small"
+                      variant="outlined"
+                      color="inherit"
+                      onClick={() => {
+                        setHalfDayStartTime(halfDayBoundaries.secondHalfStart);
+                        setHalfDayEndTime(halfDayBoundaries.secondHalfEnd);
+                        setTimeError("");
+                      }}
+                    >
+                      Second Half (
+                      {halfDayBoundaries.secondHalfStart.format("HH:mm")}
+                      &nbsp;–&nbsp;
+                      {halfDayBoundaries.secondHalfEnd.format("HH:mm")}
+                      {shiftInfo?.crossesMidnight ? " +1d" : ""})
+                    </Button>
+                  </Stack>
+                </Box>
               )}
 
-              {/* ── Hour-unit + locked date: fixed date, time-only pickers ── */}
-              {!!currentUnit &&
-                currentUnit === leave_type_hour_unit &&
-                !!lockedISO && (
-                  <Col lg={12}>
-                    <div className="row align-items-end">
-                      <Col md={3}>
-                        <Label className="form-label">Date</Label>
-                        <DatePicker
-                          name="locked_date"
-                          format={DateFormat}
-                          disabled={true}
-                          value={dayjs(lockedISO)}
-                          style={{ width: "100%" }}
-                        />
-                      </Col>
-                      <Col md={3}>
-                        <Label className="form-label">Start Time</Label>
-                        <TimePicker
-                          format="HH:mm"
-                          minuteStep={1}
-                          showSecond={false}
-                          needConfirm={false}
-                          placeholder="Start time"
-                          style={{ width: "100%" }}
-                          value={
-                            !!leaveapplyObj?.start
-                              ? dayjs(
-                                  ConvertToDateTimeFormat(
-                                    ConvertToISODateTimeFormat(
-                                      leaveapplyObj?.start,
-                                    ),
-                                  ),
-                                  DateTimeFormat,
-                                )
-                              : null
-                          }
-                          onChange={(time) =>
-                            handleLockedTimeChange(time, "start")
-                          }
-                        />
-                      </Col>
-                      <Col md={3}>
-                        <Label className="form-label">End Time</Label>
-                        <TimePicker
-                          format="HH:mm"
-                          minuteStep={1}
-                          showSecond={false}
-                          needConfirm={false}
-                          placeholder="End time"
-                          style={{ width: "100%" }}
-                          value={
-                            !!leaveapplyObj?.end
-                              ? dayjs(
-                                  ConvertToDateTimeFormat(
-                                    ConvertToISODateTimeFormat(
-                                      leaveapplyObj?.end,
-                                    ),
-                                  ),
-                                  DateTimeFormat,
-                                )
-                              : null
-                          }
-                          onChange={(time) =>
-                            handleLockedTimeChange(time, "end")
-                          }
-                        />
-                      </Col>
-                      <Col md={3}>
-                        <Label className="form-label">Total Hours</Label>
-                        <span className="form-control text-center">
-                          {hourDiff || "00:00"} h
-                        </span>
-                      </Col>
-                      <div id="passwordHelpBlock" className="form-text mt-2">
-                        Date is fixed to the selected attendance date. Please
-                        select the time
-                      </div>
-                    </div>
-                  </Col>
-                )}
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6, sm: 4 }}>
+                  <TimePicker
+                    {...TIME_PICKER_PROPS}
+                    label="Start Time"
+                    value={halfDayStartTime || null}
+                    onChange={(time) => {
+                      if (time && !time.isValid()) return;
+                      handleHalfDayStartTimeChange(time);
+                    }}
+                    slotProps={timeFieldSlotProps(true)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 4 }}>
+                  <TimePicker
+                    {...TIME_PICKER_PROPS}
+                    label={
+                      shiftInfo?.crossesMidnight
+                        ? "End Time (may be next day)"
+                        : "End Time"
+                    }
+                    value={
+                      halfDayEndTime
+                        ? dayjs(halfDayEndTime.format("HH:mm"), "HH:mm")
+                        : null
+                    }
+                    disabled={!halfDayStartTime}
+                    onChange={(time) => {
+                      if (time && !time.isValid()) return;
+                      handleHalfDayEndTimeChange(time);
+                    }}
+                    slotProps={timeFieldSlotProps(false)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 4 }}>
+                  <ReadOnlyField
+                    label="Total Hours"
+                    value={`${computedHalfDayHours} h`}
+                    helperText={
+                      shiftInfo?.crossesMidnight &&
+                      halfDayStartTime &&
+                      halfDayEndTime &&
+                      halfDayEndTime.date() !== halfDayStartTime.date()
+                        ? "(next day)"
+                        : undefined
+                    }
+                  />
+                </Grid>
+              </Grid>
 
-              {/* ── Hour-unit: datetime pickers ── */}
-              {!!currentUnit &&
-                currentUnit === leave_type_hour_unit &&
-                !lockedISO && (
-                  <Col lg={12}>
-                    <div className="row">
-                      <Col md={4} lg={4} xxl={4}>
-                        <DatePicker
-                          name="start"
-                          placeholder="Select Start Time"
-                          showTime={{
-                            minuteStep: 1,
-                            format: "HH:mm",
-                          }}
-                          format={DateTimeFormat}
-                          disabledDate={disabledDate}
-                          defaultPickerValue={
-                            lockedISO ? dayjs(lockedISO) : undefined
-                          }
-                          inputReadOnly={true}
-                          cellRender={(current, info) => {
-                            if (info.type !== "date" || !current?.format) {
-                              return info.originNode;
-                            }
-                            const currentISO = current.format("YYYY-MM-DD");
-                            const cellInfo = getDateCellInfo(currentISO);
-                            if (cellInfo) {
-                              return (
-                                <Tooltip title={cellInfo.tooltip}>
-                                  <div
-                                    className="ant-picker-cell-inner"
-                                    style={{
-                                      ...cellInfo.style,
-                                      borderRadius: "4px",
-                                    }}
-                                  >
-                                    {current.date()}
-                                  </div>
-                                </Tooltip>
-                              );
-                            }
-                            return info.originNode;
-                          }}
-                          onChange={handleFromDateChange}
-                          value={
-                            !!leaveapplyObj?.start
-                              ? dayjs(
-                                  ConvertToDateTimeFormat(
-                                    ConvertToISODateTimeFormat(
-                                      leaveapplyObj?.start,
-                                    ),
-                                  ),
-                                  DateTimeFormat,
-                                )
-                              : null
-                          }
-                          showNow={false}
-                        />
-                      </Col>
+              {timeError && <FieldHint error>{timeError}</FieldHint>}
 
-                      <Col md={4} lg={4} xxl={4}>
-                        <DatePicker
-                          name="end"
-                          placeholder="Select End Time"
-                          showTime={{
-                            minuteStep: 1,
-                            format: "HH:mm",
-                          }}
-                          format={DateTimeFormat}
-                          disabledDate={disabledDate}
-                          defaultPickerValue={
-                            lockedISO ? dayjs(lockedISO) : undefined
-                          }
-                          inputReadOnly={true}
-                          cellRender={(current, info) => {
-                            if (info.type !== "date" || !current?.format) {
-                              return info.originNode;
-                            }
-                            const currentISO = current.format("YYYY-MM-DD");
-                            const cellInfo = getDateCellInfo(currentISO);
-                            if (cellInfo) {
-                              return (
-                                <Tooltip title={cellInfo.tooltip}>
-                                  <div
-                                    className="ant-picker-cell-inner"
-                                    style={{
-                                      ...cellInfo.style,
-                                      borderRadius: "4px",
-                                    }}
-                                  >
-                                    {current.date()}
-                                  </div>
-                                </Tooltip>
-                              );
-                            }
-                            return info.originNode;
-                          }}
-                          onChange={handleToDateChange}
-                          value={
-                            !!leaveapplyObj?.end
-                              ? dayjs(
-                                  ConvertToDateTimeFormat(
-                                    ConvertToISODateTimeFormat(
-                                      leaveapplyObj?.end,
-                                    ),
-                                  ),
-                                  DateTimeFormat,
-                                )
-                              : null
-                          }
-                          showNow={false}
-                        />
-                      </Col>
-                      <Col md={2} lg={2} xxl={2}>
-                        <span
-                          className="input-group-text"
-                          style={{ fontSize: "12px" }}
-                        >
-                          {hourDiff} h
-                        </span>
-                      </Col>
-                      <div id="passwordHelpBlock" className="form-text">
-                        {lockedISO
-                          ? "Date is fixed to the selected attendance date. Please select the time"
-                          : "Please select Date and Hour"}
-                      </div>
-                    </div>
-                  </Col>
-                )}
+              {halfDayBoundaries && (
+                <Typography variant="caption" color="text.secondary">
+                  Shift total:{" "}
+                  {halfDayBoundaries.secondHalfEnd.diff(
+                    halfDayBoundaries.firstHalfStart,
+                    "minute",
+                  )}{" "}
+                  mins &nbsp;|&nbsp; Each half ≈{" "}
+                  {halfDayBoundaries.firstHalfEnd.diff(
+                    halfDayBoundaries.firstHalfStart,
+                    "minute",
+                  )}{" "}
+                  mins
+                </Typography>
+              )}
+            </Stack>
+          )}
 
-              {/* ── Reason ── */}
-              <Col lg={12}>
-                <label htmlFor="reason" className="form-label">
-                  Reason *
-                </label>
-                <textarea
-                  name="reason"
-                  className="form-control"
-                  id="reason"
-                  placeholder="Enter Reason"
-                  value={leaveapplyObj?.reason || ""}
-                  onChange={handleInputChange}
+          {/* ── Hour-unit + locked date: fixed date, time-only pickers ── */}
+          {showHourUnitPicker && !!lockedISO && (
+            <Box>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 6 }}>
+                  <TextField
+                    label="Date"
+                    value={dayjs(lockedISO).format(DateFormat)}
+                    disabled
+                  />
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <ReadOnlyField
+                    label="Total Hours"
+                    value={`${hourDiff || "00:00"} h`}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <TimePicker
+                    {...TIME_PICKER_PROPS}
+                    label="Start Time"
+                    value={toPickerDateTime(leaveapplyObj?.start)}
+                    onChange={(time) => {
+                      if (time && !time.isValid()) return;
+                      handleLockedTimeChange(time, "start");
+                    }}
+                    slotProps={timeFieldSlotProps(true)}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6 }}>
+                  <TimePicker
+                    {...TIME_PICKER_PROPS}
+                    label="End Time"
+                    value={toPickerDateTime(leaveapplyObj?.end)}
+                    onChange={(time) => {
+                      if (time && !time.isValid()) return;
+                      handleLockedTimeChange(time, "end");
+                    }}
+                    slotProps={timeFieldSlotProps(true)}
+                  />
+                </Grid>
+              </Grid>
+              <FieldHint>
+                Date is fixed to the selected attendance date. Please select
+                the time
+              </FieldHint>
+            </Box>
+          )}
+
+          {/* ── Hour-unit: datetime pickers ── */}
+          {showHourUnitPicker && !lockedISO && (
+            <Box>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FieldLabel>Start</FieldLabel>
+                  <DatePicker
+                    name="start"
+                    placeholder="Select Start Time"
+                    showTime={{
+                      minuteStep: 1,
+                      format: "HH:mm",
+                    }}
+                    format={DateTimeFormat}
+                    disabledDate={disabledDate}
+                    defaultPickerValue={
+                      lockedISO ? dayjs(lockedISO) : undefined
+                    }
+                    inputReadOnly={true}
+                    cellRender={renderDateCell()}
+                    style={ANT_PICKER_STYLE}
+                    onChange={handleFromDateChange}
+                    value={toPickerDateTime(leaveapplyObj?.start)}
+                    showNow={false}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <FieldLabel>End</FieldLabel>
+                  <DatePicker
+                    name="end"
+                    placeholder="Select End Time"
+                    showTime={{
+                      minuteStep: 1,
+                      format: "HH:mm",
+                    }}
+                    format={DateTimeFormat}
+                    disabledDate={disabledDate}
+                    defaultPickerValue={
+                      lockedISO ? dayjs(lockedISO) : undefined
+                    }
+                    inputReadOnly={true}
+                    cellRender={renderDateCell()}
+                    style={ANT_PICKER_STYLE}
+                    onChange={handleToDateChange}
+                    value={toPickerDateTime(leaveapplyObj?.end)}
+                    showNow={false}
+                  />
+                </Grid>
+              </Grid>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                spacing={1}
+                sx={{ mt: 0.75 }}
+              >
+                <FieldHint>
+                  {lockedISO
+                    ? "Date is fixed to the selected attendance date. Please select the time"
+                    : "Please select Date and Hour"}
+                </FieldHint>
+                <Chip
+                  size="small"
+                  color="primary"
+                  variant="outlined"
+                  label={`${hourDiff || "00:00"} h`}
                 />
-                {FormikForm.errors.reason ? (
-                  <div className="lc_form_error_text">
-                    {FormikForm.errors.reason}
-                  </div>
-                ) : null}
-              </Col>
+              </Stack>
+            </Box>
+          )}
+        </Stack>
+      )}
 
-              {/* ── Submit ── */}
-              <Col lg={12}>
-                <div className="text-end">
-                  <Button color="success" className="btn-label" type="submit">
-                    <i className="ri-check-double-line label-icon align-middle fs-16 me-2" />
-                    Apply
-                  </Button>
-                </div>
-              </Col>
-            </Row>
-          </Form>
-        </Col>
-      </Row>
-    </React.Fragment>
+      {reasonField}
+    </SidebarFormLayout>
   );
 };
 

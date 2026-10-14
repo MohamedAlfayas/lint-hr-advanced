@@ -1,13 +1,24 @@
-import React, { useState, useCallback } from "react";
-import { Badge, Col, Container, Row } from "reactstrap";
+import React, { useState, useCallback, useMemo } from "react";
+import { Container } from "reactstrap";
 import { useDropzone } from "react-dropzone";
 // import 'react-dropzone-uploader/dist/styles.css';
 import * as XLSX from "xlsx";
 import "../../common/css/lc_style.css";
 import Papa from "papaparse";
+import AppTable from "../../shared/ui/table/AppTable";
 const Xlsx = () => {
   const [data, setData] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const columns = useMemo(
+    () =>
+      Object.keys(data[0] ?? {}).map((key, i) => ({
+        id: key || `column_${i}`,
+        header: key,
+        accessorFn: (row) => row[key] ?? "",
+      })),
+    [data],
+  );
 
   const onDrop = useCallback((acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -77,7 +88,7 @@ const Xlsx = () => {
             className="container"
             style={{ textAlign: "center" }}
           >
-            <input {...getInputProps()} />
+            <input {...getInputProps()} data-testid="xlsx-file-input" />
             <div className="mb-3">
               <i className="display-4 text-muted ri-upload-cloud-2-fill" />
             </div>
@@ -88,24 +99,11 @@ const Xlsx = () => {
 
           {data.length > 0 && (
             <div className="table-container">
-              <table className="table-lc-import-xl">
-                <thead>
-                  <tr>
-                    {Object.keys(data[0]).map((key) => (
-                      <th key={key}>{key}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.map((row, index) => (
-                    <tr key={index}>
-                      {Object.values(row).map((value, i) => (
-                        <td key={i}>{value}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <AppTable
+                columns={columns}
+                data={data}
+                exportFileName="import-preview"
+              />
             </div>
           )}
         </Container>

@@ -7,6 +7,14 @@ import { setProjects } from "../../../redux/reducers/ChildReducer/ProjectsReduce
 import { project_component_name } from "../../../common/constant/Constants";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { useNavigate } from "react-router-dom";
+import {
+  ApvActive,
+  ApvDate,
+  ApvEmpty,
+  ApvStatus,
+  ApvTitle,
+  initialsOf,
+} from "../../../component/common/approval/ApprovalCells";
 
 const Projects = ({ clientId }) => {
   const dispatch = useDispatch();
@@ -52,8 +60,8 @@ const Projects = ({ clientId }) => {
 
   // ================= PROJECT TYPE =================
   const PROJECT_TYPE_MAP = {
-    1: { label: "Internal", color: "info" },
-    2: { label: "Client", color: "primary" },
+    1: { label: "Internal", tone: "info", icon: "ri-building-2-line" },
+    2: { label: "Client", tone: "primary", icon: "ri-user-star-line" },
   };
 
   // ================= TABLE COLUMNS =================
@@ -69,59 +77,24 @@ const Projects = ({ clientId }) => {
           const progress =
             obj?.task_status_details?.project_completed_percentage || 0;
 
+          const tone = progress >= 100 ? "success" : progress >= 50 ? "warning" : "danger";
+
           return (
-            <div>
-              <span
+            <span className="apv-project">
+              <ApvTitle
+                icon="ri-folder-2-line"
+                tone={Number(obj.type) === 2 ? "primary" : "info"}
+                title={obj.title}
+                sub={obj.description || null}
                 onClick={() => navigate(`/project-overview/${obj.id}`)}
-                style={{
-                  cursor: "pointer",
-                  color: "#405189",
-                  fontWeight: 600,
-                }}
-              >
-                {obj.title}
+              />
+              <span className="apv-project-progress">
+                <span className={`apv-progress is-${progress >= 100 ? "success" : tone}`}>
+                  <span style={{ width: `${progress}%` }} />
+                </span>
+                <small>{progress}%</small>
               </span>
-
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#6c757d",
-                  marginTop: "4px",
-                }}
-                title={obj.description}
-              >
-                {obj.description?.length > 50
-                  ? `${obj.description.substring(0, 50)}...`
-                  : obj.description}
-              </div>
-
-              <div
-                className="progress"
-                style={{
-                  height: "8px",
-                  borderRadius: "20px",
-                  backgroundColor: "#e9ecef",
-                }}
-              >
-                <div
-                  className="progress-bar"
-                  role="progressbar"
-                  style={{
-                    width: `${progress}%`,
-                    backgroundColor: "#28a745",
-                    borderRadius: "4px",
-                    transition: "width 0.5s ease",
-                  }}
-                  aria-valuenow={progress}
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                />
-              </div>
-
-              <small style={{ color: "#6c757d", fontSize: "11px" }}>
-                {progress}% Complete
-              </small>
-            </div>
+            </span>
           );
         },
       },
@@ -131,16 +104,11 @@ const Projects = ({ clientId }) => {
         id: "type",
         filterable: false,
         accessor: (obj) => {
-          const t = PROJECT_TYPE_MAP[obj.type] || {
-            label: "Unknown",
-            color: "secondary",
-          };
-          return (
-            <span
-              className={`badge text-uppercase bg-${t.color}-subtle text-${t.color}`}
-            >
-              {t.label}
-            </span>
+          const t = PROJECT_TYPE_MAP[obj.type];
+          return t ? (
+            <ApvStatus tone={t.tone} icon={t.icon} label={t.label} />
+          ) : (
+            <ApvStatus tone="secondary" label="Unknown" />
           );
         },
       },
@@ -150,26 +118,28 @@ const Projects = ({ clientId }) => {
         id: "client_name",
         filterable: false,
         accessor: (obj) => {
-          if (Number(obj.type) !== 2) return "-";
-          const client = clientList.find(
-            (c) => Number(c.id) === Number(obj.client),
+          if (Number(obj.type) !== 2) return <ApvEmpty />;
+          const client = clientList.find((c) => Number(c.id) === Number(obj.client));
+          return client ? (
+            <ApvTitle initials={initialsOf(client.name)} tone="info" title={client.name} />
+          ) : (
+            <ApvEmpty />
           );
-          return client?.name || "-";
         },
       },
 
       {
         Header: "Start Date",
-        accessor: "start_date",
         filterable: false,
         id: "start_date",
+        accessor: (obj) => <ApvDate value={obj.start_date} />,
       },
 
       {
         Header: "Deadline",
-        accessor: "deadline",
         filterable: false,
         id: "deadline",
+        accessor: (obj) => <ApvDate value={obj.deadline} />,
       },
 
       {
@@ -177,26 +147,18 @@ const Projects = ({ clientId }) => {
         id: "price",
         filterable: false,
         accessor: (obj) =>
-          obj.price
-            ? `₹ ${parseFloat(obj.price).toLocaleString("en-IN")}`
-            : "-",
+          obj.price ? (
+            <span className="apv-amount">₹ {parseFloat(obj.price).toLocaleString("en-IN")}</span>
+          ) : (
+            <ApvEmpty />
+          ),
       },
 
       {
         Header: "Status",
         id: "status",
         filterable: false,
-        accessor: (obj) => {
-          const status = obj.status ? "Active" : "Inactive";
-          const statusClass = obj.status ? "success" : "warning";
-          return (
-            <span
-              className={`badge text-uppercase bg-${statusClass}-subtle text-${statusClass}`}
-            >
-              {status}
-            </span>
-          );
-        },
+        accessor: (obj) => <ApvActive active={obj.status} />,
       },
     ],
     [clientList, navigate],

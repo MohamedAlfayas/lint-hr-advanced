@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Skel } from "../../../component/common/skeleton/Skeleton";
 import {
   Modal,
   ModalHeader,
@@ -20,6 +21,8 @@ import { PostApi } from "../../../common/api/PostApi";
 import { useDispatch } from "react-redux";
 import { setLoaderVisible } from "../../../redux/reducers/ChildReducer/LoaderReducer"; 
 import { Api } from "../../../common/api/Api";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 /**
  * Props:
  *  - isOpen      : boolean
@@ -139,9 +142,9 @@ const AssignStructureEditModal = ({
     employee?.salary_structure?.name || "Not Assigned";
 
   return (
-    <Modal isOpen={isOpen} toggle={handleCancel} centered size="md">
-      <ModalHeader className="border-bottom pb-3" toggle={handleCancel}>
-        <span className="fw-semibold fs-6 text-dark">
+    <Modal data-testid="assign-structure-dialog" isOpen={isOpen} toggle={handleCancel} centered size="md">
+      <ModalHeader close={<ModalCloseButton onClick={handleCancel} testId="assign-structure-close-button" />} className="border-bottom pb-3" toggle={handleCancel}>
+        <span className="fw-semibold fs-6 text-body">
           {isBulk
             ? `Assign Structure — ${bulkUuids.length} Employees`
             : employee?.name || "Assign Structure"}
@@ -158,7 +161,7 @@ const AssignStructureEditModal = ({
                 <Label className="form-label text-muted mb-1" style={{ fontSize: 12 }}>
                   Current Salary Structure
                 </Label>
-                <div className="px-3 py-2 rounded border bg-light">
+                <div className="px-3 py-2 rounded border surface-muted">
                   {currentStructureName === "Not Assigned" ? (
                     <span className="badge bg-warning-subtle text-warning fw-medium">
                       Not Assigned
@@ -180,7 +183,7 @@ const AssignStructureEditModal = ({
     >
       Current Effective Date
     </Label>
-    <div className="px-3 py-2 rounded border bg-light">
+    <div className="px-3 py-2 rounded border surface-muted">
       {employee?.effective_date ? (
         <span>
           {employee?.effective_date}
@@ -199,13 +202,13 @@ const AssignStructureEditModal = ({
             {isBulk && (
               <Col md={12}>
                 <div
-                  className="px-3 py-2 rounded border bg-light d-flex align-items-center gap-2"
+                  className="px-3 py-2 rounded border surface-muted d-flex align-items-center gap-2"
                   style={{ fontSize: 13 }}
                 >
                   <i className="ri-group-line text-primary fs-16"></i>
                   <span className="text-muted">
                     Assigning to{" "}
-                    <strong className="text-dark">{bulkUuids.length}</strong>{" "}
+                    <strong className="text-body">{bulkUuids.length}</strong>{" "}
                     selected employees
                   </span>
                 </div>
@@ -219,14 +222,12 @@ const AssignStructureEditModal = ({
                 <span className="text-danger">*</span>
               </Label>
               {loadingStructures ? (
-                <div className="d-flex align-items-center gap-2 py-2">
-                  <Spinner size="sm" />
-                  <span className="text-muted" style={{ fontSize: 13 }}>
-                    Loading structures...
-                  </span>
+                <div role="status" aria-label="Loading structures" data-testid="assign-structure-loading-skeleton">
+                  <Skel h={38} />
                 </div>
               ) : (
                 <Input
+                  data-testid="assign-structure-salary-structure-select"
                   type="select"
                   name="salary_structure"
                   value={formik.values.salary_structure}
@@ -239,9 +240,9 @@ const AssignStructureEditModal = ({
                     )
                   }
                 >
-                  <option value="">-- Select Structure --</option>
+                  <option data-testid="assign-structure-salary-structure-option-none" value="">-- Select Structure --</option>
                   {structureOptions.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
+                    <option data-testid={testId("assign-structure-salary-structure-option", itemTestKey(opt))} key={opt.id} value={opt.id}>
                       {opt.name}
                     </option>
                   ))}
@@ -249,7 +250,7 @@ const AssignStructureEditModal = ({
               )}
               {formik.touched.salary_structure &&
                 formik.errors.salary_structure && (
-                  <FormFeedback>{formik.errors.salary_structure}</FormFeedback>
+                  <FormFeedback data-testid="assign-structure-salary-structure-error">{formik.errors.salary_structure}</FormFeedback>
                 )}
             </Col>
 
@@ -259,6 +260,7 @@ const AssignStructureEditModal = ({
                 Effective Date <span className="text-danger">*</span>
               </Label>
               <Input
+                data-testid="assign-structure-effective-date-input"
                 type="date"
                 name="effective_date"
                 value={formik.values.effective_date}
@@ -273,7 +275,7 @@ const AssignStructureEditModal = ({
               />
               {formik.touched.effective_date &&
                 formik.errors.effective_date && (
-                  <FormFeedback>{formik.errors.effective_date}</FormFeedback>
+                  <FormFeedback data-testid="assign-structure-effective-date-error">{formik.errors.effective_date}</FormFeedback>
                 )}
             </Col>
 
@@ -282,11 +284,12 @@ const AssignStructureEditModal = ({
       </ModalBody>
 
       <ModalFooter className="border-top pt-3 d-flex justify-content-end gap-2">
-        <Button type="button" className="btn btn-danger" onClick={handleCancel}>
+        <Button data-testid="assign-structure-cancel-button" type="button" className="btn btn-danger" onClick={handleCancel}>
           <i className="ri-close-line align-middle me-1"></i>
           Cancel
         </Button>
         <Button
+          data-testid="assign-structure-confirm-button"
           type="button"
           className="btn-success"
           disabled={formik.isSubmitting}

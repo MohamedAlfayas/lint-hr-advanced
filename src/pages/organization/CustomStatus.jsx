@@ -4,6 +4,16 @@ import InfoTable from "../../component/common/table/InfoTable";
 import { custom_status_form_component_name } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import { setCustomStatus } from "../../redux/reducers/ChildReducer/CustomStatusReducer";
+import {
+  ApvActive,
+  ApvStatus,
+  ApvTitle,
+} from "../../component/common/approval/ApprovalCells";
+
+const YesNo = ({ value, icon }) => (
+  <ApvStatus tone={value ? "success" : "secondary"} icon={icon} label={value ? "Yes" : "No"} />
+);
+YesNo.toText = ({ value }) => (value ? "Yes" : "No");
 
 const CustomStatus = () => {
   const { custom_status_data } = useSelector(
@@ -36,46 +46,33 @@ const CustomStatus = () => {
     setCustomStatusData(t);
   }, [custom_status_data]);
 
-  const BoolBadge = ({ value, trueLabel = "Yes", falseLabel = "No" }) => (
-    <span
-      className={`badge text-uppercase bg-${value ? "success" : "warning"}-subtle text-${value ? "success" : "warning"}`}
-    >
-      {value ? trueLabel : falseLabel}
-    </span>
-  );
-
   const additionalColumn = [
     {
-      Header: "Emoji",
-      accessor: (obj) => (
-        <span style={{ fontSize: "1.4rem" }}>{obj.emoji}</span>
-      ),
-    },
-    {
       Header: "Name",
-      accessor: (obj) => <b>{obj.name}</b>,
-    },
-    {
-      Header: "Status",
       accessor: (obj) => (
-        <BoolBadge
-          value={obj.is_active}
-          trueLabel="Active"
-          falseLabel="Inactive"
+        <ApvTitle
+          icon="ri-emotion-line"
+          initials={obj.emoji || undefined}
+          title={obj.name}
+          tone={obj.is_break ? "warning" : "info"}
         />
       ),
     },
     {
+      Header: "Status",
+      accessor: (obj) => <ApvActive active={obj.is_active} />,
+    },
+    {
       Header: "Location Required",
-      accessor: (obj) => <BoolBadge value={obj.location_required} />,
+      accessor: (obj) => <YesNo value={obj.location_required} icon="ri-map-pin-line" />,
     },
     {
       Header: "Notes Required",
-      accessor: (obj) => <BoolBadge value={obj.notes_required} />,
+      accessor: (obj) => <YesNo value={obj.notes_required} icon="ri-sticky-note-line" />,
     },
     {
       Header: "Exclude Hours",
-      accessor: (obj) => <BoolBadge value={obj.is_break} />,
+      accessor: (obj) => <YesNo value={obj.is_break} icon="ri-timer-line" />,
     },
   ];
 

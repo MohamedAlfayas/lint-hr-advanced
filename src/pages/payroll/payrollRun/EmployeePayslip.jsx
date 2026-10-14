@@ -1,18 +1,23 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { TableSkeletonBlock } from "../../../component/common/skeleton/Skeleton";
 import {
   Card, CardHeader, CardBody, CardTitle, Table, Spinner,
   Button, Modal, ModalHeader, ModalBody, ModalFooter, Row, Col, Badge, Input,
 } from "reactstrap";
-import Select from "react-select";
+import Select from "../../../shared/ui/TestableSelect";
 import { Document, Page, Text, View, StyleSheet, pdf, Image } from "@react-pdf/renderer";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import PayslipStatusCell from "./PayslipStatusCell";
 import PayslipBulkStatusBar from "./PayslipBulkStatusBar";
 import PayslipRevisionHistory from "./PayslipRevisionHistory";
 import { isPaymentRecorded } from "./statusHelpers";
 import ExcelJs from "exceljs";
+import { ApvEmployee } from "../../../component/common/approval/ApprovalCells";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 const fmtDateTime = (val) => {
   if (!val) return "—";
@@ -35,6 +40,8 @@ const fmtDays = (val) => {
   return `${wholeDays} day${wholeDays !== 1 ? "s" : ""} ${hours} hr${hours !== 1 ? "s" : ""}`;
 };
 
+const PAYSLIP_PAGE_SIZE = 15;
+
 const employees = GetLocalStorageData("employee") || [];
 const departments = GetLocalStorageData("department") || [];
 
@@ -48,6 +55,65 @@ const getDeptName = (emp) => {
   const firstId = ids[0];
   return deptMap[firstId] || "";
 };
+
+// Same group colors as the Regularization sheet.
+const PAYSLIP_COLORS = {
+  employee:   { bg: "#f0f4f8", text: "#334155", border: "#cbd5e1", cell: "#f8fafc" },
+  attendance: { bg: "#fffbeb", text: "#92400e", border: "#fcd34d", cell: "#fffdf5" },
+  lop:        { bg: "#fff1f2", text: "#be123c", border: "#fda4af", cell: "#fff1f2" },
+  earning:    { bg: "#f0fdf4", text: "#166534", border: "#86efac", cell: "#f0fdf4" },
+  deduction:  { bg: "#fff5f5", text: "#c53030", border: "#fca5a5", cell: "#fff8f8" },
+  netpay:     { bg: "#ecfdf5", text: "#065f46", border: "#34d399", cell: "#ecfdf5" },
+  payment:    { bg: "#eff6ff", text: "#1d4ed8", border: "#93c5fd", cell: "#f0f6ff" },
+  meta:       { bg: "#f8fafc", text: "#475569", border: "#e2e8f0", cell: "#ffffff" },
+};
+
+const GROUP_HEAD_H = 36;
+
+const payslipTh = (color, extra = {}) => ({
+  padding: "6px 8px",
+  fontSize: 10.5,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.4px",
+  verticalAlign: "middle",
+  textAlign: "center",
+  position: "sticky",
+  top: 0,
+  zIndex: 3,
+  background: color.bg,
+  color: color.text,
+  borderRight: `1px solid ${color.border}`,
+  borderBottom: `2px solid ${color.border}`,
+  borderTop: `2px solid ${color.border}`,
+  height: GROUP_HEAD_H,
+  boxSizing: "border-box",
+  ...extra,
+});
+
+const payslipSubTh = (color, extra = {}) => payslipTh(color, {
+  top: GROUP_HEAD_H,
+  borderTop: "none",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  lineHeight: 1.3,
+  minWidth: 108,
+  height: "auto",
+  ...extra,
+});
+
+const payslipTd = (color, extra = {}) => ({
+  padding: "8px",
+  fontSize: 12,
+  whiteSpace: "nowrap",
+  verticalAlign: "middle",
+  textAlign: "right",
+  background: color.cell,
+  color: color.text,
+  borderRight: "1px solid #e9ecef",
+  borderBottom: "1px solid #e9ecef",
+  ...extra,
+});
 
 const transformPayslip = (item) => {
   const earningsMap   = {};
@@ -379,8 +445,11 @@ const deptSelectStyles = {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0, month, year, runStatus, onPaymentReleased }) => {
+const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refreshKey = 0, month, year, runStatus, onPaymentReleased, runTotals = null }) => {
   const [loading, setLoading]                     = useState(false);
+  const [page, setPage]                           = useState(1);
+  const [totalCount, setTotalCount]               = useState(0);
+  const [totalPages, setTotalPages]               = useState(1);
   const [payslipData, setPayslipData]             = useState([]);
   const [dynamicEarnings, setDynamicEarnings]     = useState([]);
   const [dynamicDeductions, setDynamicDeductions] = useState([]);
@@ -391,11 +460,13 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   const [selectedIds, setSelectedIds] = useState([]);
   const [rerunning, setRerunning] = useState(false);
   const [historySlip, setHistorySlip] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
   const toggleSelect = (id) =>
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   // ── Filters ──
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState(null); // react-select option | null
 
   const departmentOptions = departments.map((d) => ({ value: d.id, label: d.name }));
@@ -416,7 +487,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     Api({ method: "GET", url: "branch/get-company-profile/" })
       .then(async (res) => {
         const profile = res?.data?.data || {};
-        const logoUrl = profile.dark_logo_image || profile.light_logo_image;
+        const logoUrl = profile.light_logo_image || profile.dark_logo_image;
         if (!logoUrl) return;
         try {
           const base64 = await urlToBase64(logoUrl);
@@ -429,27 +500,89 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       .catch((err) => console.error("Failed to fetch company profile:", err));
   }, []);
 
-  const fetchPayslips = () => {
+  const payslipListUrl = (targetPage, targetPageSize = PAYSLIP_PAGE_SIZE) => {
+    const params = new URLSearchParams();
+    params.set("payroll_run", String(payrollRunId));
+    params.set("page", String(targetPage));
+    params.set("page_size", String(targetPageSize));
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (selectedDepartment?.value != null && selectedDepartment.value !== "") {
+      params.set("department", String(selectedDepartment.value));
+    }
+    return `payroll/employee-payslip/?${params.toString()}`;
+  };
+
+  const applyPayslipRows = (raw, meta) => {
+    const transformed = (raw || []).map(transformPayslip);
+    setPayslipData(transformed);
+    setTotalCount(Number(meta?.count ?? transformed.length));
+    setTotalPages(Math.max(1, Number(meta?.total_pages ?? 1)));
+    const earningKeys = new Set();
+    const deductionKeys = new Set();
+    transformed.forEach((item) => {
+      Object.keys(item.earnings || {}).forEach((k) => earningKeys.add(k));
+      Object.keys(item.deductions || {}).forEach((k) => deductionKeys.add(k));
+    });
+    setDynamicEarnings(Array.from(earningKeys));
+    setDynamicDeductions(Array.from(deductionKeys));
+  };
+
+  const fetchPayslips = (targetPage = page) => {
     setLoading(true);
-    return Api({ method:"GET", url:`payroll/employee-payslip/?payroll_run=${payrollRunId}` })
-      .then((res) => {
-        const raw         = res?.data?.data || [];
-        const transformed = raw.map(transformPayslip);
-        setPayslipData(transformed);
-        const earningKeys   = new Set();
-        const deductionKeys = new Set();
-        transformed.forEach((item) => {
-          Object.keys(item.earnings   || {}).forEach((k) => earningKeys.add(k));
-          Object.keys(item.deductions || {}).forEach((k) => deductionKeys.add(k));
-        });
-        setDynamicEarnings(Array.from(earningKeys));
-        setDynamicDeductions(Array.from(deductionKeys));
-      })
+    return Api({ method: "GET", url: payslipListUrl(targetPage) })
+      .then((res) => applyPayslipRows(res?.data?.data, res?.data))
       .catch(() => toast.error("Failed to load payslip data."))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchPayslips(); }, [payrollRunId, refreshKey]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    if (!fullscreen) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !modalOpen && !historySlip) setFullscreen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [fullscreen, modalOpen, historySlip]);
+
+  const filtersKey = `${payrollRunId}|${debouncedSearch}|${selectedDepartment?.value ?? ""}`;
+  const filtersRef = useRef(filtersKey);
+
+  useEffect(() => {
+    const filtersChanged = filtersRef.current !== filtersKey;
+    filtersRef.current = filtersKey;
+    if (filtersChanged && page !== 1) {
+      setPage(1);
+      setSelectedIds([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    Api({ method: "GET", url: payslipListUrl(page) })
+      .then((res) => {
+        if (!cancelled) applyPayslipRows(res?.data?.data, res?.data);
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Failed to load payslip data.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [page, filtersKey, refreshKey]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [page, filtersKey]);
 
   // Re-run (or first-run) payroll for just the checked rows — e.g. after
   // fixing an attendance record for a couple of people, or clearing new
@@ -494,6 +627,17 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     else fetchPayslips();
   };
 
+  const confirmRerun = (title, text) =>
+    Swal.fire({
+      icon: "question",
+      title,
+      text,
+      showCancelButton: true,
+      confirmButtonText: "Yes, re-run",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    }).then((result) => result.isConfirmed);
+
   const handleRerunSelected = () => {
     const selected = payslipData.filter((row) => selectedIds.includes(row.id));
     const blocked = selected.filter(isPaymentRecorded);
@@ -502,10 +646,20 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       toast.warning("Paid and partially paid payslips cannot be re-run.");
       return;
     }
-    if (blocked.length) {
-      toast.warning(`${blocked.length} paid or partially paid payslip(s) skipped.`);
-    }
-    rerunEmployees(eligible.map((row) => row.employee));
+    const names = eligible.map((row) => row.employee_name).filter(Boolean);
+    const title = eligible.length === 1
+      ? `Re-run payroll for ${names[0] || "this employee"}?`
+      : `Re-run payroll for ${eligible.length} employees?`;
+    const text = blocked.length
+      ? `${blocked.length} paid or partially paid payslip(s) will be skipped. This recalculates the remaining payslips.`
+      : "This recalculates the selected payslips for this run.";
+    confirmRerun(title, text).then((confirmed) => {
+      if (!confirmed) return;
+      if (blocked.length) {
+        toast.warning(`${blocked.length} paid or partially paid payslip(s) skipped.`);
+      }
+      rerunEmployees(eligible.map((row) => row.employee));
+    });
   };
 
   const handleRerunOne = (row) => {
@@ -513,31 +667,42 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       toast.warning("Paid and partially paid payslips cannot be re-run.");
       return;
     }
-    rerunEmployees([row.employee]);
+    const name = row.employee_name || "this employee";
+    confirmRerun(
+      `Re-run payroll for ${name}?`,
+      "This recalculates only this employee's payslip for the current run.",
+    ).then((confirmed) => {
+      if (confirmed) rerunEmployees([row.employee]);
+    });
   };
 
-  // ── Filtered rows — name/emp_id search AND department, both optional ──
-  const filteredPayslipData = useMemo(() => {
-    return payslipData.filter((row) => {
-      const matchesSearch =
-        !search ||
-        row.employee_name?.toLowerCase().includes(search.toLowerCase()) ||
-        row.emp_id?.toLowerCase().includes(search.toLowerCase());
-
-      const matchesDepartment =
-        !selectedDepartment ||
-        String(row.department_id) === String(selectedDepartment.value);
-
-      return matchesSearch && matchesDepartment;
-    });
-  }, [payslipData, search, selectedDepartment]);
-
-  // ── Excel export — colored ExcelJS workbook, applied to the currently filtered rows ──
+  // ── Excel export — every employee matching the current search and department ──
   const handleExportExcel = async () => {
-    if (!filteredPayslipData.length) {
+    let exportRows = [];
+    try {
+      const first = await Api({ method: "GET", url: payslipListUrl(1, 100) });
+      const exportPages = Number(first?.data?.total_pages || 1);
+      exportRows = (first?.data?.data || []).map(transformPayslip);
+      for (let nextPage = 2; nextPage <= exportPages; nextPage += 1) {
+        const res = await Api({ method: "GET", url: payslipListUrl(nextPage, 100) });
+        exportRows = exportRows.concat((res?.data?.data || []).map(transformPayslip));
+      }
+    } catch (err) {
+      toast.error("Failed to export payslips.");
+      return;
+    }
+    if (!exportRows.length) {
       toast.warning("No payslips to export.");
       return;
     }
+    const earningKeys = new Set();
+    const deductionKeys = new Set();
+    exportRows.forEach((item) => {
+      Object.keys(item.earnings || {}).forEach((k) => earningKeys.add(k));
+      Object.keys(item.deductions || {}).forEach((k) => deductionKeys.add(k));
+    });
+    const dynamicEarnings = Array.from(earningKeys);
+    const dynamicDeductions = Array.from(deductionKeys);
 
     const workbook = new ExcelJs.Workbook();
     const sheet = workbook.addWorksheet("Payslips", {
@@ -564,7 +729,6 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       "Net Pay",
       "Paid",
       "Balance",
-      "Deferred",
       "Based On",
     ];
 
@@ -574,8 +738,8 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     const dedStart = earnEnd + 1; // first deduction col
     const dedEnd = dedStart + dynamicDeductions.length; // includes Total Deductions
     const netCol = dedEnd + 1; // Net Pay col
-    const paidStart = netCol + 1; // Paid, Balance, Deferred
-    const paidEnd = netCol + 3;
+    const paidStart = netCol + 1; // Paid, Balance
+    const paidEnd = netCol + 2;
 
     // ── Header row ──
     const headerRow = sheet.addRow(header);
@@ -600,7 +764,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
     });
 
     // ── Data rows ──
-    filteredPayslipData.forEach((row) => {
+    exportRows.forEach((row) => {
       const netPay = Number(row.net_pay || 0);
       const values = [
         row.employee_name,
@@ -621,7 +785,6 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
         netPay,
         Number(row.paid_amount || 0),
         Number(row.balance_amount || 0),
-        Number(row.deferred_amount || 0),
         (row.based_on || "CTC").toUpperCase(),
       ];
 
@@ -651,7 +814,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
             fgColor: { argb: "FDECEC" },
           };
         }
-        // paid, balance, and deferred amounts
+        // paid and balance amounts
         if (col >= paidStart && col <= paidEnd) {
           cell.numFmt = "#,##0.00";
         }
@@ -699,7 +862,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
 
-    const rawPeriod = filteredPayslipData[0]?.pay_period || `Run_${payrollRunId}`;
+    const rawPeriod = exportRows[0]?.pay_period || `Run_${payrollRunId}`;
     const safePeriod = rawPeriod.replace(/\s+/g, "_").replace(/[^\w-]/g, "");
 
     const url = window.URL.createObjectURL(blob);
@@ -745,32 +908,65 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
   };
 
   const allowDecimal = selectedSlip?.allow_decimal_in_payslip ?? true;
-
-  if (loading) {
-    return (
-      <div className="text-center py-5">
-        <Spinner color="success" />
-        <p className="text-muted mt-2" style={{ fontSize:13 }}>Loading payslips...</p>
-      </div>
-    );
+  const startItem = totalCount === 0 ? 0 : (page - 1) * PAYSLIP_PAGE_SIZE + 1;
+  const endItem = Math.min(page * PAYSLIP_PAGE_SIZE, totalCount);
+  const pageNumbers = [];
+  for (let n = 1; n <= totalPages; n += 1) {
+    if (n === 1 || n === totalPages || Math.abs(n - page) <= 1) pageNumbers.push(n);
   }
 
   return (
     <React.Fragment>
-      <Card className="shadow-none border h-100 d-flex flex-column" style={{ minHeight: 0 }}>
+      <div
+        className="d-flex flex-column"
+        style={fullscreen ? {
+          position: "fixed",
+          inset: 0,
+          zIndex: 1045,
+          background: "#fff",
+          padding: "16px 20px",
+          minHeight: 0,
+        } : { flex: "1 1 auto", minHeight: 0 }}
+      >
+      {fullscreen && (
+        <div
+          className="d-flex align-items-center justify-content-between mb-2 pb-2 flex-shrink-0"
+          style={{ borderBottom: "1px solid #e5e7eb" }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#475569" }}>
+            <i className="ri-fullscreen-line me-2"></i>Full Screen
+          </span>
+          <Button data-testid="payslip-exit-full-screen-esc-button" color="light" size="sm" className="border" onClick={() => setFullscreen(false)}>
+            <i className="ri-fullscreen-exit-line me-1"></i>Exit Full Screen (Esc)
+          </Button>
+        </div>
+      )}
+      <Card className="shadow-none border d-flex flex-column mb-0" style={{ minHeight: 0, flex: "0 1 auto", maxHeight: "100%", overflow: "hidden" }}>
         {/* ── Card Header ── */}
         <CardHeader className="bg-light d-flex align-items-center justify-content-between flex-shrink-0">
           <CardTitle tag="h5" className="mb-0">Employee Payslip Registry</CardTitle>
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-2">
             <span className="text-muted" style={{ fontSize: 12 }}>
-              {filteredPayslipData.length} employee{filteredPayslipData.length !== 1 ? "s" : ""}
+              {totalCount} employee{totalCount !== 1 ? "s" : ""}
             </span>
-            <Button color="success" size="sm" onClick={handleExportExcel} disabled={!filteredPayslipData.length}>
+            <Button data-testid="payslip-export-excel-button" color="success" size="sm" onClick={handleExportExcel} disabled={!totalCount || loading}>
               <i className="ri-file-excel-2-line align-middle me-1"></i> Export Excel
+            </Button>
+            <Button
+              data-testid="payslip-fullscreen-button"
+              color="light"
+              size="sm"
+              className="border"
+              onClick={() => setFullscreen((open) => !open)}
+              title={fullscreen ? "Exit full screen" : "Full screen view"}
+            >
+              <i className={fullscreen ? "ri-fullscreen-exit-line" : "ri-fullscreen-line"}></i>
             </Button>
             {selectedIds.length > 0 && (
               <Button
-                color="warning"
+                data-testid="payslip-re-run-selected-button"
+                color="primary"
+                outline
                 size="sm"
                 onClick={handleRerunSelected}
                 disabled={rerunning || !payslipData.some((row) => selectedIds.includes(row.id) && !isPaymentRecorded(row))}
@@ -783,10 +979,39 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
           </div>
         </CardHeader>
 
+        {runTotals && (
+          <div className="d-flex flex-wrap gap-3 px-3 pt-3 flex-shrink-0">
+            {[
+              { label: "Total Gross", val: runTotals.gross, color: PAYSLIP_COLORS.earning },
+              { label: "Total Deductions", val: runTotals.deductions, color: PAYSLIP_COLORS.deduction },
+              { label: "Total Net Pay", val: runTotals.netPay, color: PAYSLIP_COLORS.netpay },
+              { label: "Total Paid", val: runTotals.paid, color: PAYSLIP_COLORS.payment },
+              { label: "Balance Pending", val: runTotals.balance, color: PAYSLIP_COLORS.lop },
+            ].map((c) => (
+              <div
+                key={c.label}
+                className="text-center"
+                style={{
+                  flex: "1 1 160px",
+                  background: c.color.cell,
+                  color: c.color.text,
+                  borderTop: `3px solid ${c.color.border}`,
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                }}
+              >
+                <p className="mb-1 text-uppercase fw-semibold" style={{ fontSize: 10, letterSpacing: "0.4px" }}>{c.label}</p>
+                <h5 className="mb-0 fw-bold">{runTotals.ready ? `₹${fmt(c.val)}` : "—"}</h5>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ── Filters — name search + department, side by side, aligned heights ── */}
         <div className="px-3 py-2 border-bottom d-flex align-items-center gap-3 flex-wrap flex-shrink-0">
           <div className="search-box" style={{ width: 240, height: 38 }}>
             <Input
+              data-testid="payslip-search-employee-name-or-input"
               type="search"
               className="form-control search"
               style={{ height: 38, fontSize: 13 }}
@@ -798,6 +1023,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
           </div>
           <div style={{ width: 220 }}>
             <Select
+              testId="payslip-filter-by-department"
               options={departmentOptions}
               value={selectedDepartment}
               onChange={(val) => setSelectedDepartment(val)}
@@ -809,6 +1035,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
           </div>
           {selectedDepartment && (
             <Button
+              data-testid="payslip-clear-department-button"
               color="link"
               size="sm"
               className="text-muted p-0 text-decoration-none align-self-center"
@@ -827,163 +1054,144 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
           onDone={() => refreshAfterChange({ clearSelection: true })}
         />
 
-        <CardBody className="p-0 flex-grow-1" style={{ minHeight: 0 }}>
+        <CardBody className="p-0 d-flex flex-column" style={{ minHeight: 0, flex: "1 1 auto", overflow: "hidden" }}>
           <style>{`
-            .payslip-table-wrap table.table-nowrap th,
-            .payslip-table-wrap table.table-nowrap td {
-              border: none;
-              border-bottom: 1px solid #dfe3e8;
+            .payslip-scroll {
+              overflow: auto;
+              flex: 1 1 auto;
+              min-height: 0;
+              scrollbar-width: thin;
+              scrollbar-color: #b7c3ea #f4f6fb;
             }
-            .payslip-table-wrap table.table-nowrap thead th {
-              border-bottom: 1px solid #c9ced4;
+            .payslip-scroll::-webkit-scrollbar {
+              width: 8px;
+              height: 10px;
             }
-            .payslip-table-wrap table.table-nowrap tbody tr:hover td {
-              background-color: #fafbfc;
+            .payslip-scroll::-webkit-scrollbar-track {
+              background: #f4f6fb;
+            }
+            .payslip-scroll::-webkit-scrollbar-thumb {
+              background: #b7c3ea;
+              border-radius: 8px;
+              border: 2px solid #f4f6fb;
+            }
+            .payslip-scroll::-webkit-scrollbar-thumb:hover {
+              background: #405189;
+            }
+            .payslip-scroll::-webkit-scrollbar-corner {
+              background: #f4f6fb;
             }
           `}</style>
-          <div
-            className="table-responsive payslip-table-wrap"
-            style={{ height: "100%", overflow: "auto", position: "relative" }}
-          >
-            <Table
-              className="align-middle table-nowrap mb-0"
-              style={{ fontSize: 13, borderCollapse: "collapse", borderSpacing: 0 }}
-            >
-              <thead className="text-muted text-uppercase" style={{ fontSize: 11 }}>
+          <div className="payslip-scroll">
+            <table style={{ borderCollapse: "separate", borderSpacing: 0, width: "100%", minWidth: "max-content", fontSize: 12 }}>
+              <thead>
                 <tr>
-                  <th className="text-center" style={{ width: 44, position:"sticky", top:0, zIndex:4, background:"#f8f9fa" }}>
+                  <th rowSpan={2} style={payslipTh(PAYSLIP_COLORS.employee, { left: 0, zIndex: 6, width: 48, minWidth: 48, height: "auto" })}>
                     <input
+                      data-testid="payslip-select-all-checkbox"
                       type="checkbox"
                       style={{ width: 15, height: 15, cursor: "pointer" }}
-                      checked={selectedIds.length === filteredPayslipData.length && filteredPayslipData.length > 0}
-                      onChange={(e) => setSelectedIds(e.target.checked ? filteredPayslipData.map(r=>r.id) : [])}
+                      checked={selectedIds.length === payslipData.length && payslipData.length > 0}
+                      onChange={(e) => setSelectedIds(e.target.checked ? payslipData.map((r) => r.id) : [])}
                     />
                   </th>
-                  <th style={{ position:"sticky", top:0, left:0, zIndex:4, background:"#f8f9fa", minWidth:200 }}>
+                  <th rowSpan={2} style={payslipTh(PAYSLIP_COLORS.employee, { left: 48, zIndex: 6, minWidth: 220, textAlign: "left", height: "auto", boxShadow: "4px 0 6px -4px rgba(15, 23, 42, 0.18)" })}>
                     Employee
                   </th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Pay Period</th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Payable Days</th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>LOP Days</th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Regularized</th>
-                  {dynamicEarnings.map((earn) => (
-                    <th key={earn} style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>{earn}</th>
-                  ))}
-                  {dynamicDeductions.map((ded) => (
-                    <th key={ded} className="text-danger" style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>{ded}</th>
-                  ))}
-                  <th className="text-dark" style={{ position:"sticky", top:0, zIndex:3, background:"#d8f3ea" }}>Net Pay</th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Paid</th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Balance</th>
-                  <th style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Deferred</th>
-                  <th className="text-center" style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Based On</th>
-                  <th className="text-center" style={{ position:"sticky", top:0, zIndex:3, background:"#f8f9fa" }}>Status</th>
-                  <th
-                    className="text-center"
-                    style={{
-                      position:"sticky", top:0, right:0, zIndex:4,
-                      background:"#f8f9fa", minWidth:120,
-                      boxShadow:"-2px 0 4px -2px rgba(0,0,0,0.15)",
-                    }}
-                  >
+                  <th colSpan={2} style={payslipTh(PAYSLIP_COLORS.attendance, { borderLeft: `3px solid ${PAYSLIP_COLORS.attendance.border}` })}>Attendance</th>
+                  <th rowSpan={2} style={payslipTh(PAYSLIP_COLORS.lop, { height: "auto", borderLeft: `3px solid ${PAYSLIP_COLORS.lop.border}` })}>LOP</th>
+                  <th rowSpan={2} style={payslipTh(PAYSLIP_COLORS.attendance, { height: "auto" })}>Regularized</th>
+                  {dynamicEarnings.length > 0 && (
+                    <th colSpan={dynamicEarnings.length} style={payslipTh(PAYSLIP_COLORS.earning, { borderLeft: `3px solid ${PAYSLIP_COLORS.earning.border}` })}>Earnings</th>
+                  )}
+                  {dynamicDeductions.length > 0 && (
+                    <th colSpan={dynamicDeductions.length} style={payslipTh(PAYSLIP_COLORS.deduction, { borderLeft: `3px solid ${PAYSLIP_COLORS.deduction.border}` })}>Deductions</th>
+                  )}
+                  <th rowSpan={2} style={payslipTh(PAYSLIP_COLORS.netpay, { height: "auto", borderLeft: `3px solid ${PAYSLIP_COLORS.netpay.border}` })}>Net Pay</th>
+                  <th colSpan={2} style={payslipTh(PAYSLIP_COLORS.payment, { borderLeft: `3px solid ${PAYSLIP_COLORS.payment.border}` })}>Settlement</th>
+                  <th colSpan={2} style={payslipTh(PAYSLIP_COLORS.meta, { borderLeft: `3px solid ${PAYSLIP_COLORS.meta.border}` })}>Details</th>
+                  <th rowSpan={2} style={payslipTh(PAYSLIP_COLORS.meta, { right: 0, zIndex: 6, minWidth: 168, height: "auto", boxShadow: "-4px 0 6px -4px rgba(15, 23, 42, 0.18)" })}>
                     Actions
                   </th>
                 </tr>
+                <tr>
+                  <th style={payslipSubTh(PAYSLIP_COLORS.attendance, { borderLeft: `3px solid ${PAYSLIP_COLORS.attendance.border}`, textAlign: "left" })}>Pay Period</th>
+                  <th style={payslipSubTh(PAYSLIP_COLORS.attendance)}>Payable Days</th>
+                  {dynamicEarnings.map((earn, i) => (
+                    <th key={earn} style={payslipSubTh(PAYSLIP_COLORS.earning, { borderLeft: i === 0 ? `3px solid ${PAYSLIP_COLORS.earning.border}` : undefined })}>{earn}</th>
+                  ))}
+                  {dynamicDeductions.map((ded, i) => (
+                    <th key={ded} style={payslipSubTh(PAYSLIP_COLORS.deduction, { borderLeft: i === 0 ? `3px solid ${PAYSLIP_COLORS.deduction.border}` : undefined })}>{ded}</th>
+                  ))}
+                  <th style={payslipSubTh(PAYSLIP_COLORS.payment, { borderLeft: `3px solid ${PAYSLIP_COLORS.payment.border}` })}>Paid</th>
+                  <th style={payslipSubTh(PAYSLIP_COLORS.payment)}>Balance</th>
+                  <th style={payslipSubTh(PAYSLIP_COLORS.meta, { borderLeft: `3px solid ${PAYSLIP_COLORS.meta.border}`, textAlign: "center" })}>Based On</th>
+                  <th style={payslipSubTh(PAYSLIP_COLORS.meta, { textAlign: "center" })}>Status</th>
+                </tr>
               </thead>
               <tbody>
-                {filteredPayslipData.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={13 + dynamicEarnings.length + dynamicDeductions.length} className="text-center py-4 text-muted">
+                    <td colSpan={12 + dynamicEarnings.length + dynamicDeductions.length} className="py-3">
+                      <TableSkeletonBlock rows={6} cols={8} head={false} testId="employee-payslip-loading-skeleton" label="Loading payslips" />
+                    </td>
+                  </tr>
+                ) : payslipData.length === 0 ? (
+                  <tr>
+                    <td colSpan={12 + dynamicEarnings.length + dynamicDeductions.length} className="text-center py-4 text-muted">
                       No payslip data found.
                     </td>
                   </tr>
-                ) : filteredPayslipData.map((row, index) => {
+                ) : payslipData.map((row, index) => {
                   const netPay = parseFloat(row.net_pay || 0);
                   return (
                     <tr key={row.id || index}>
-                      <td className="text-center"><input type="checkbox" style={{ width: 15, height: 15, cursor: "pointer" }} checked={selectedIds.includes(row.id)} onChange={() => toggleSelect(row.id)} /></td>
-                      <td
-                        className="ps-3"
-                        style={{ position:"sticky", left:0, zIndex:1, background:"#fff", boxShadow:"2px 0 4px -2px rgba(0,0,0,0.15)" }}
-                      >
-                        <div className="d-flex align-items-center gap-2">
-                          {row.profile_url ? (
-                            <img
-                              src={row.profile_url}
-                              alt={row.employee_name}
-                              className="rounded-circle"
-                              width={28} height={28}
-                              style={{ objectFit:"cover" }}
-                            />
-                          ) : (
-                            <div
-                              className="rounded-circle bg-success-subtle d-flex align-items-center justify-content-center"
-                              style={{ width:28, height:28, fontSize:11, fontWeight:600, color:"#0ab39c" }}
-                            >
-                              {(row.employee_name || "?")[0].toUpperCase()}
-                            </div>
-                          )}
-                          <div>
-                            <p className="mb-0" style={{ fontSize:13, fontWeight:500, color:"#344054" }}>{row.employee_name}</p>
-                            <p className="mb-0 text-muted" style={{ fontSize:11 }}>
-                              {row.emp_id}
-                              {row.department && (
-                                <span className="ms-1 text-muted">· {row.department}</span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
+                      <td style={payslipTd(PAYSLIP_COLORS.employee, { position: "sticky", left: 0, zIndex: 2, textAlign: "center", width: 48, minWidth: 48, background: "#fff" })}>
+                        <input data-testid={testId("payslip-row", itemTestKey(row), "checkbox")} type="checkbox" style={{ width: 15, height: 15, cursor: "pointer" }} checked={selectedIds.includes(row.id)} onChange={() => toggleSelect(row.id)} />
                       </td>
-
-                      <td className="text-muted" style={{ fontSize:12 }}>{row.pay_period || "—"}</td>
-                      <td>{row.payable_days}</td>
-                      <td>
-                        {parseFloat(row.lop_days) > 0
-                          ? <Badge color="danger" className="fs-11">{fmtDays(row.lop_days)}</Badge>
-                          : <span className="text-muted">0</span>}
+                      <td style={payslipTd(PAYSLIP_COLORS.employee, { position: "sticky", left: 48, zIndex: 2, textAlign: "left", minWidth: 220, background: "#fff", boxShadow: "4px 0 6px -4px rgba(15, 23, 42, 0.18)" })}>
+                        <ApvEmployee
+                          employee={{ first_name: row.employee_name, profile_url: row.profile_url }}
+                          tag={row.emp_id ? `#${row.emp_id}` : null}
+                          sub={row.department || null}
+                        />
                       </td>
-                      <td>
+                      <td style={payslipTd(PAYSLIP_COLORS.attendance, { textAlign: "left" })}>{row.pay_period || "—"}</td>
+                      <td style={payslipTd(PAYSLIP_COLORS.attendance)}>{row.payable_days}</td>
+                      <td style={payslipTd(PAYSLIP_COLORS.lop, { fontWeight: 600 })}>
+                        {parseFloat(row.lop_days) > 0 ? fmtDays(row.lop_days) : "0"}
+                      </td>
+                      <td style={payslipTd(PAYSLIP_COLORS.attendance, { textAlign: "center" })}>
                         {row.is_regularized
-                          ? (
-                            <Badge color="info" className="fs-11">
-                              <i className="ri-checkbox-circle-line align-middle me-1"></i>
-                              {row.regularized_days_count} day{row.regularized_days_count === 1 ? "" : "s"}
-                            </Badge>
-                          )
-                          : <span className="text-muted">—</span>}
+                          ? `${row.regularized_days_count} day${row.regularized_days_count === 1 ? "" : "s"}`
+                          : "—"}
                       </td>
-
                       {dynamicEarnings.map((earn) => (
-                        <td key={earn}>&#8377;{fmt(row.earnings?.[earn])}</td>
+                        <td key={earn} style={payslipTd(PAYSLIP_COLORS.earning)}>
+                          &#8377;{fmt(row.earnings?.[earn])}
+                        </td>
                       ))}
                       {dynamicDeductions.map((ded) => (
-                        <td key={ded} className="text-danger">&#8377;{fmt(row.deductions?.[ded])}</td>
+                        <td key={ded} style={payslipTd(PAYSLIP_COLORS.deduction)}>
+                          &#8377;{fmt(row.deductions?.[ded])}
+                        </td>
                       ))}
-
-                      <td className={`fw-bold ${netPay < 0 ? "text-danger" : "text-success"}`}>
+                      <td style={payslipTd(PAYSLIP_COLORS.netpay, { fontWeight: 800, color: netPay < 0 ? "#c53030" : PAYSLIP_COLORS.netpay.text })}>
                         &#8377;{fmt(row.net_pay)}
                       </td>
-                      <td>&#8377;{fmt(row.paid_amount)}</td>
-                      <td className={parseFloat(row.balance_amount || 0) > 0 ? "text-warning fw-semibold" : ""}>
+                      <td style={payslipTd(PAYSLIP_COLORS.payment)}>&#8377;{fmt(row.paid_amount)}</td>
+                      <td style={payslipTd(PAYSLIP_COLORS.payment, { fontWeight: parseFloat(row.balance_amount || 0) > 0 ? 700 : 400 })}>
                         &#8377;{fmt(row.balance_amount)}
                       </td>
-                      <td>&#8377;{fmt(row.deferred_amount)}</td>
-
-                      <td className="text-center">
-                        <Badge color={row.based_on === "ctc" ? "info" : "secondary"} className="fs-11 text-uppercase">
-                          {row.based_on || "—"}
-                        </Badge>
+                      <td style={payslipTd(PAYSLIP_COLORS.meta, { textAlign: "center", textTransform: "uppercase" })}>
+                        {row.based_on || "—"}
                       </td>
-
-                      <td className="text-center">
+                      <td style={payslipTd(PAYSLIP_COLORS.meta, { textAlign: "center", background: "#fff" })}>
                         <PayslipStatusCell payslip={row} runStatus={runStatus} onChanged={() => refreshAfterChange()} />
                       </td>
-
-                      <td
-                        className="text-end pe-2"
-                        style={{ position:"sticky", right:0, zIndex:1, background:"#fff", boxShadow:"-2px 0 4px -2px rgba(0,0,0,0.15)" }}
-                      >
+                      <td style={payslipTd(PAYSLIP_COLORS.meta, { position: "sticky", right: 0, zIndex: 2, textAlign: "right", background: "#fff", minWidth: 168, boxShadow: "-4px 0 6px -4px rgba(15, 23, 42, 0.12)" })}>
                         <Button
+                          data-testid={testId("payslip-refresh", itemTestKey(row), "button")}
                           color="light"
                           size="sm"
                           className="border py-1 px-2 me-1"
@@ -994,6 +1202,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                           <i className="ri-refresh-line align-middle"></i>
                         </Button>
                         <Button
+                          data-testid={testId("payslip-view-old-versions-of-this", itemTestKey(row), "button")}
                           color="light"
                           size="sm"
                           className="border py-1 px-2 me-1"
@@ -1003,6 +1212,7 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                           <i className="ri-history-line align-middle"></i>
                         </Button>
                         <Button
+                          data-testid={testId("payslip-open-slip", itemTestKey(row), "button")}
                           color="light"
                           size="sm"
                           className="border py-1 px-2"
@@ -1016,10 +1226,56 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
                   );
                 })}
               </tbody>
-            </Table>
+            </table>
+          </div>
+          <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 px-3 py-2 border-top flex-shrink-0">
+            <div className="text-muted" style={{ fontSize: 12 }}>
+              Showing <span className="fw-semibold">{startItem}</span> to{" "}
+              <span className="fw-semibold">{endItem}</span> of{" "}
+              <span className="fw-semibold">{totalCount}</span>
+            </div>
+            {totalPages > 1 && (
+              <ul className="pagination pagination-separated pagination-sm mb-0">
+                <li className={page <= 1 || loading ? "page-item disabled" : "page-item"}>
+                  <button data-testid="payslip-previous-button" type="button" className="page-link" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>
+                    Previous
+                  </button>
+                </li>
+                {pageNumbers.map((n, idx) => {
+                  const prev = pageNumbers[idx - 1];
+                  const gap = prev && n - prev > 1;
+                  return (
+                    <React.Fragment key={n}>
+                      {gap && (
+                        <li className="page-item disabled">
+                          <span className="page-link">...</span>
+                        </li>
+                      )}
+                      <li className="page-item">
+                        <button
+                          data-testid={testId("payslip", itemTestKey(n), "button")}
+                          type="button"
+                          className={n === page ? "page-link active" : "page-link"}
+                          disabled={loading}
+                          onClick={() => setPage(n)}
+                        >
+                          {n}
+                        </button>
+                      </li>
+                    </React.Fragment>
+                  );
+                })}
+                <li className={page >= totalPages || loading ? "page-item disabled" : "page-item"}>
+                  <button data-testid="payslip-next-button" type="button" className="page-link" disabled={page >= totalPages || loading} onClick={() => setPage(page + 1)}>
+                    Next
+                  </button>
+                </li>
+              </ul>
+            )}
           </div>
         </CardBody>
       </Card>
+      </div>
 
       {/* ── Payslip Revision History Modal ── */}
       <PayslipRevisionHistory
@@ -1030,8 +1286,8 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
 
       {/* ── Payslip Detail Modal ── */}
       {selectedSlip && (
-        <Modal isOpen={modalOpen} toggle={handleCloseModal} size="xl" centered>
-          <ModalHeader toggle={handleCloseModal} className="bg-light p-3">
+        <Modal data-testid="payslip-detail-dialog" isOpen={modalOpen} toggle={handleCloseModal} size="xl" centered>
+          <ModalHeader close={<ModalCloseButton onClick={handleCloseModal} testId="payslip-detail-close-button" />} toggle={handleCloseModal} className="bg-light p-3">
             Payslip &mdash; {selectedSlip.employee_name || "Employee"} ({selectedSlip.emp_id || selectedSlip.employee})
             {selectedSlip.department && (
               <span className="text-muted ms-2" style={{ fontSize: 12, fontWeight: 400 }}>
@@ -1206,8 +1462,9 @@ const EmployeePayslip = ({ payrollRunId = 38, companyName = "Lintcloud", refresh
 
           <ModalFooter className="bg-light border-top">
             <div className="d-flex justify-content-between w-100 align-items-center">
-              <Button color="secondary" outline size="sm" onClick={handleCloseModal}>Close</Button>
+              <Button data-testid="payslip-detail-footer-close-button" color="secondary" outline size="sm" onClick={handleCloseModal}>Close</Button>
               <Button
+                data-testid="payslip-detail-download-button"
                 color="success" size="sm" onClick={handleDownloadPDF}
                 disabled={downloading} style={{ minWidth:165 }}
               >

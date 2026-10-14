@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, FormGroup, Input, Label, Spinner, Table } from "reactstrap";
+import { Button, Input, Label, Spinner } from "reactstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Api } from "../../../common/api/Api";
@@ -8,6 +8,8 @@ import {
   editPTSetting,
   addPTSetting,
 } from "../../../redux/reducers/ChildReducer/PTSettingsReducer";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import "./PTSettings.scss";
 
 const CYCLE_OPTIONS = [
   { value: "monthly", label: "Monthly" },
@@ -49,11 +51,11 @@ const PTSettingsForm = () => {
   useEffect(() => {
     if (!formObj || !formObj.id) {
       setForm({
-        id: formObj.id,
-        state: formObj.state || "",
-        deduction_cycle: formObj.deduction_cycle || "monthly",
-        slab_basis: formObj.slab_basis || "monthly",
-        is_active: formObj.is_active ?? true,
+        id: formObj?.id,
+        state: formObj?.state || "",
+        deduction_cycle: formObj?.deduction_cycle || "monthly",
+        slab_basis: formObj?.slab_basis || "monthly",
+        is_active: formObj?.is_active ?? true,
       });
       setTableData([createRow()]);
       return;
@@ -203,118 +205,169 @@ const PTSettingsForm = () => {
       .finally(() => setSaving(false));
   };
 
+  const filledAmounts = tableData.map((r) => Number(r.amount) || 0);
+  const maxAmount = filledAmounts.length ? Math.max(...filledAmounts) : 0;
+
   return (
-    <div className="p-3">
+    <div className="ptf">
+      <div className="ptf-scroll">
+        {/* ── 1. Basics ── */}
+        <section className="ptf-section">
+          <div className="ptf-section-head">
+            <span className="ptf-step">1</span>
+            <div>
+              <h6>State & cycle</h6>
+              <p>Where this tax applies and how often it's deducted</p>
+            </div>
+          </div>
 
-      {/* State */}
-      <FormGroup>
-        <Label>State <span className="text-danger">*</span></Label>
-        {isEdit ? (
-          <>
-            <div className="form-control bg-light">{formatStateLabel(form.state)}</div>
-            <small className="text-muted">State cannot be changed after creation.</small>
-          </>
-        ) : (
-          <Input
-            value={form.state}
-            onChange={(e) => setField("state", e.target.value)}
-            placeholder="Enter state key (e.g. tamil_nadu)"
-          />
-        )}
-      </FormGroup>
+          <div className="ptf-field">
+            <Label>State <span className="text-danger">*</span></Label>
+            {isEdit ? (
+              <>
+                <div className="ptf-locked">
+                  <i className="ri-map-pin-2-line"></i>
+                  {formatStateLabel(form.state)}
+                  <i className="ri-lock-line ptf-locked-icon" title="Locked"></i>
+                </div>
+                <small className="ptf-hint">State cannot be changed after creation.</small>
+              </>
+            ) : (
+              <Input
+                data-testid="pt-settings-form-enter-state-key-e-input"
+                value={form.state}
+                onChange={(e) => setField("state", e.target.value)}
+                placeholder="Enter state key (e.g. tamil_nadu)"
+              />
+            )}
+          </div>
 
-      {/* Deduction Cycle */}
-      <FormGroup>
-        <Label>Deduction Cycle</Label>
-        <Input type="select" value={form.deduction_cycle}
-          onChange={(e) => setField("deduction_cycle", e.target.value)}>
-          {CYCLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </Input>
-      </FormGroup>
+          <div className="ptf-row">
+            <div className="ptf-field">
+              <Label>Deduction Cycle</Label>
+              <Input
+                data-testid="pt-settings-form-deduction-cycle-select" type="select" value={form.deduction_cycle}
+                onChange={(e) => setField("deduction_cycle", e.target.value)}>
+                {CYCLE_OPTIONS.map((o) => <option data-testid={testId("pt-settings-form-deduction-cycle-option", itemTestKey(o))} key={o.value} value={o.value}>{o.label}</option>)}
+              </Input>
+            </div>
+            <div className="ptf-field">
+              <Label>Slab Basis</Label>
+              <Input
+                data-testid="pt-settings-form-slab-basis-select" type="select" value={form.slab_basis}
+                onChange={(e) => setField("slab_basis", e.target.value)}>
+                {CYCLE_OPTIONS.map((o) => <option data-testid={testId("pt-settings-form-slab-basis-option", itemTestKey(o))} key={o.value} value={o.value}>{o.label}</option>)}
+              </Input>
+            </div>
+          </div>
+        </section>
 
-      {/* Slab Basis */}
-      <FormGroup>
-        <Label>Slab Basis</Label>
-        <Input type="select" value={form.slab_basis}
-          onChange={(e) => setField("slab_basis", e.target.value)}>
-          {CYCLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </Input>
-      </FormGroup>
+        {/* ── 2. Slabs ── */}
+        <section className="ptf-section">
+          <div className="ptf-section-head">
+            <span className="ptf-step">2</span>
+            <div>
+              <h6>Tax slabs</h6>
+              <p>Gross salary ranges and the PT amount for each</p>
+            </div>
+            <span className="ptf-badge">
+              {tableData.length} slab{tableData.length === 1 ? "" : "s"} · max ₹{maxAmount.toLocaleString("en-IN")}
+            </span>
+          </div>
 
-      <hr />
+          <div className="ptf-slab-head" aria-hidden="true">
+            <span />
+            <span>Start (₹)</span>
+            <span>End (₹)</span>
+            <span>Amount (₹)</span>
+            <span />
+          </div>
 
-      {/* Slabs Table */}
-      <Table bordered size="sm">
-        <thead>
-          <tr>
-            <th>Start</th>
-            <th>End</th>
-            <th>Amount</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {tableData.map((row, i) => (
-            <tr key={row._uid}>
+          <ol className="ptf-slabs">
+            {tableData.map((row, i) => (
+              <li key={row._uid} className="ptf-slab">
+                <span className="ptf-slab-no">{i + 1}</span>
 
-              {/* START — editable only for row 0, read-only (auto) for rest */}
-              <td>
-                {i === 0 ? (
+                {/* START — editable only for row 0, read-only (auto) for rest */}
+                <label className="ptf-slab-field">
+                  <span className="ptf-slab-label">Start (₹)</span>
+                  {i === 0 ? (
+                    <Input
+                      data-testid="pt-settings-form-first-slab-start-input"
+                      type="number"
+                      value={row.start}
+                      onChange={(e) => updateRow(row._uid, "start", e.target.value)}
+                    />
+                  ) : (
+                    <Input
+                      data-testid={testId("pt-settings-form-slab", row.start, "start-input")}
+                      type="number"
+                      value={row.start}
+                      readOnly
+                      className="is-auto"
+                      title="Auto-calculated from previous row's End"
+                    />
+                  )}
+                </label>
+
+                {/* END — always editable, triggers cascade */}
+                <label className="ptf-slab-field">
+                  <span className="ptf-slab-label">End (₹)</span>
                   <Input
+                    data-testid={testId("pt-settings-form-slab", row.start, "end-input")}
                     type="number"
-                    value={row.start}
-                    onChange={(e) => updateRow(row._uid, "start", e.target.value)}
+                    value={row.end}
+                    onChange={(e) => updateRow(row._uid, "end", e.target.value)}
+                    onBlur={() => validateEndOnBlur(row._uid)}
                   />
-                ) : (
+                </label>
+
+                <label className="ptf-slab-field">
+                  <span className="ptf-slab-label">Amount (₹)</span>
                   <Input
+                    data-testid={testId("pt-settings-form-slab", row.start, "amount-input")}
                     type="number"
-                    value={row.start}
-                    readOnly
-                    className="bg-light"
-                    title="Auto-calculated from previous row's End"
+                    value={row.amount}
+                    onChange={(e) => updateRow(row._uid, "amount", e.target.value)}
                   />
-                )}
-              </td>
+                </label>
 
-              {/* END — always editable, triggers cascade */}
-              <td>
-                <Input
-                  type="number"
-                  value={row.end}
-                  onChange={(e) => updateRow(row._uid, "end", e.target.value)}
-                  onBlur={() => validateEndOnBlur(row._uid)}
-                />
-              </td>
+                <div className="ptf-slab-action">
+                  {i !== 0 && (
+                    <button
+                      data-testid={testId("pt-settings-form-slab", row.start, "delete-button")}
+                      type="button"
+                      className="ptf-del"
+                      title="Remove slab"
+                      onClick={() => deleteRow(row._uid)}
+                    >
+                      <i className="ri-delete-bin-6-line"></i>
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
 
-              {/* AMOUNT */}
-              <td>
-                <Input
-                  type="number"
-                  value={row.amount}
-                  onChange={(e) => updateRow(row._uid, "amount", e.target.value)}
-                />
-              </td>
+          <button data-testid="pt-settings-form-add-row-button" type="button" className="ptf-add" onClick={addRow}>
+            <i className="ri-add-line"></i>
+            Add slab
+          </button>
 
-              <td>
-                {i !== 0 && (
-                  <Button size="sm" color="danger" onClick={() => deleteRow(row._uid)}>✕</Button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-
-      <Button size="sm" onClick={addRow}>+ Add Row</Button>
-
-      <div className="d-flex justify-content-end gap-2 mt-3">
-        <Button className="btn-danger" onClick={() => dispatch(toggleRSBView(false))}>Cancel</Button>
-        <Button className="btn-success" onClick={handleSave} disabled={saving}>
-           <i className="ri-check-double-line align-middle me-1"></i>
-          {saving ? <Spinner size="sm" /> : isEdit ? "Update" : "Save"}
-        </Button>
+          <p className="ptf-hint mt-2 mb-0">
+            <i className="ri-information-line me-1"></i>
+            Each slab starts right after the previous one ends. Use 999999 as the last End for "and above".
+          </p>
+        </section>
       </div>
 
+      <div className="ptf-foot">
+        <Button data-testid="pt-settings-form-cancel-button" color="light" className="ptf-cancel" onClick={() => dispatch(toggleRSBView(false))}>Cancel</Button>
+        <Button data-testid="pt-settings-form-update-button" color="primary" className="ptf-save" onClick={handleSave} disabled={saving}>
+          {saving ? <Spinner size="sm" className="me-1" /> : <i className="ri-check-double-line me-1"></i>}
+          {isEdit ? "Update" : "Save"}
+        </Button>
+      </div>
     </div>
   );
 };

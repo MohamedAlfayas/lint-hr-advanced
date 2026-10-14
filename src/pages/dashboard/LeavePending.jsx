@@ -10,8 +10,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { setLeaveApproval } from "../../redux/reducers/ChildReducer/LeaveApprovalReducer";
 import { Api } from "../../common/api/Api";
-import { Badge, Button, UncontrolledTooltip } from "reactstrap";
-import { convertDate, convertTime } from "../../common/js/ConvertDateFormat";
+import {
+  ApvDate,
+  ApvDuration,
+  ApvEmployee,
+  ApvLeaveType,
+  ApvReason,
+} from "../../component/common/approval/ApprovalCells";
 import { VIEW_TEAM_LEAVE_APPROVAL_ACCESS_KEY } from "../../common/constant/RoleConstants";
 import { toast } from "react-toastify";
 
@@ -23,6 +28,7 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
   );
   const DepartmentData = GetLocalStorageData("department") || [];
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
+  const EmployeeData = GetLocalStorageData("employee") || [];
   const { version } = useSelector((data) => data.MetaReducer);
 
   const pendingData = leave_approval_data.filter((item) => item.status === 1);
@@ -36,7 +42,7 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
     const day_type = LeaveTypeData?.find((val) => val?.value === id)?.unit;
     return day_type;
   };
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data")) || {};
 
   useEffect(() => {
     const today = new Date();
@@ -98,147 +104,48 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
       filterable: false,
       id: "employee_id",
 
-     accessor: (obj) => {
-  const EmployeeData = GetLocalStorageData("employee") || [];
-  const thisEmployee = EmployeeData.find(
-    (data) => data.id === obj.employee_id
-  );
-
-  if (!thisEmployee) {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <div className="flex-shrink-0">
-          <div
-            className="avatar-xs rounded-circle"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              background: "#6c757d",
-            }}
-          >
-            <span className="first_letter" style={{ color: "white" }}>
-              ?
-            </span>
-          </div>
-        </div>
-        <div className="flex-grow-1">
-          <div>Unknown</div>
-          <div>-</div>
-        </div>
-      </div>
-    );
-  }
-
-  return thisEmployee.profile_url ? (
-    <div className="d-flex gap-2 align-items-center">
-      <div className="flex-shrink-0">
-        <img
-          src={thisEmployee.profile_url}
-          alt=""
-          className="avatar-xs rounded-circle"
-        />
-      </div>
-      <div className="flex-grow-1">
-        <div>{thisEmployee.first_name}</div>
-        <div>{thisEmployee.email}</div>
-      </div>
-    </div>
-  ) : (
-    <div className="d-flex gap-2 align-items-center">
-      <div className="flex-shrink-0">
-        <div
-          className="avatar-xs rounded-circle"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            background: "#0ab39c",
-          }}
-          data-bs-toggle="tooltip"
-          title={thisEmployee.first_name}
-        >
-          <span className="first_letter" style={{ color: "white" }}>
-            {thisEmployee.first_name?.charAt(0) || ""}
-          </span>
-        </div>
-      </div>
-      <div className="flex-grow-1">
-        <div>{thisEmployee.first_name}</div>
-        <div>{thisEmployee.email}</div>
-      </div>
-    </div>
-  );
-}
-,
+      accessor: (obj) => (
+        <ApvEmployee employee={EmployeeData.find((data) => data.id === obj.employee_id)} />
+      ),
     },
-
     {
       Header: "Start Date",
       accessor: "start",
       filterable: false,
       id: "start",
-      accessor: (obj) => {
-        const date = convertDate(new Date(obj.start).toDateString());
-        const time = convertTime(new Date(obj.start).toTimeString());
-        return (
-          <b>{`${
-            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
-          }`}</b>
-        );
-      },
+      accessor: (obj) => <ApvDate value={obj.start} withTime={getUnitId(obj.leave_type_id) !== 1} />,
     },
     {
       Header: "End Date",
       accessor: "end",
       filterable: false,
       id: "end",
-      accessor: (obj) => {
-        const date = convertDate(new Date(obj.end).toDateString());
-        const time = convertTime(new Date(obj.end).toTimeString());
-        return (
-          <b>{`${
-            getUnitId(obj.leave_type_id) === 1 ? date : `${date} - ${time}`
-          }`}</b>
-        );
-      },
+      accessor: (obj) => <ApvDate value={obj.end} withTime={getUnitId(obj.leave_type_id) !== 1} />,
     },
     {
-      Header: "Total ",
+      Header: "Total",
       accessor: "total",
       filterable: false,
       id: "total",
-      accessor: (obj) => {
-        let leave_count = obj.requested_leave_count;
-        return (
-          <b>{`${leave_count} ${
-            getUnitId(obj.leave_type_id) === 1 ? "Days" : "Hour"
-          }`}</b>
-        );
-      },
+      accessor: (obj) => (
+        <ApvDuration count={obj.requested_leave_count} days={getUnitId(obj.leave_type_id) === 1} />
+      ),
     },
     {
-      Header: "Leave Type ",
+      Header: "Leave Type",
       accessor: "leave_type_id",
       filterable: false,
       id: "leave_type_id",
-      accessor: (obj) => {
-        const thisLeaveType = LeaveTypeData.find(
-          (data) => data.id === obj.leave_type_id
-        );
-        return (
-          <React.Fragment>{thisLeaveType && thisLeaveType.name}</React.Fragment>
-        );
-      },
+      accessor: (obj) => (
+        <ApvLeaveType name={LeaveTypeData.find((data) => data.id === obj.leave_type_id)?.name} />
+      ),
     },
     {
       Header: "Reason",
       accessor: "reason",
       filterable: false,
       id: "reason",
-      accessor: (obj) => {
-        return <b>{obj.reason}</b>;
-      },
+      accessor: (obj) => <ApvReason text={obj.reason} />,
     },
   ];
 

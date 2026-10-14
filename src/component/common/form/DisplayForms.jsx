@@ -1,6 +1,6 @@
 import React from "react";
-import { Offcanvas, OffcanvasBody, OffcanvasHeader } from "reactstrap";
-import SimpleBar from "simplebar-react";
+import { Box, Divider, Drawer, IconButton, Stack, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import DepartmentForm from "../../forms/DepartmentForm";
 import { useSelector } from "react-redux";
 import EmployeeForm from "../../forms/EmployeeForm";
@@ -66,28 +66,57 @@ import ClientForm from "../../forms/Common/ClientsForm";
 import ProjectForm from "../../forms/Common/ProjectsForm";
 import TaskListForm from "../../forms/Common/TaskListForm";
 import AsignCustomForm from "../../forms/Common/AsignCustomForm";
+import { TestIdModule, testId } from "../../../shared/testing/testId";
+import { testIdModuleFor } from "../../../shared/testing/testIdModules";
 
 const DisplayForms = ({ open, toggleLeftCanvas }) => {
   const { form_title, form_width_percentage, component_to_show, form_obj } =
     useSelector((state) => state.RightSideBarReducer);
+  const testIdModule = testIdModuleFor(component_to_show);
 
   return (
-    <div>
-      <Offcanvas
-        style={{ width: form_width_percentage }}
-        isOpen={open}
-        toggle={toggleLeftCanvas}
-        direction="end"
-      >
-        <OffcanvasHeader
-          toggle={toggleLeftCanvas}
-          style={{ textTransform: "capitalize" }}
+    <Drawer
+      anchor="right"
+      open={!!open}
+      onClose={toggleLeftCanvas}
+      disableEnforceFocus
+      sx={{ zIndex: 1045 }}
+      slotProps={{
+        paper: {
+          "data-testid": testId(testIdModule, "drawer"),
+          sx: {
+            width: { xs: "100%", sm: form_width_percentage || 480 },
+            minWidth: { sm: 440 },
+            maxWidth: "100%",
+          },
+        },
+      }}
+    >
+      <Stack sx={{ height: "100%" }}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ px: 3, py: 2 }}
         >
-          {form_title.split("_").join(" ")}
-        </OffcanvasHeader>
-        <OffcanvasBody className="p-0">
-          <SimpleBar className="h-100">
-            <div className="p-4">
+          <Typography
+            variant="h6"
+            sx={{ textTransform: "capitalize" }}
+            data-testid={testId(testIdModule, "drawer", "title")}
+          >
+            {(form_title || "").split("_").join(" ")}
+          </Typography>
+          <IconButton
+            onClick={toggleLeftCanvas}
+            edge="end"
+            data-testid={testId(testIdModule, "drawer", "close", "button")}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Stack>
+        <Divider />
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 3 }}>
+          <TestIdModule name={testIdModule}>
               {component_to_show === department_component_name ? (
                 <DepartmentForm />
               ) : component_to_show === branch_component_name ? (
@@ -154,11 +183,10 @@ const DisplayForms = ({ open, toggleLeftCanvas }) => {
               ) : (
                 <></>
               )}
-            </div>
-          </SimpleBar>
-        </OffcanvasBody>
-      </Offcanvas>
-    </div>
+          </TestIdModule>
+        </Box>
+      </Stack>
+    </Drawer>
   );
 };
 

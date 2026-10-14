@@ -1,29 +1,44 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+} from "react";
+
+const VISIBLE_ROWS = 5;
 import {
   Card,
   CardBody,
   CardHeader,
-  Col,
-  Container,
-  Nav,
-  NavItem,
-  NavLink,
-  Row,
-  Input,
-  Button,
   Modal,
-  ModalHeader,
   ModalBody,
 } from "reactstrap";
-import classnames from "classnames";
+import {
+  Box,
+  Button,
+  Chip,
+  MenuItem,
+  TextField,
+  Tooltip,
+} from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import moment from "moment";
 import { Api } from "../../common/api/Api";
 import { setTodayAttendance } from "../../redux/reducers/ChildReducer/TodayAttendanceReducer";
 import { useDispatch } from "react-redux";
 import Lottie from "react-lottie";
 import noLocationFind from "../auth/loader/animation/no-location.json";
-import { DatePicker } from "antd";
-import { DateFormat } from "../../common/constant/Constants";
+import { DateFormat, profile_view_component_name } from "../../common/constant/Constants";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import {
+  setComponentToShow,
+  setFormObj,
+  setFormTitle,
+  setFormWidthPercentage,
+  toggleRSBView,
+} from "../../redux/reducers/ChildReducer/RightSideBarReducer";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import {
@@ -31,113 +46,22 @@ import {
   ConvertISODateFormat,
 } from "../../common/js/ConvertDateFormat";
 import UsersClusterMapAll from "./useClusterMapAll";
-import SkletonDashboard from "../../component/common/skeleton/SkletonDashboard";
-import SimpleBar from "simplebar-react";
-import "simplebar-react/dist/simplebar.min.css";
+import AppTable from "../../shared/ui/table/AppTable";
+import PillTabs from "../../shared/ui/PillTabs";
+import {
+  ApvAvatar,
+  ApvChip,
+  ApvEmpty,
+  ApvHours,
+  ApvStatus,
+  ApvTime,
+} from "../../component/common/approval/ApprovalCells";
 import {
   connectWebSocket,
   disconnectWebSocket,
 } from "./LocationWebSocket/WebSocket";
 
 dayjs.extend(customParseFormat);
-
-// ─── Responsive styles injected once ─────────────────────────────────────
-const RESPONSIVE_STYLES = `
-  /* Defensive: some dashboard themes set overflow:hidden on .card to clip
-     rounded corners — that silently clips our scrollbar too. Force it open
-     just for this card. */
-  #attendanceList,
-  #attendanceList .card-body {
-    overflow: visible !important;
-  }
-
-  .attendance-table-wrapper {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 0 16px 16px 0; /* real empty space OUTSIDE the bordered table box */
-    overflow: visible;
-  }
-
-  /* Border now traces the actual table box, not the outer wrapper */
-  .attendance-table-inner {
-    border: 1px solid #f0f0f0;
-  }
-
-  .attendance-table {
-    width: 100%;
-    min-width: 700px;
-    table-layout: fixed;
-    border-collapse: collapse;
-  }
-  .attendance-table.leave-tab {
-    min-width: 560px;
-  }
-  @media (max-width: 991px) {
-    .attendance-table {
-      min-width: 620px;
-    }
-    .attendance-table.leave-tab {
-      min-width: 480px;
-    }
-  }
-  @media (max-width: 575px) {
-    .attendance-table,
-    .attendance-table.leave-tab {
-      min-width: 520px;
-    }
-    .filter-container .row > [class*="col-"] {
-      flex: 0 0 100%;
-      max-width: 100%;
-    }
-  }
-  .attendance-table thead th {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: #f8f9fa;
-  }
-  @media (max-width: 767px) {
-    .attendance-table td,
-    .attendance-table th {
-      padding: 8px 6px !important;
-      font-size: 12px;
-    }
-  }
-
-  /* ✅ Track sits OUTSIDE the bordered box (negative offset), landing in the
-     16px whitespace gutter reserved above by .attendance-table-wrapper's
-     padding — fully clickable since nothing here clips overflow. */
-  .attendance-table-wrapper .simplebar-wrapper,
-  .attendance-table-wrapper .simplebar-mask,
-  .attendance-table-wrapper .simplebar-offset {
-    width: 100% !important;
-  }
-
-  .attendance-table-wrapper .simplebar-track {
-    pointer-events: auto;
-    z-index: 3;
-  }
-  .attendance-table-wrapper .simplebar-track.simplebar-vertical {
-    right: -14px;
-    width: 8px;
-  }
-  .attendance-table-wrapper .simplebar-track.simplebar-horizontal {
-    bottom: -14px;
-    height: 8px;
-  }
-  .attendance-table-wrapper .simplebar-track.simplebar-vertical .simplebar-scrollbar::before {
-    top: 0; bottom: 0; left: 0; right: 0;
-    background-color: #adb5bd;
-    border-radius: 4px;
-    opacity: 1;
-  }
-  .attendance-table-wrapper .simplebar-track.simplebar-horizontal .simplebar-scrollbar::before {
-    top: 0; bottom: 0; left: 0; right: 0;
-    background-color: #adb5bd;
-    border-radius: 4px;
-    opacity: 1;
-  }
-`;
 
 // ─── Check-in device icon (punched_by: 1 = desktop, 2 = mobile) ──────────
 const PunchDeviceIcon = ({ punchedBy }) => {
@@ -269,32 +193,42 @@ const getCheckInStatusBadge = (statusName, customStatuses = []) => {
 };
 
 // ─── Approval badge ───────────────────────────────────────────────────────
-const getApprovalBadge = (status) => {
-  switch (status) {
-    case 1:
-      return (
-        <span className="badge bg-warning-subtle text-warning">Pending</span>
-      );
-    case 2:
-      return (
-        <span className="badge bg-success-subtle text-success">Approved</span>
-      );
-    case 3:
-      return (
-        <span className="badge bg-danger-subtle text-danger">Rejected</span>
-      );
-    case 4:
-      return (
-        <span className="badge bg-danger-subtle text-danger">Cancelled</span>
-      );
-    default:
-      return (
-        <span className="badge bg-secondary-subtle text-secondary">
-          Unknown
-        </span>
-      );
-  }
+const APPROVAL_STATUS = {
+  1: { label: "Pending", color: "warning" },
+  2: { label: "Approved", color: "success" },
+  3: { label: "Rejected", color: "error" },
+  4: { label: "Cancelled", color: "error" },
 };
+
+const getApprovalBadge = (status) => {
+  const { label, color } = APPROVAL_STATUS[status] || {
+    label: "Unknown",
+    color: "default",
+  };
+  return (
+    <Chip
+      size="small"
+      variant="outlined"
+      color={color}
+      label={label}
+      sx={{ fontWeight: 600 }}
+    />
+  );
+};
+
+// ─── Attendance status chip colors ────────────────────────────────────────
+const ATTENDANCE_STATUS = {
+  "On Time": { tone: "success", icon: "ri-checkbox-circle-line" },
+  Late: { tone: "warning", icon: "ri-alarm-warning-line" },
+  Leave: { tone: "secondary", icon: "ri-calendar-2-line" },
+  default: { tone: "danger", icon: "ri-close-circle-line" },
+};
+
+const timeSortValue = (value) =>
+  value ? new Date(`1970-01-01 ${value}`).getTime() || 0 : 0;
+
+const timeSortingFn = (key) => (a, b) =>
+  timeSortValue(a.original[key]) - timeSortValue(b.original[key]);
 
 // ─── Leave type label (for status filter matching) ────────────────────────
 const getLeaveTypeLabel = (row) => {
@@ -304,15 +238,69 @@ const getLeaveTypeLabel = (row) => {
   return "Full Day Leave";
 };
 
-// ─── Filter field style ───────────────────────────────────────────────────
-const FILTER_HEIGHT = "38px";
-const filterInputStyle = {
-  height: FILTER_HEIGHT,
-  borderRadius: "6px",
-  border: "1px solid #ced4da",
-  fontSize: "13px",
-  width: "100%",
-  boxSizing: "border-box",
+// ─── Worked-time progress (share of today's work schedule) ────────────────
+const PROGRESS_TONES = [
+  { min: 90, from: "#0ab39c", to: "#34d399", text: "#0a8f7d" },
+  { min: 50, from: "#4b6cb7", to: "#6a8dff", text: "#4b6cb7" },
+  { min: 25, from: "#f7b84b", to: "#fcd34d", text: "#c98a16" },
+  { min: 0, from: "#f06548", to: "#fb923c", text: "#e04b2c" },
+];
+
+const WorkProgress = ({ value = 0, worked }) => {
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
+  const tone = PROGRESS_TONES.find((t) => pct >= t.min);
+  return (
+    <Tooltip
+      arrow
+      placement="bottom-start"
+      title={`${worked ? `${worked} worked · ` : ""}${pct}% of work schedule`}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          marginTop: "6px",
+          maxWidth: "200px",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            flex: 1,
+            height: "6px",
+            borderRadius: "999px",
+            background: "rgba(135,138,153,.18)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${pct}%`,
+              minWidth: pct > 0 ? "6px" : 0,
+              height: "100%",
+              borderRadius: "inherit",
+              background: `linear-gradient(90deg, ${tone.from}, ${tone.to})`,
+              boxShadow: pct > 0 ? `0 0 6px ${tone.from}66` : "none",
+              transition: "width .6s ease",
+            }}
+          />
+        </div>
+        <span
+          style={{
+            fontSize: "10.5px",
+            fontWeight: 700,
+            color: tone.text,
+            minWidth: "30px",
+            textAlign: "right",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {pct}%
+        </span>
+      </div>
+    </Tooltip>
+  );
 };
 
 // ─── Divider between info blocks ──────────────────────────────────────────
@@ -391,6 +379,8 @@ const TodayAttendanceTable = () => {
     new Date().toISOString().split("T")[0].split("-").reverse().join("-"),
   );
   const [search, setSearch] = useState("");
+  const tableScrollRef = useRef(null);
+  const [tableMaxHeight, setTableMaxHeight] = useState(420);
   const [departments, setDepartments] = useState([]);
   const [customStatuses, setCustomStatuses] = useState([]);
   const [attendanceData, setAttendanceData] = useState([]);
@@ -410,20 +400,6 @@ const TodayAttendanceTable = () => {
   const [countNotCheckIn, setCountNotCheckIn] = useState(0);
   const [countLeave, setCountLeave] = useState(0);
   const [loading, setLoading] = useState(false);
-
-  const thCenter = { textAlign: "center", verticalAlign: "middle" };
-  const tdCenter = { textAlign: "center", verticalAlign: "middle" };
-
-  // Inject responsive CSS once
-  useEffect(() => {
-    const styleId = "attendance-table-responsive-styles";
-    if (!document.getElementById(styleId)) {
-      const tag = document.createElement("style");
-      tag.id = styleId;
-      tag.textContent = RESPONSIVE_STYLES;
-      document.head.appendChild(tag);
-    }
-  }, []);
 
   // ✅ Load departments + custom_statuses from localStorage
   useEffect(() => {
@@ -515,6 +491,8 @@ const TodayAttendanceTable = () => {
             inTime: item.first_check_in_time || null,
             outTime: item.last_check_out_time || null,
             punchedBy,
+
+            totalSeconds: item.total_time_worked_till_last_checkout || 0,
 
             totalHours: (() => {
               const totalSeconds =
@@ -656,6 +634,27 @@ const TodayAttendanceTable = () => {
     setIsMapOpen(true);
   };
 
+  const viewEmployee = (row) => {
+    const employee = (GetLocalStorageData("employee") || []).find(
+      (e) => e.id === row.employee_id,
+    );
+    dispatch(setFormTitle("Employee Details"));
+    dispatch(
+      setFormObj(
+        employee || {
+          id: row.employee_id,
+          emp_id: row.emp_id,
+          first_name: row.first_name,
+          email: row.email,
+          profile_url: row.profile_url,
+        },
+      ),
+    );
+    dispatch(setFormWidthPercentage("30%"));
+    dispatch(setComponentToShow(profile_view_component_name));
+    dispatch(toggleRSBView(true));
+  };
+
   // connect when modal opens with a selected employee, disconnect on close/unmount
   useEffect(() => {
     if (isMapOpen && mapSelectedEmpId) {
@@ -700,16 +699,9 @@ const TodayAttendanceTable = () => {
         }
       }
 
-      const q = search.toLowerCase();
-      return (
-        !q ||
-        (item.first_name || "").toLowerCase().includes(q) ||
-        (item.department || "").toLowerCase().includes(q) ||
-        (item.status || "").toLowerCase().includes(q) ||
-        (item.totalHours || "").toLowerCase().includes(q)
-      );
+      return true;
     });
-  }, [attendanceData, activeTab, departmentFilter, statusFilter, search]);
+  }, [attendanceData, activeTab, departmentFilter, statusFilter]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -722,184 +714,6 @@ const TodayAttendanceTable = () => {
     autoplay: true,
     animationData: noLocationFind,
     rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
-  };
-
-  const getColumnCount = (tab) => {
-    if (tab === "1") return 7;
-    if (tab === "2") return 6;
-    return 4;
-  };
-
-  const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: "asc",
-  });
-
-  const scrollBarRef = useRef(null);
-
-  useEffect(() => {
-    const scrollEl = scrollBarRef.current?.getScrollElement?.();
-    if (!scrollEl) return;
-
-    const handleWheel = (e) => {
-      scrollEl.scrollTop += e.deltaY;
-      scrollEl.scrollLeft += e.deltaX;
-      e.preventDefault();
-    };
-
-    scrollEl.addEventListener("wheel", handleWheel, { passive: false });
-    return () => scrollEl.removeEventListener("wheel", handleWheel);
-  }, [loading, activeTab]);
-
-  const handleSort = (key) => {
-    let direction = "asc";
-
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-
-    setSortConfig({ key, direction });
-  };
-
-  const SortableHeader = ({ title, sortKey, style = {} }) => (
-    <th
-      onClick={() => handleSort(sortKey)}
-      style={{
-        cursor: "pointer",
-        userSelect: "none",
-        ...style,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "5px",
-        }}
-      >
-        {title}
-
-        {sortConfig.key === sortKey ? (
-          sortConfig.direction === "asc" ? (
-            <i className="bx bx-chevron-up"></i>
-          ) : (
-            <i className="bx bx-chevron-down"></i>
-          )
-        ) : (
-          <i className="bx bx-sort-alt-2" style={{ opacity: 0.5 }}></i>
-        )}
-      </div>
-    </th>
-  );
-
-  // ─── Table headers ────────────────────────────────────────────────────────
-  const renderTableHeaders = () => {
-    if (activeTab === "3") {
-      return (
-        <tr>
-          <SortableHeader
-            title="Name"
-            sortKey="first_name"
-            style={{ width: "28%", minWidth: "160px" }}
-          />
-
-          <SortableHeader
-            title="Department"
-            sortKey="department"
-            style={{ width: "15%", minWidth: "100px", ...thCenter }}
-          />
-
-          <th
-            onClick={() => handleSort("leave_type")}
-            style={{
-              width: "20%",
-              minWidth: "130px",
-              cursor: "pointer",
-              userSelect: "none",
-              ...thCenter,
-            }}
-          >
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-              }}
-            >
-              <i
-                className="bx bx-calendar-x"
-                style={{ color: "#ef4444", fontSize: "14px" }}
-              ></i>
-              Leave Type
-              {sortConfig.key === "leave_type" ? (
-                sortConfig.direction === "asc" ? (
-                  <i className="bx bx-chevron-up"></i>
-                ) : (
-                  <i className="bx bx-chevron-down"></i>
-                )
-              ) : (
-                <i className="bx bx-sort-alt-2" style={{ opacity: 0.5 }}></i>
-              )}
-            </span>
-          </th>
-
-          <SortableHeader
-            title="Info"
-            sortKey="info"
-            style={{ width: "37%", minWidth: "180px", ...thCenter }}
-          />
-        </tr>
-      );
-    }
-
-    return (
-      <tr>
-        <SortableHeader
-          title="Name"
-          sortKey="first_name"
-          style={{ width: "28%", minWidth: "170px" }}
-        />
-
-        <SortableHeader
-          title="Department"
-          sortKey="department"
-          style={{ width: "14%", minWidth: "100px", ...thCenter }}
-        />
-
-        <SortableHeader
-          title="In Time"
-          sortKey="inTime"
-          style={{ width: "11%", minWidth: "80px", ...thCenter }}
-        />
-
-        <SortableHeader
-          title="Out Time"
-          sortKey="outTime"
-          style={{ width: "11%", minWidth: "80px", ...thCenter }}
-        />
-
-        <SortableHeader
-          title="Total Hours"
-          sortKey="totalHours"
-          style={{ width: "11%", minWidth: "80px", ...thCenter }}
-        />
-
-        <SortableHeader
-          title="Status"
-          sortKey="status"
-          style={{ width: "10%", minWidth: "70px", ...thCenter }}
-        />
-
-        {activeTab === "1" && (
-          <SortableHeader
-            title="Location"
-            sortKey="location"
-            style={{ width: "10%", minWidth: "70px", ...thCenter }}
-          />
-        )}
-      </tr>
-    );
   };
 
   // ─── Leave type pills renderer ────────────────────────────────────────────
@@ -1085,434 +899,296 @@ const TodayAttendanceTable = () => {
     );
   };
 
-  // ─── Table rows ───────────────────────────────────────────────────────────
-  const renderTableRows = () => {
-    if (filteredData.length === 0) {
-      return (
-        <tr>
-          <td colSpan={getColumnCount(activeTab)} style={{ border: "none" }}>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "220px",
-              }}
-            >
-              <lord-icon
-                src="https://cdn.lordicon.com/msoeawqm.json"
-                trigger="loop"
-                colors="primary:#405189,secondary:#0ab39c"
-                style={{ width: "80px", height: "80px", marginBottom: "12px" }}
-              ></lord-icon>
-
-              <p
-                style={{
-                  color: "#405189",
-                  fontSize: "16px",
-                  textAlign: "center",
-                }}
+  // ─── Table columns ────────────────────────────────────────────────────────
+  const columns = useMemo(() => {
+    const nameColumn = {
+      id: "first_name",
+      accessorFn: (row) => `${row.first_name} #${row.emp_id}`,
+      header: "Name",
+      size: 260,
+      exportValue: (row) => row.first_name,
+      Cell: ({ row: { original: row } }) => (
+        <div className="apv-emp align-items-start">
+          <ApvAvatar url={row.profile_url} name={row.first_name} />
+          <div className="apv-emp-text">
+            <span className="apv-emp-name" title={row.first_name}>
+              <button
+                type="button"
+                className="apv-emp-name-text"
+                data-testid={`today-attendance-row-${row.emp_id || row.employee_id}-name-button`}
+                onClick={() => viewEmployee(row)}
               >
-                No Data Found!
-              </p>
-            </div>
-          </td>
-        </tr>
-      );
-    }
+                {row.first_name}
+              </button>
+              {row.emp_id && <span className="apv-emp-tag">#{row.emp_id}</span>}
+            </span>
 
-    // Sort Data
-    const sortedData = [...filteredData].sort((a, b) => {
-      if (!sortConfig.key) return 0;
-
-      let aValue = a[sortConfig.key];
-      let bValue = b[sortConfig.key];
-
-      aValue = aValue ?? "";
-      bValue = bValue ?? "";
-
-      // Time sorting
-      if (sortConfig.key === "inTime" || sortConfig.key === "outTime") {
-        aValue = aValue ? new Date(`1970-01-01 ${aValue}`).getTime() : 0;
-
-        bValue = bValue ? new Date(`1970-01-01 ${bValue}`).getTime() : 0;
-      }
-
-      // Total Hours sorting
-      if (sortConfig.key === "totalHours") {
-        aValue = parseFloat(aValue) || 0;
-        bValue = parseFloat(bValue) || 0;
-      }
-
-      // String sorting
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        const result = aValue.localeCompare(bValue);
-
-        return sortConfig.direction === "asc" ? result : -result;
-      }
-
-      // Number sorting
-      const result = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-
-      return sortConfig.direction === "asc" ? result : -result;
-    });
-
-    return sortedData.map((row, idx) => (
-      <tr key={idx}>
-        {/* Name */}
-        <td style={{ verticalAlign: "middle" }}>
-          <div className="d-flex gap-2 align-items-start">
-            <div className="flex-shrink-0" style={{ marginTop: "2px" }}>
-              {row.profile_url ? (
-                <img
-                  src={row.profile_url}
-                  alt=""
-                  className="avatar-xs rounded-circle"
-                  style={{ objectFit: "cover" }}
-                />
-              ) : (
-                <div
-                  className="avatar-xs rounded-circle"
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    background: "#0ab39c",
-                  }}
-                >
-                  <span style={{ color: "white" }}>
-                    {(row.first_name || "?").charAt(0)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-grow-1" style={{ minWidth: 0 }}>
-              <div
-                className="d-flex align-items-center gap-2 flex-wrap"
-                style={{ marginBottom: "2px" }}
-              >
-                <h5 className="fs-14 mb-0" style={{ whiteSpace: "nowrap" }}>
-                  {row.first_name}{" "}
-                  <span
-                    style={{
-                      color: "#a29797",
-                      fontSize: "smaller",
-                    }}
-                  >
-                    #{row.emp_id}
-                  </span>
-                </h5>
+            {((row.inTime && row.punchedBy) || row.checkInStatus) && (
+              <div className="d-flex align-items-center gap-2 flex-wrap my-1">
+                {row.inTime && <PunchDeviceIcon punchedBy={row.punchedBy} />}
+                {row.checkInStatus &&
+                  getCheckInStatusBadge(row.checkInStatus, customStatuses)}
               </div>
+            )}
 
-              {/* ✅ Badge row: device icon + check-in / check-out status */}
-              {((row.inTime && row.punchedBy) || row.checkInStatus) && (
-                <div
-                  className="d-flex align-items-center gap-2 flex-wrap"
-                  style={{ marginBottom: "2px" }}
-                >
-                  {row.inTime && <PunchDeviceIcon punchedBy={row.punchedBy} />}
-
-                  {row.checkInStatus &&
-                    getCheckInStatusBadge(row.checkInStatus, customStatuses)}
-                </div>
-              )}
-
-              <div
-                className="text-muted"
-                style={{
-                  fontSize: "12px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {row.email}
-              </div>
-
-              {activeTab === "1" && (
-                <div className="progress progress-sm animated-progess lc-color mt-1">
-                  <div
-                    className={`progress-bar ${
-                      row.status === "On Time"
-                        ? "bg-success"
-                        : "bg-danger progress-bar-striped"
-                    }`}
-                    role="progressbar"
-                    aria-valuenow={row.progress}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    style={{ width: `${row.progress}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
-          </div>
-        </td>
-
-        {/* Leave Tab */}
-        {activeTab === "3" ? (
-          <>
-            <td style={tdCenter}>{row.department || "-"}</td>
-
-            <td style={tdCenter}>{renderLeaveTypePills(row)}</td>
-
-            <td style={tdCenter}>{renderInfoCell(row)}</td>
-          </>
-        ) : (
-          <>
-            <td style={tdCenter}>{row.department || "-"}</td>
-
-            <td style={tdCenter}>{formatTime(row.inTime)}</td>
-
-            <td style={tdCenter}>{formatTime(row.outTime)}</td>
-
-            <td style={tdCenter}>{row.totalHours}</td>
-
-            <td style={tdCenter}>
-              <span
-                className={`badge text-uppercase ${
-                  row.status === "On Time"
-                    ? "bg-success-subtle text-success"
-                    : row.status === "Late"
-                      ? "bg-warning-subtle text-warning"
-                      : row.status === "Leave"
-                        ? "bg-secondary-subtle text-secondary"
-                        : "bg-danger-subtle text-danger"
-                }`}
-              >
-                {row.status}
-              </span>
-            </td>
+            <span className="apv-emp-mail" title={row.email}>
+              {row.email}
+            </span>
 
             {activeTab === "1" && (
-              <td style={tdCenter}>
-                <Button
-                  color="info"
-                  size="sm"
-                  onClick={() => handleViewLocations(row)}
-                >
-                  View
-                </Button>
-              </td>
+              <WorkProgress value={row.progress} worked={row.totalHours} />
             )}
-          </>
-        )}
-      </tr>
-    ));
-  };
+          </div>
+        </div>
+      ),
+    };
+
+    const departmentColumn = {
+      id: "department",
+      accessorFn: (row) => row.department || "-",
+      header: "Department",
+      filterVariant: "select",
+      Cell: ({ cell }) => <ApvChip icon="ri-building-line">{cell.getValue() === "-" ? "" : cell.getValue()}</ApvChip>,
+    };
+
+    if (activeTab === "3") {
+      return [
+        nameColumn,
+        departmentColumn,
+        {
+          id: "leave_type",
+          accessorFn: getLeaveTypeLabel,
+          header: "Leave Type",
+          filterVariant: "select",
+          Header: () => (
+            <span
+              style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+            >
+              <i
+                className="bx bx-calendar-x"
+                style={{ color: "#ef4444", fontSize: "14px" }}
+              ></i>
+              Leave Type
+            </span>
+          ),
+          Cell: ({ row }) => renderLeaveTypePills(row.original),
+        },
+        {
+          id: "info",
+          accessorFn: (row) =>
+            [row.fullday, row.halfday, row.permission]
+              .filter(Boolean)
+              .map((l) => l.reason)
+              .join(", "),
+          header: "Info",
+          size: 320,
+          enableSorting: false,
+          enableGlobalFilter: false,
+          Cell: ({ row }) => renderInfoCell(row.original),
+        },
+      ];
+    }
+
+    return [
+      nameColumn,
+      departmentColumn,
+      {
+        id: "inTime",
+        accessorFn: (row) => formatTime(row.inTime),
+        header: "In Time",
+        sortingFn: timeSortingFn("inTime"),
+        Cell: ({ cell }) => <ApvTime value={cell.getValue()} kind="in" />,
+      },
+      {
+        id: "outTime",
+        accessorFn: (row) => formatTime(row.outTime),
+        header: "Out Time",
+        sortingFn: timeSortingFn("outTime"),
+        Cell: ({ cell }) => <ApvTime value={cell.getValue()} kind="out" />,
+      },
+      {
+        accessorKey: "totalHours",
+        header: "Total Hours",
+        sortingFn: (a, b) => a.original.totalSeconds - b.original.totalSeconds,
+        Cell: ({ cell, row }) =>
+          row.original.totalSeconds ? (
+            <ApvHours value={cell.getValue()} unit={null} strong />
+          ) : (
+            <ApvEmpty />
+          ),
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        filterVariant: "select",
+        Cell: ({ cell }) => {
+          const s = ATTENDANCE_STATUS[cell.getValue()] || ATTENDANCE_STATUS.default;
+          return <ApvStatus tone={s.tone} icon={s.icon} label={cell.getValue()} />;
+        },
+      },
+    ];
+  }, [activeTab, customStatuses]);
+
+  // Size the scroll area to exactly the header + first VISIBLE_ROWS rows.
+  useLayoutEffect(() => {
+    const el = tableScrollRef.current;
+    if (!el) return;
+    const head = el.querySelector("thead");
+    const rows = Array.from(el.querySelectorAll("tbody tr")).slice(0, VISIBLE_ROWS);
+    if (!head || rows.length === 0) return;
+    const rowsHeight = rows.reduce((sum, r) => sum + r.getBoundingClientRect().height, 0);
+    const avgRow = rowsHeight / rows.length;
+    const height = Math.ceil(head.getBoundingClientRect().height + avgRow * VISIBLE_ROWS) + 2;
+    setTableMaxHeight((prev) => (Math.abs(prev - height) > 1 ? height : prev));
+  }, [filteredData, activeTab, loading]);
 
   return (
-    <Container fluid>
-      <Row>
-        <Col lg={12}>
-          <Card id="attendanceList">
-            <CardHeader className="border-0 pb-0">
-              <h5 className="card-title mb-0">
-                <b>{dateFilter}</b> - Entry Status
-              </h5>
+    <>
+          <Card id="attendanceList" className="h-100 mb-0">
+            <CardHeader
+              className="d-flex align-items-center justify-content-between flex-wrap gap-2"
+              style={{
+                padding: "1rem 1.25rem",
+                borderBottom: "1px solid var(--vz-border-color)",
+                borderRadius: "var(--vz-card-inner-border-radius, 12px) var(--vz-card-inner-border-radius, 12px) 0 0",
+                background: "var(--app-head-tint), var(--vz-secondary-bg)",
+              }}
+            >
+              <div className="apv-head">
+                <span className="apv-head-icon">
+                  <i className="ri-fingerprint-line"></i>
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <h5 className="apv-head-title">Entry Status</h5>
+                  <span className="apv-head-sub">
+                    Check-in and check-out activity for your team
+                  </span>
+                </div>
+              </div>
+              <span
+                className="d-inline-flex align-items-center gap-2 fw-semibold"
+                style={{
+                  height: 34,
+                  padding: "0 14px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  color: "var(--vz-heading-color)",
+                  background: "var(--vz-secondary-bg)",
+                  border: "1px solid var(--vz-border-color)",
+                }}
+              >
+                <i className="ri-calendar-line" style={{ color: "var(--vz-success)", fontSize: 15 }}></i>
+                {dateFilter}
+              </span>
             </CardHeader>
 
             <CardBody>
-              {/* ── Filters ── */}
-              <div className="filter-container p-2 pt-2 pb-0">
-                <Row className="mb-3 g-2" style={{ alignItems: "stretch" }}>
-                  {/* 1. Department */}
-                  <Col
-                    xs={12}
-                    sm={6}
-                    md={showStatusFilter ? 3 : 4}
-                    style={{ display: "flex", flexDirection: "column" }}
-                  >
-                    <Input
-                      type="select"
-                      value={departmentFilter}
-                      onChange={(e) => setDepartmentFilter(e.target.value)}
-                      style={filterInputStyle}
-                    >
-                      <option value="All">All Departments</option>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.name}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </Input>
-                  </Col>
+              <Box sx={{ border: 1, borderColor: "divider", borderRadius: 3, overflow: "hidden" }}>
+                <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
+                  <PillTabs
+                    value={activeTab}
+                    onChange={handleTabChange}
+                    tabs={[
+                      { value: "1", label: "In", count: countIn, tone: "success", icon: "ri-login-circle-line" },
+                      { value: "2", label: "Not Check In", count: countNotCheckIn, tone: "danger", icon: "ri-user-unfollow-line" },
+                      { value: "3", label: "Leave", count: countLeave, tone: "primary", icon: "ri-calendar-event-line" },
+                    ]}
+                  />
+                </Box>
 
-                  {/* 2. Status / leave filter */}
-                  {showStatusFilter && (
-                    <Col
-                      xs={12}
-                      sm={6}
-                      md={3}
-                      style={{ display: "flex", flexDirection: "column" }}
-                    >
-                      <Input
-                        type="select"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        style={filterInputStyle}
-                      >
-                        {statusFilterOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </Input>
-                    </Col>
-                  )}
-
-                  {/* 3. Date picker */}
-                  <Col
-                    xs={12}
-                    sm={6}
-                    md={showStatusFilter ? 3 : 4}
-                    style={{ display: "flex", flexDirection: "column" }}
-                  >
-                    <DatePicker
-                      value={dayjs(dateFilter, DateFormat)}
-                      format={DateFormat}
-                      allowClear={false}
-                      onChange={(e, f) => setDateFilter(f)}
-                      style={{
-                        width: "100%",
-                        height: "38px",
-                        borderRadius: "6px",
-                        border: "1px solid #ced4da",
-                        padding: "0 11px",
-                        fontSize: "14px",
-                      }}
-                    />
-                  </Col>
-
-                  {/* 4. Search */}
-                  <Col
-                    xs={12}
-                    sm={6}
-                    md={showStatusFilter ? 3 : 4}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      position: "relative",
-                    }}
-                  >
-                    <i
-                      className="bx bx-search-alt search-icon position-absolute"
-                      style={{
-                        top: "50%",
-                        left: "20px",
-                        transform: "translateY(-50%)",
-                        zIndex: 1,
-                        color: "#888",
-                        fontSize: "15px",
-                        pointerEvents: "none",
-                      }}
-                    ></i>
-                    <Input
-                      type="text"
-                      placeholder="Search employee"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      style={{ ...filterInputStyle, paddingLeft: "30px" }}
-                    />
-                  </Col>
-                </Row>
-              </div>
-
-              {/* ── Tabs ── */}
-              <Nav
-                className="nav-tabs nav-tabs-custom nav-success pt-2"
-                role="tablist"
-              >
-                <NavItem>
-                  <NavLink
-                    className={classnames(
-                      { active: activeTab === "1" },
-                      "fw-semibold",
-                    )}
-                    onClick={() => handleTabChange("1")}
-                    href="#"
-                  >
-                    In <span className="badge bg-success ms-1">{countIn}</span>
-                  </NavLink>
-                </NavItem>
-
-                <NavItem>
-                  <NavLink
-                    className={classnames(
-                      { active: activeTab === "2" },
-                      "fw-semibold",
-                    )}
-                    onClick={() => handleTabChange("2")}
-                    href="#"
-                  >
-                    Not Check In{" "}
-                    <span className="badge bg-danger ms-1">
-                      {countNotCheckIn}
-                    </span>
-                  </NavLink>
-                </NavItem>
-
-                <NavItem>
-                  <NavLink
-                    className={classnames(
-                      { active: activeTab === "3" },
-                      "fw-semibold",
-                    )}
-                    onClick={() => handleTabChange("3")}
-                    href="#"
-                  >
-                    Leave{" "}
-                    <span className="badge bg-secondary ms-1">
-                      {countLeave}
-                    </span>
-                  </NavLink>
-                </NavItem>
-              </Nav>
-
-              {/* ── Responsive table wrapper ── */}
-              <div
-                className="attendance-table-wrapper"
-                style={{
-                  marginTop: "8px",
-                }}
-              >
-                <SimpleBar
-                  ref={scrollBarRef}
-                  Name="attendance-table-inner"
-                  style={{
-                    maxHeight: "420px",
-                    minHeight: "420px",
-                    width: "100%",
+                <AppTable
+                  key={activeTab}
+                  columns={columns}
+                  data={filteredData}
+                  isLoading={loading}
+                  exportFileName={`attendance-${dateFilter}`}
+                  emptyMessage="No Data Found!"
+                  state={{ globalFilter: search }}
+                  onGlobalFilterChange={(value) => setSearch(value ?? "")}
+                  muiTablePaperProps={{ elevation: 0, sx: { border: 0, borderRadius: 0 } }}
+                  enablePagination={false}
+                  enableColumnDragging={false}
+                  muiTableContainerProps={{
+                    ref: tableScrollRef,
+                    sx: {
+                      maxHeight: tableMaxHeight,
+                      maxWidth: "100%",
+                      overflow: "auto",
+                      scrollbarWidth: "thin",
+                    },
                   }}
-                  autoHide={false}
-                >
-                  <table
-                    className={`table align-middle mb-0 attendance-table${
-                      activeTab === "3" ? " leave-tab" : ""
-                    }`}
-                  >
-                    <thead className="table-light text-muted">
-                      {renderTableHeaders()}
-                    </thead>
-                    <tbody>
-                      {loading ? (
-                        <SkletonDashboard
-                          rows={6}
-                          columns={getColumnCount(activeTab)}
-                          hasAvatar={true}
-                        />
-                      ) : (
-                        renderTableRows()
+                  toolbarActions={
+                    <>
+                      <TextField
+                        select
+                        size="small"
+                        label="Department"
+                        value={departmentFilter}
+                        onChange={(e) => setDepartmentFilter(e.target.value)}
+                        sx={{ width: 180 }}
+                      >
+                        <MenuItem value="All">All Departments</MenuItem>
+                        {departments.map((dept) => (
+                          <MenuItem key={dept.id} value={dept.name}>
+                            {dept.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      {showStatusFilter && (
+                        <TextField
+                          select
+                          size="small"
+                          label="Status"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          sx={{ width: 160 }}
+                        >
+                          {statusFilterOptions.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </MenuItem>
+                          ))}
+                        </TextField>
                       )}
-                    </tbody>
-                  </table>
-                </SimpleBar>
-              </div>
+                      <DatePicker
+                        label="Date"
+                        format={DateFormat}
+                        value={dayjs(dateFilter, DateFormat)}
+                        onChange={(d) => d?.isValid() && setDateFilter(d.format(DateFormat))}
+                        slotProps={{ textField: { size: "small", sx: { width: 160 } } }}
+                      />
+                    </>
+                  }
+                  enableRowActions={activeTab === "1"}
+                  positionActionsColumn="last"
+                  displayColumnDefOptions={{
+                    "mrt-row-actions": { header: "Location", size: 110 },
+                  }}
+                  renderRowActions={({ row }) => (
+                    <Tooltip title="View Locations">
+                      <Button
+                        data-testid="today-attendance-view-button"
+                        size="small"
+                        color="info"
+                        variant="text"
+                        startIcon={<PlaceOutlinedIcon fontSize="small" />}
+                        onClick={() => handleViewLocations(row.original)}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          minWidth: 0,
+                          px: 1,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        View
+                      </Button>
+                    </Tooltip>
+                  )}
+                />
+              </Box>
             </CardBody>
           </Card>
-        </Col>
 
         {/* ── Map Modal ── */}
         <Modal
@@ -1520,6 +1196,7 @@ const TodayAttendanceTable = () => {
           fullscreen={isMapFull}
           isOpen={isMapOpen}
           toggle={() => setIsMapOpen(!isMapOpen)}
+          className="lhm-modal"
           onOpened={() => {
             // Google Maps sizes itself off its container's dimensions at the
             // moment it's created. If that happens while the reactstrap
@@ -1532,119 +1209,62 @@ const TodayAttendanceTable = () => {
             window.dispatchEvent(new Event("resize"));
           }}
         >
-          {/* Custom header (no default close btn) */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "12px 16px",
-              borderBottom: "1px solid #e9ecef",
-            }}
-          >
-            {/* Left: back arrow */}
+          <div className="lhm-head">
             <button
+              data-testid="today-attendance-back-button"
+              type="button"
+              className="lhm-icon-btn"
               onClick={() => setIsMapOpen(false)}
               title="Back"
-              style={{
-                border: "none",
-                background: "transparent",
-                fontSize: "22px",
-                lineHeight: 1,
-                cursor: "pointer",
-                color: "#374151",
-                padding: "2px 6px",
-              }}
             >
               <i className="ri-arrow-left-line"></i>
             </button>
 
-            {/* Middle: title */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                flex: 1,
-                marginLeft: "10px",
-              }}
-            >
-              <span style={{ fontWeight: 600, fontSize: "18px" }}>
-                Employee Location History
+            <div className="lhm-title-wrap">
+              <span className="lhm-title-icon">
+                <i className="ri-map-pin-time-line"></i>
               </span>
+              <div style={{ minWidth: 0 }}>
+                <div className="lhm-title">Employee Location History</div>
+                <div className="lhm-sub">
+                  Route playback, activity and device timeline
+                </div>
+              </div>
             </div>
 
-            {/* Right: employee avatar + name, close */}
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  backgroundColor: "#e0f7fa",
-                  color: "#00796b",
-                  padding: "3px 10px 3px 3px",
-                  borderRadius: "20px",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  marginRight: "6px",
-                }}
-              >
+            {mapSelectedEmpName && (
+              <div className="lhm-emp">
                 {mapSelectedEmpProfileUrl ? (
                   <img
                     src={mapSelectedEmpProfileUrl}
                     alt=""
-                    style={{
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                    }}
+                    className="lhm-emp-avatar"
                   />
                 ) : (
-                  <div
-                    style={{
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      background: "#00796b",
-                      color: "#fff",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {(mapSelectedEmpName || "?").charAt(0).toUpperCase()}
-                  </div>
+                  <span className="lhm-emp-avatar">
+                    {mapSelectedEmpName.charAt(0).toUpperCase()}
+                  </span>
                 )}
-                <span>{mapSelectedEmpName}</span>
+                <div className="lhm-emp-text">
+                  <div className="lhm-emp-name">{mapSelectedEmpName}</div>
+                  <div className="lhm-emp-tag">Tracking</div>
+                </div>
               </div>
+            )}
 
-              <button
-                onClick={() => setIsMapOpen(false)}
-                title="Close"
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "22px",
-                  lineHeight: 1,
-                  cursor: "pointer",
-                  color: "#374151",
-                  padding: "2px 6px",
-                }}
-              >
-                <i className="ri-close-line"></i>
-              </button>
-            </div>
+            <button
+              data-testid="today-attendance-close-button"
+              type="button"
+              className="lhm-icon-btn is-close"
+              onClick={() => setIsMapOpen(false)}
+              title="Close"
+            >
+              <i className="ri-close-line"></i>
+            </button>
           </div>
-
           <ModalBody
             style={{
-              height: isMapFull ? "calc(100vh - 58px)" : "78vh",
+              height: isMapFull ? "calc(100vh - 65px)" : "78vh",
               padding: 0,
             }}
           >
@@ -1670,23 +1290,14 @@ const TodayAttendanceTable = () => {
                 }}
               >
                 <Lottie options={defaultOptions} height={250} width={250} />
-                <p
-                  style={{
-                    marginTop: "15px",
-                    fontSize: "16px",
-                    fontWeight: "500",
-                    color: "#555",
-                    textAlign: "center",
-                  }}
-                >
+                <p className="lhm-empty-text">
                   No location history available
                 </p>
               </div>
             )}
           </ModalBody>
         </Modal>
-      </Row>
-    </Container>
+    </>
   );
 };
 

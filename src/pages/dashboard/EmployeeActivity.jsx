@@ -15,7 +15,7 @@ import {
 } from "reactstrap";
 
 //SimpleBar
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 
 import SimpleBar from "simplebar-react";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
@@ -59,7 +59,7 @@ const EmployeeActivity = (props) => {
 
   const [showTeamAttendance, setShowTeamAttendance] = useState(false);
   const [showAllAttendance, setShowAllAttendance] = useState(false);
-  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data"));
+  const profile_data = JSON.parse(localStorage.getItem("lint_hr_profile_data")) || {};
 
   useEffect(() => {
     let permission_list = profile_data?.permission_list || [];
@@ -190,6 +190,7 @@ const EmployeeActivity = (props) => {
                 >
                   <NavItem>
                     <NavLink
+                      data-testid="employee-activity-in-link"
                       href="#"
                       className={classnames({ active: activeTab === "1" })}
                       onClick={() => {
@@ -201,6 +202,7 @@ const EmployeeActivity = (props) => {
                   </NavItem>
                   <NavItem>
                     <NavLink
+                      data-testid="employee-activity-late-link"
                       href="#"
                       className={classnames({ active: activeTab === "2" })}
                       onClick={() => {
@@ -212,6 +214,7 @@ const EmployeeActivity = (props) => {
                   </NavItem>
                   <NavItem>
                     <NavLink
+                      data-testid="employee-activity-no-data-link"
                       href="#"
                       className={classnames({ active: activeTab === "3" })}
                       onClick={() => {
@@ -229,6 +232,7 @@ const EmployeeActivity = (props) => {
                 {(showAllAttendance || showTeamAttendance) && (
                   <div className="form-icon right" style={{ width: "250px" }}>
                     <Select
+                      testId="employee-activity-employee-type"
                       id="emp_type"
                       name="Employee Type"
                       isMulti={false}
@@ -248,6 +252,7 @@ const EmployeeActivity = (props) => {
                   style={{ width: "250px" }}
                 >
                   <Input
+                    data-testid="employee-activity-search-input"
                     type="text"
                     name="search"
                     id="search_activity"

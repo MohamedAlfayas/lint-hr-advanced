@@ -31,7 +31,7 @@ const ViewToggle = ({ checked, label }) => (
   <div className="d-flex align-items-center gap-2">
     <span style={{
       display: "inline-block", width: 36, height: 20, borderRadius: 12,
-      background: checked ? "#0ab39c" : "#ced4da", position: "relative", flexShrink: 0,
+      background: checked ? "var(--vz-success)" : "rgba(var(--vz-secondary-rgb), .35)", position: "relative", flexShrink: 0,
     }}>
       <span style={{
         position: "absolute", top: 3, left: checked ? 18 : 3,
@@ -126,7 +126,7 @@ const ProbationPolicySettings = () => {
             <p className="text-muted mb-4" style={{ fontSize: 13 }}>
               Set the default probation duration for new hires.
             </p>
-            <Button color="primary" onClick={handleNew}>
+            <Button data-testid="probation-policy-configure-policy-button" color="primary" onClick={handleNew}>
               <i className="ri-add-line align-bottom me-1"></i> Configure Policy
             </Button>
           </div>
@@ -147,10 +147,10 @@ const ProbationPolicySettings = () => {
         <div className="d-flex gap-2">
           {!isEditing && (
             <>
-              <Button size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
+              <Button data-testid="probation-policy-edit-button" size="sm" color="primary" outline onClick={() => { setForm({ ...records[0] }); setIsEditing(true); }}>
                 <i className="ri-edit-line fs-14"></i> Edit
               </Button>
-              <Button size="sm" color="success" outline onClick={handleNew}>
+              <Button data-testid="probation-policy-new-version-button" size="sm" color="success" outline onClick={handleNew}>
                 <i className="ri-add-line fs-14"></i> New Version
               </Button>
             </>
@@ -189,7 +189,8 @@ const ProbationPolicySettings = () => {
         <div className="border rounded mb-4">
           <SettingRow label="Effective Date">
             {isEditing ? (
-              <Input type="date" value={data.effective_date || ""}
+              <Input
+                data-testid="probation-policy-effective-date-input" type="date" value={data.effective_date || ""}
                 onChange={(e) => handleChange("effective_date", e.target.value)} style={{ width: 180 }} />
             ) : (
               <span style={{ fontSize: 13 }}>{data.effective_date || "—"}</span>
@@ -199,7 +200,8 @@ const ProbationPolicySettings = () => {
           <SettingRow label="Status">
             {isEditing ? (
               <div className="form-check form-switch mb-0">
-                <Input className="form-check-input" type="checkbox" checked={!!data.is_active}
+                <Input
+                  data-testid="probation-policy-is-active-checkbox" className="form-check-input" type="checkbox" checked={!!data.is_active}
                   onChange={() => handleToggle("is_active")} />
                 <Label className="form-check-label ms-1" style={{ fontSize: 13 }}>
                   {data.is_active ? "Active" : "Inactive"}
@@ -212,7 +214,8 @@ const ProbationPolicySettings = () => {
 
           <SettingRow label="Default Probation (months)" last>
             {isEditing ? (
-              <Input type="number" min="0" max="60" value={data.default_probation_months ?? 3}
+              <Input
+                data-testid="probation-policy-active-input" type="number" min="0" max="60" value={data.default_probation_months ?? 3}
                 onChange={(e) => {
                   let v = parseInt(e.target.value, 10);
                   if (isNaN(v)) v = 0;
@@ -235,8 +238,8 @@ const ProbationPolicySettings = () => {
 
         {isEditing && (
           <div className="d-flex justify-content-end gap-2 pt-2 border-top">
-            <Button color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
-            <Button color="success" onClick={handleSave} disabled={loading}>
+            <Button data-testid="probation-policy-cancel-button" color="light" className="border" onClick={handleCancel} disabled={loading}>Cancel</Button>
+            <Button data-testid="probation-policy-save-changes-button" color="success" onClick={handleSave} disabled={loading}>
               <i className="ri-check-double-line align-middle me-1"></i>
               {loading ? "Saving…" : "Save Changes"}
             </Button>

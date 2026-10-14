@@ -1,0 +1,531 @@
+//
+// Filters rendered in the AppTable top toolbar (react-select, reactstrap
+// inputs, date pickers). Matches the toolbar search field: 40px, rounded,
+// plain fill, green focus border, tinted when a filter is applied.
+//
+// react-select is used without a classNamePrefix, so its parts are matched by
+// the stable emotion label suffixes (`-control`, `-menu`, …).
+//
+
+$tt-h: 40px;
+$tt-radius: 8px;
+// Visibly stronger than the card border so idle fields don't read as disabled.
+$tt-border: color-mix(in srgb, var(--vz-border-color) 55%, var(--vz-secondary-color));
+$tt-shadow: none;
+$tt-icon: color-mix(in srgb, var(--vz-body-color) 65%, transparent);
+
+// Table papers with filter rows use `overflow: visible` (so dropdowns aren't
+// clipped), which lets square toolbar backgrounds poke out of the rounded
+// corners. Round the first / last sections to follow the paper instead.
+.MuiPaper-root:has(> .app-table-toolbar, > .app-table-bottombar) {
+  > :first-child {
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+  }
+  > :last-child {
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+  }
+  > .app-table-bottombar {
+    box-shadow: none;
+    border-top: 1px solid var(--vz-border-color);
+  }
+}
+
+.app-table-toolbar {
+  gap: 10px;
+
+  // Search | custom actions | icons row: when space runs out the whole
+  // actions group drops to its own line instead of stacking field-by-field.
+  > .MuiBox-root:has(> .app-table-actions) {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 10px;
+  }
+
+  // Filters arrive wrapped in Bootstrap <Col md=…>; give them an even width.
+  [class*="col-"] {
+    flex: 1 1 190px;
+    width: auto;
+    min-width: 170px;
+    max-width: 250px;
+    padding-inline: 0;
+  }
+}
+
+.app-table-toolbar,
+.tf-card {
+  // ── react-select ──
+  [class*="-container"]:has(> [class*="-control"]) {
+    font-size: 13.5px;
+  }
+
+  [class*="-control"]:not([class*="-container"]) {
+    min-height: $tt-h;
+    border-radius: $tt-radius;
+    border-color: $tt-border;
+    background-color: var(--vz-secondary-bg);
+    box-shadow: none;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--vz-success) 55%, transparent);
+    }
+
+    // focused
+    &[class*="-control"]:focus-within {
+      border-color: var(--vz-success);
+      background-color: var(--vz-secondary-bg);
+      box-shadow: none;
+    }
+
+    // a value is selected → mark the filter as active
+    &:has([class*="-singleValue"]),
+    &:has([class*="-multiValue"]) {
+      border-color: rgba(var(--vz-primary-rgb), 0.45);
+      background-color: rgba(var(--vz-primary-rgb), 0.06);
+    }
+  }
+
+  [class*="-control"] > div:first-child {
+    padding-inline: 12px 6px;
+  }
+
+  [class*="-placeholder"] {
+    color: var(--vz-body-color);
+    opacity: 0.8;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  [class*="-singleValue"] {
+    color: var(--vz-primary);
+    font-weight: 600;
+  }
+
+  // Out-ranks the global solid-primary chip in themes.scss (dark text on dark chip otherwise).
+  [class*="-control"]:not([class*="-container"]) [class*="-multiValue"] {
+    min-width: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--vz-primary-rgb), 0.22);
+    background-color: rgba(var(--vz-primary-rgb), 0.1);
+    color: var(--vz-primary);
+
+    > div:first-child {
+      padding: 2px 4px 2px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--vz-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    > div:last-child:not(:first-child) {
+      margin-right: 2px;
+      border-radius: 999px;
+      color: color-mix(in srgb, var(--vz-primary) 70%, transparent);
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+
+      &:hover {
+        background-color: rgba(var(--vz-danger-rgb), 0.15);
+        color: var(--vz-danger);
+      }
+    }
+  }
+
+  [class*="-indicatorSeparator"] {
+    display: none;
+  }
+
+  [class*="-indicatorContainer"] {
+    padding: 0 8px;
+    color: $tt-icon;
+    transition: color 0.15s, transform 0.2s;
+
+    &:hover {
+      color: var(--vz-primary);
+    }
+  }
+
+  // ── reactstrap / Bootstrap inputs and date pickers ──
+  .form-control,
+  .form-select,
+  .ant-picker {
+    height: $tt-h;
+    border-radius: $tt-radius;
+    border-color: $tt-border;
+    background-color: var(--vz-secondary-bg);
+    font-size: 13.5px;
+    box-shadow: $tt-shadow;
+    transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--vz-success) 55%, transparent);
+    }
+
+    &:focus,
+    &.ant-picker-focused {
+      border-color: var(--vz-success);
+      background-color: var(--vz-secondary-bg);
+      box-shadow: none;
+    }
+
+    &::placeholder {
+      color: var(--vz-body-color);
+      opacity: 0.8;
+    }
+  }
+
+  .form-icon.right .form-control {
+    padding-right: 38px;
+  }
+
+  // Toolbar buttons (refresh, columns, density, full screen)
+  .MuiIconButton-root {
+    border-radius: $tt-radius;
+    color: var(--vz-secondary-color);
+    transition: color 0.15s, background-color 0.15s;
+
+    &:hover {
+      color: var(--vz-primary);
+      background-color: rgba(var(--vz-primary-rgb), 0.08);
+    }
+  }
+}
+
+// ── react-select menus (portalled to <body>) ──
+body > div:has(> [class*="-menu"]),
+.app-table-toolbar {
+  [class*="-menu"]:not([class*="-menuPortal"]) {
+    margin-top: 6px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--vz-border-color);
+    background: var(--vz-secondary-bg);
+    box-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.3);
+
+    // menu list (unlabelled in react-select 5.7)
+    > div {
+      padding: 6px;
+    }
+  }
+
+  [class*="-option"] {
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+}
+
+// ───────────────────────── Filter card (above tables) ─────────────────────────
+.tf-card {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-bottom: 1.25rem;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--vz-border-color);
+  background:
+    linear-gradient(135deg, rgba(var(--vz-primary-rgb), 0.05), transparent 55%),
+    var(--vz-secondary-bg);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.tf-fields {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1 1 520px;
+  min-width: 0;
+}
+
+.tf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 200px;
+  max-width: 260px;
+  min-width: 170px;
+}
+
+.tf-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--vz-secondary-color);
+
+  i {
+    font-size: 14px;
+    color: var(--vz-primary);
+  }
+}
+
+.tf-card .ant-picker {
+  width: 100%;
+  padding-inline: 12px 10px;
+
+  input {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--vz-primary) !important;
+  }
+  .ant-picker-suffix {
+    color: var(--vz-secondary-color);
+    font-size: 16px;
+  }
+}
+
+.tf-apply {
+  height: $tt-h;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: $tt-radius;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--vz-primary), var(--vz-info));
+  box-shadow: 0 8px 18px -8px rgba(var(--vz-primary-rgb), 0.6);
+  cursor: pointer;
+  transition: transform 0.15s, filter 0.15s, box-shadow 0.15s;
+
+  i {
+    font-size: 16px;
+  }
+  &:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 10px 22px -8px rgba(var(--vz-primary-rgb), 0.7);
+  }
+  &:active {
+    transform: none;
+  }
+}
+
+.tf-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--vz-border-color);
+  background: var(--vz-body-bg);
+}
+
+.tf-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--vz-secondary-color);
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s, box-shadow 0.15s;
+
+  i {
+    font-size: 15px;
+  }
+  &:hover {
+    color: var(--vz-heading-color);
+  }
+  &.active {
+    color: var(--vz-primary);
+    background: var(--vz-secondary-bg);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.08),
+      0 3px 10px rgba(var(--vz-primary-rgb), 0.16);
+  }
+}
+
+@media (max-width: 576px) {
+  .tf-field {
+    max-width: none;
+  }
+  .tf-apply,
+  .tf-switch {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .tf-switch-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+// ───────────────────────── Date-range trigger + popup ─────────────────────────
+.form-control.tf-range-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: $tt-h;
+  padding: 0 8px 0 12px;
+  cursor: pointer;
+  user-select: none;
+
+  &.is-active {
+    border-color: rgba(var(--vz-primary-rgb), 0.45);
+    background-color: rgba(var(--vz-primary-rgb), 0.06);
+
+    .tf-range-text {
+      color: var(--vz-primary);
+      font-weight: 600;
+    }
+    .tf-range-icon {
+      color: var(--vz-primary);
+    }
+  }
+  &.is-open {
+    border-color: var(--vz-primary);
+    box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.15);
+  }
+}
+
+.tf-range-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: $tt-icon;
+}
+
+.tf-range-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--vz-body-color) 80%, transparent);
+  font-weight: 500;
+}
+
+.tf-range-caret {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: $tt-icon;
+}
+
+.tf-range-clear {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--vz-secondary-color);
+  font-size: 15px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--vz-danger);
+    background: rgba(var(--vz-danger-rgb), 0.1);
+  }
+}
+
+.tf-pop {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--vz-border-color);
+  background: var(--vz-secondary-bg);
+  color: var(--vz-body-color);
+  box-shadow: 0 20px 48px -16px rgba(15, 23, 42, 0.35);
+
+  .form-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--vz-secondary-color);
+  }
+  .form-control {
+    height: 36px;
+    border-radius: 9px;
+    background-color: var(--vz-body-bg);
+    border-color: var(--vz-border-color);
+    font-size: 13px;
+
+    &:focus {
+      border-color: var(--vz-primary);
+      background-color: var(--vz-secondary-bg);
+      box-shadow: 0 0 0 3px rgba(var(--vz-primary-rgb), 0.15);
+    }
+  }
+}
+
+.tf-pop-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--vz-secondary-color);
+}
+
+.tf-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tf-preset {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--vz-border-color);
+  background: var(--vz-body-bg);
+  color: var(--vz-body-color);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+
+  &:hover {
+    color: var(--vz-primary);
+    border-color: rgba(var(--vz-primary-rgb), 0.45);
+    background: rgba(var(--vz-primary-rgb), 0.08);
+  }
+}
+
+.tf-pop-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 14px -14px -14px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--vz-border-color);
+  background: var(--vz-tertiary-bg);
+  border-radius: 0 0 14px 14px;
+
+  .btn {
+    min-width: 80px;
+    border-radius: 9px;
+    font-weight: 600;
+  }
+}
+
+// ───────────────────────── MRT column-filter popover ─────────────────────────
+.MuiPopover-paper:has(.MuiTextField-root .MuiInputBase-input[placeholder^="Filter"]) {
+  margin-top: 6px;
+  padding: 12px;
+  border-radius: 12px !important;
+  border: 1px solid var(--vz-border-color);
+  box-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.3) !important;
+}

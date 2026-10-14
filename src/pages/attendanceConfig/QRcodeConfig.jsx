@@ -15,7 +15,7 @@ import {
   TabPane,
 } from "reactstrap";
 import { Link } from "react-router-dom";
-import Select from "react-select";
+import Select from "../../shared/ui/TestableSelect";
 import classnames from "classnames";
 import FeatherIcon from "feather-icons-react/build/FeatherIcon";
 import { location_edit_form_component_name } from "../../common/constant/Constants";
@@ -124,6 +124,7 @@ const QrcodeConfig = () => {
                     </Col>
                     <Col lg={3}>
                       <Input
+                        data-testid="qr-code-qr-generate-time-input"
                         id="qr_generate_time"
                         name="qr_generate_time"
                         type="number"
@@ -139,13 +140,14 @@ const QrcodeConfig = () => {
                       />
                       {FormikForm.touched.qr_generate_time &&
                       FormikForm.errors.qr_generate_time ? (
-                        <FormFeedback type="invalid">
+                        <FormFeedback data-testid="qr-code-qr-generate-time-error" type="invalid">
                           {FormikForm.errors.qr_generate_time}
                         </FormFeedback>
                       ) : null}
                     </Col>
                     <Col lg={3}>
                       <Select
+                        testId="qr-code-qr-generate-unit"
                         id=" qr_generate_unit"
                         name="qr_generate_unit"
                         isMulti={false}
@@ -199,6 +201,7 @@ const QrcodeConfig = () => {
                     <Col>
                       <div>
                         <Select
+                          testId="qr-code-security-type"
                           id="security_type"
                           name="security_type"
                           isMulti={false}
@@ -246,6 +249,7 @@ const QrcodeConfig = () => {
                 <Col lg={12}>
                   <div className="text-start">
                     <Button
+                      data-testid="qr-code-start-generating-qr-code-button"
                       color="success"
                       className="btn-label"
                       onClick={FormikForm.handleSubmit}

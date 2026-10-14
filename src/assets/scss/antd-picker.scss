@@ -1,0 +1,459 @@
+// Global theme for antd DatePicker / RangePicker (input + dropdown).
+// antd v5 styles use :where() so two-class selectors here win without !important.
+
+$pk-radius: 12px;
+$pk-cell: 34px;
+
+// ───────────────────────── Input ─────────────────────────
+.ant-picker.ant-picker-outlined,
+.ant-picker:not(.ant-picker-borderless) {
+  border-radius: $pk-radius;
+  border-color: var(--vz-border-color);
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+
+  &:hover:not(.ant-picker-disabled) {
+    border-color: color-mix(in srgb, var(--vz-primary) 50%, var(--vz-border-color));
+  }
+
+  &.ant-picker-focused {
+    border-color: var(--vz-primary);
+    box-shadow: 0 0 0 4px rgba(var(--vz-primary-rgb), 0.12);
+  }
+
+  .ant-picker-input > input {
+    font-weight: 500;
+
+    &::placeholder {
+      font-weight: 400;
+      color: var(--vz-secondary-color);
+      opacity: 0.8;
+    }
+  }
+
+  .ant-picker-suffix {
+    width: 26px;
+    height: 26px;
+    margin-inline-start: 8px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    color: var(--vz-primary);
+    background: rgba(var(--vz-primary-rgb), 0.1);
+    transition: background 0.2s, color 0.2s;
+  }
+
+  &.ant-picker-focused .ant-picker-suffix {
+    color: #fff;
+    background: var(--vz-primary);
+  }
+
+  // Swaps in exactly over the suffix (same box), so the two never overlap half-way.
+  .ant-picker-clear {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    inset-inline-end: 0;
+    color: var(--vz-danger);
+    background: color-mix(in srgb, var(--vz-danger) 10%, var(--vz-secondary-bg));
+    transition: opacity 0.2s, color 0.15s, background 0.15s;
+
+    &:hover {
+      color: #fff;
+      background: var(--vz-danger);
+    }
+  }
+
+  &:hover:not(.ant-picker-disabled) .ant-picker-input:has(.ant-picker-clear) .ant-picker-suffix {
+    opacity: 0;
+  }
+}
+
+// Range picker: clear lives on the outer box, so it sits inside the padding like the suffix.
+.ant-picker.ant-picker-range {
+  .ant-picker-clear {
+    inset-inline-end: 11px;
+  }
+  &.ant-picker-small .ant-picker-clear {
+    inset-inline-end: 7px;
+  }
+  &:hover:not(.ant-picker-disabled):has(> .ant-picker-clear) > .ant-picker-suffix {
+    opacity: 0;
+  }
+}
+
+.ant-picker.ant-picker-range {
+  .ant-picker-range-separator {
+    padding: 0 10px;
+
+    .ant-picker-separator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      color: var(--vz-secondary-color);
+      background: var(--vz-tertiary-bg);
+    }
+  }
+
+  .ant-picker-active-bar {
+    height: 3px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--vz-primary), var(--vz-success));
+    margin-inline-start: 11px;
+  }
+}
+
+// ───────────────────────── Dropdown shell ─────────────────────────
+.ant-picker-dropdown {
+  .ant-picker-panel-container {
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--vz-border-color);
+    background: var(--vz-secondary-bg);
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.04),
+      0 24px 48px -16px rgba(15, 23, 42, 0.28);
+    animation: pk-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .ant-picker-range-arrow {
+    display: none;
+  }
+
+  .ant-picker-panel {
+    border-color: var(--vz-border-color);
+    background: transparent;
+  }
+
+  .ant-picker-panels .ant-picker-panel + .ant-picker-panel {
+    border-inline-start: 1px dashed var(--vz-border-color);
+  }
+
+  // ── Header ──
+  .ant-picker-header {
+    align-items: center;
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--vz-border-color);
+    background:
+      radial-gradient(120% 140% at 50% 0%, rgba(var(--vz-primary-rgb), 0.08), transparent 70%);
+
+    > button {
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      border-radius: 9px;
+      display: inline-grid;
+      place-items: center;
+      color: var(--vz-secondary-color);
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        color: #fff;
+        background: var(--vz-primary);
+      }
+    }
+
+    .ant-picker-header-view {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 30px;
+      color: var(--vz-heading-color);
+
+      button {
+        padding: 2px 6px;
+        border-radius: 7px;
+        color: inherit;
+        transition: background 0.15s, color 0.15s;
+
+        &:hover {
+          color: var(--vz-primary);
+          background: rgba(var(--vz-primary-rgb), 0.08);
+        }
+
+        &:not(:first-child) {
+          margin-inline-start: 2px;
+        }
+      }
+    }
+  }
+
+  // ── Body ──
+  .ant-picker-body {
+    padding: 10px 14px 12px;
+  }
+
+  .ant-picker-date-panel {
+    width: auto;
+
+    .ant-picker-content {
+      width: calc(#{$pk-cell + 4px} * 7);
+    }
+  }
+
+  .ant-picker-content {
+    th {
+      height: 30px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--vz-secondary-color);
+    }
+  }
+
+  // ── Cells ──
+  .ant-picker-cell {
+    padding: 2px 0;
+    color: color-mix(in srgb, var(--vz-secondary-color) 55%, transparent);
+
+    &.ant-picker-cell-in-view {
+      color: var(--vz-body-color);
+    }
+
+    .ant-picker-cell-inner {
+      min-width: $pk-cell;
+      height: $pk-cell;
+      line-height: $pk-cell;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+    }
+
+    &::before {
+      height: $pk-cell;
+    }
+
+    &:hover:not(.ant-picker-cell-disabled):not(.ant-picker-cell-selected):not(.ant-picker-cell-range-start):not(.ant-picker-cell-range-end)
+      .ant-picker-cell-inner {
+      color: var(--vz-primary);
+      background: rgba(var(--vz-primary-rgb), 0.1);
+      transform: scale(1.06);
+    }
+  }
+
+  // today: ring + dot
+  .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner {
+    font-weight: 700;
+    color: var(--vz-primary);
+
+    &::before {
+      border: 1.5px solid rgba(var(--vz-primary-rgb), 0.6);
+      border-radius: 10px;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 4px;
+      width: 4px;
+      height: 4px;
+      margin-left: -2px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+  }
+
+  // range band
+  .ant-picker-cell-in-view.ant-picker-cell-in-range::before,
+  .ant-picker-cell-in-view.ant-picker-cell-range-start:not(.ant-picker-cell-range-start-single)::before,
+  .ant-picker-cell-in-view.ant-picker-cell-range-end:not(.ant-picker-cell-range-end-single)::before {
+    background: rgba(var(--vz-primary-rgb), 0.1);
+  }
+
+  .ant-picker-cell-in-view.ant-picker-cell-range-start:not(.ant-picker-cell-range-start-single)::before {
+    border-start-start-radius: 10px;
+    border-end-start-radius: 10px;
+  }
+  .ant-picker-cell-in-view.ant-picker-cell-range-end:not(.ant-picker-cell-range-end-single)::before {
+    border-start-end-radius: 10px;
+    border-end-end-radius: 10px;
+  }
+
+  .ant-picker-cell-in-view.ant-picker-cell-in-range .ant-picker-cell-inner {
+    color: var(--vz-primary);
+  }
+
+  // hover preview band
+  .ant-picker-cell-in-view.ant-picker-cell-range-hover::before,
+  .ant-picker-cell-in-view.ant-picker-cell-range-hover-start::before,
+  .ant-picker-cell-in-view.ant-picker-cell-range-hover-end::before {
+    background: rgba(var(--vz-primary-rgb), 0.06);
+  }
+
+  // selected / range ends
+  .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner,
+  .ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+  .ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
+    color: #fff;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--vz-primary), color-mix(in srgb, var(--vz-primary) 55%, var(--vz-info)));
+    box-shadow: 0 6px 14px -6px rgba(var(--vz-primary-rgb), 0.85);
+    animation: pk-pick 0.22s ease;
+
+    &::before {
+      border-color: transparent;
+    }
+  }
+
+  // disabled
+  .ant-picker-cell-disabled {
+    color: color-mix(in srgb, var(--vz-secondary-color) 40%, transparent);
+
+    &::before {
+      background: transparent;
+    }
+
+    .ant-picker-cell-inner {
+      text-decoration: line-through;
+      text-decoration-color: color-mix(in srgb, var(--vz-secondary-color) 45%, transparent);
+    }
+  }
+
+  // month / year / decade panels
+  .ant-picker-month-panel,
+  .ant-picker-year-panel,
+  .ant-picker-quarter-panel,
+  .ant-picker-decade-panel {
+    .ant-picker-cell-inner {
+      min-width: 56px;
+      padding: 0 8px;
+    }
+  }
+
+  // ── Footer ──
+  .ant-picker-footer {
+    border-top: 1px dashed var(--vz-border-color);
+    background: color-mix(in srgb, var(--vz-tertiary-bg) 50%, transparent);
+  }
+
+  .ant-picker-footer-extra {
+    padding: 8px 14px;
+    line-height: 1.4;
+    border-bottom: 0;
+  }
+
+  .ant-picker-today-btn,
+  .ant-picker-now-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+    color: var(--vz-primary);
+    background: rgba(var(--vz-primary-rgb), 0.1);
+    transition: background 0.15s, color 0.15s;
+
+    &:hover {
+      color: #fff;
+      background: var(--vz-primary);
+    }
+  }
+
+  .ant-picker-ranges {
+    padding: 8px 12px;
+
+    .ant-picker-preset > .ant-tag {
+      border-radius: 999px;
+      padding: 2px 10px;
+      border-color: var(--vz-border-color);
+      color: var(--vz-body-color);
+      background: var(--vz-secondary-bg);
+
+      &:hover {
+        color: var(--vz-primary);
+        border-color: var(--vz-primary);
+      }
+    }
+  }
+}
+
+@keyframes pk-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes pk-pick {
+  from {
+    transform: scale(0.82);
+  }
+}
+
+// ───────────────────────── Leave picker: holiday / applied markers + legend ─────────────────────────
+// Kept at lower specificity than the selected/range-end rules so selection still wins.
+.ant-picker-dropdown .lv-mark {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--m);
+    box-shadow: 0 0 0 2px var(--vz-secondary-bg);
+  }
+
+  &.is-holiday {
+    --m: var(--vz-success);
+    color: var(--vz-success);
+    background: rgba(var(--vz-success-rgb), 0.14);
+  }
+
+  &.is-applied {
+    --m: var(--vz-warning);
+    color: color-mix(in srgb, var(--vz-warning) 80%, var(--vz-heading-color));
+    background: rgba(var(--vz-warning-rgb), 0.16);
+  }
+}
+
+.lv-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 11.5px;
+  color: var(--vz-secondary-color);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+
+  .is-holiday {
+    background: var(--vz-success);
+  }
+  .is-applied {
+    background: var(--vz-warning);
+  }
+  .is-today {
+    border: 1.5px solid var(--vz-primary);
+  }
+  .is-selected {
+    background: linear-gradient(135deg, var(--vz-primary), var(--vz-info));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ant-picker-dropdown .ant-picker-panel-container,
+  .ant-picker-dropdown .ant-picker-cell-inner {
+    animation: none;
+  }
+}

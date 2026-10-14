@@ -17,12 +17,18 @@ import AttendanceTeamTable from "../../component/common/table/AttendanceTeamTabl
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  setAttendanceLoading,
+  setAttendanceSummary,
   setIndividualAttendanceReportData,
   setShowTeamTable,
 } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import { Api } from "../../common/api/Api";
 import AttendanceFilter from "./AttendanceFilter";
-import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import {
+  Skel,
+  StatCardsSkeleton,
+  TableSkeletonBlock,
+} from "../../component/common/skeleton/Skeleton";
 import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
@@ -39,7 +45,7 @@ const AttendanceDashboard = () => {
 
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
-  const { showTeamTable } = useSelector(
+  const { showTeamTable, attendanceLoading } = useSelector(
     (state) => state.AttendanceReportReducer,
   );
   const show_attendance_timer = useSelector(
@@ -68,7 +74,7 @@ const AttendanceDashboard = () => {
       : [];
 
   useEffect(() => {
-    dispatch(setLoaderVisible(true));
+    dispatch(setAttendanceLoading(true));
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
@@ -79,15 +85,19 @@ const AttendanceDashboard = () => {
       url: "attendance/get_attendance_entry_log/v2/?thisMonth=" + thisMonth,
     })
       .then((res) => {
-        dispatch(setIndividualAttendanceReportData(res?.data?.data));
-        BuildAttendanceReportChart(res?.data?.data, dispatch);
+        const payload = res?.data?.data;
+        const rows = Array.isArray(payload)
+          ? payload
+          : payload?.individual_attendance_report || [];
+        dispatch(setIndividualAttendanceReportData(rows));
+        BuildAttendanceReportChart(rows, dispatch);
+        dispatch(setAttendanceSummary(payload?.summary || res?.data?.summary));
         dispatch(setShowTeamTable(false));
-        ResetLoaderVisible();
       })
-      .catch((err) => {
+      .catch(() => {
         console.log("Something Went Wrong !!");
-        ResetLoaderVisible();
-      });
+      })
+      .finally(() => dispatch(setAttendanceLoading(false)));
 
     // if (profile_data.length > 0) {
     //   const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
@@ -102,12 +112,6 @@ const AttendanceDashboard = () => {
       setHideTimer(isMobileCheckinAllowed);
     }
   }, []);
-
-  const ResetLoaderVisible = () => {
-    setTimeout(() => {
-      dispatch(setLoaderVisible(false));
-    }, 1000);
-  };
 
   useEffect(() => {
     if (profile_data && profile_data?.id) {
@@ -150,19 +154,36 @@ const AttendanceDashboard = () => {
                 xs={12}
                 className="d-flex"
               >
-                <AttendanceOverview />
+                {attendanceLoading ? (
+                  <Card
+                    className="w-100 p-3"
+                    data-testid="attendance-overview-loading-skeleton"
+                    aria-busy="true"
+                  >
+                    <StatCardsSkeleton count={4} />
+                    <Skel h={200} style={{ marginTop: 16, borderRadius: 12 }} />
+                  </Card>
+                ) : (
+                  <AttendanceOverview />
+                )}
               </Col>
             )}
-            {!showTeamTable && (
-              <Col xxl={12}>
-                <AttendanceEmployeeTable />
-              </Col>
-            )}
-            {showTeamTable && (
-              <Col xxl={12}>
+            <Col xxl={12}>
+              {attendanceLoading ? (
+                <Card className="p-3">
+                  <TableSkeletonBlock
+                    rows={8}
+                    cols={7}
+                    testId="attendance-table-loading-skeleton"
+                    label="Loading attendance"
+                  />
+                </Card>
+              ) : showTeamTable ? (
                 <AttendanceTeamTable />
-              </Col>
-            )}
+              ) : (
+                <AttendanceEmployeeTable />
+              )}
+            </Col>
           </Row>
         </Container>
       </div>

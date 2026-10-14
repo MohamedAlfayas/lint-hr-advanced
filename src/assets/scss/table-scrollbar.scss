@@ -1,0 +1,58 @@
+// Thin scrollbars for every table container (MUI/MRT, Bootstrap, rsuite, antd)
+$tbl-scroll-containers: ".MuiTableContainer-root", ".table-responsive", ".rs-table-body-row-wrapper",
+  ".ant-table-content", ".ant-table-body", ".react-bootstrap-table";
+
+@each $sel in $tbl-scroll-containers {
+  #{$sel} {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(135, 138, 153, 0.45) transparent;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(135, 138, 153, 0.45);
+      border-radius: 10px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(135, 138, 153, 0.75);
+    }
+    &::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+  }
+}
+
+// Flex / grid children default to `min-width: auto`, so a wide table would
+// stretch its card / column (and the whole page) instead of scrolling inside
+// its own container. Let every ancestor of a table shrink to the screen.
+:is(.card, .card-body, .tab-content, .tab-pane, .col, [class*="col-"], .row > *, .d-flex > *, .MuiGrid-root, .MuiStack-root > *):has(
+    .MuiTableContainer-root
+  ) {
+  min-width: 0;
+}
+
+.MuiTableContainer-root {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+// rsuite draws its own scrollbar elements
+.rs-table-scrollbar-horizontal {
+  height: 6px !important;
+  .rs-table-scrollbar-handle {
+    height: 4px !important;
+    top: 1px !important;
+  }
+}
+.rs-table-scrollbar-vertical {
+  width: 6px !important;
+  .rs-table-scrollbar-handle {
+    width: 4px !important;
+    left: 1px !important;
+  }
+}

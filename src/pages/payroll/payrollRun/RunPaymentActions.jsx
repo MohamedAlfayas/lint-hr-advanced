@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Skel } from "../../../component/common/skeleton/Skeleton";
 import { Button, Spinner, ButtonGroup } from "reactstrap";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
@@ -92,32 +93,33 @@ const RunPaymentActions = ({ run, payslips, payslipsLoading, onReleased }) => {
     <>
       <ButtonGroup size="sm">
         {fullEligible.length > 0 && (
-          <Button color="success" outline disabled={!!busy} onClick={releaseFull}>
+          <Button data-testid="payroll-run-payment-pay-full-button" color="success" outline disabled={!!busy} onClick={releaseFull}>
             {busy === "pay_full" ? <Spinner size="sm" className="me-1" /> : <i className="ri-hand-coin-line align-middle me-1"></i>}
             Pay Full ({fullEligible.length})
           </Button>
         )}
         {partialEligible.length > 0 && (
-          <Button color="info" outline disabled={!!busy} onClick={() => setPartialOpen(true)}>
+          <Button data-testid="payroll-run-payment-pay-partial-button" color="info" outline disabled={!!busy} onClick={() => setPartialOpen(true)}>
             <i className="ri-money-dollar-circle-line align-middle me-1"></i>
             Pay Partial ({partialEligible.length})
           </Button>
         )}
         {salaryEligible.length > 0 && (
-          <Button color="warning" outline disabled={!!busy} onClick={() => release("pay_partial", "Release salary tranche", salaryEligible.length)}>
+          <Button data-testid="payroll-run-payment-release-salary-button" color="warning" outline disabled={!!busy} onClick={() => release("pay_partial", "Release salary tranche", salaryEligible.length)}>
             {busy === "pay_partial" ? <Spinner size="sm" className="me-1" /> : <i className="ri-wallet-3-line align-middle me-1"></i>}
             Release Salary ({salaryEligible.length})
           </Button>
         )}
         {balanceEligible.length > 0 && (
-          <Button color="primary" outline disabled={!!busy} onClick={() => release("pay_balance", "Release incentive balance", balanceEligible.length)}>
+          <Button data-testid="payroll-run-payment-release-balance-button" color="primary" outline disabled={!!busy} onClick={() => release("pay_balance", "Release incentive balance", balanceEligible.length)}>
             {busy === "pay_balance" ? <Spinner size="sm" className="me-1" /> : <i className="ri-gift-2-line align-middle me-1"></i>}
             Release Balance ({balanceEligible.length})
           </Button>
         )}
         {payslipsLoading && (
-          <span className="text-muted d-inline-flex align-items-center" style={{ fontSize: 12 }}>
-            <Spinner size="sm" className="me-1" /> Loading payments…
+          <span className="sk-inline" role="status" aria-label="Loading payments" data-testid="run-payment-loading-skeleton">
+            <Skel w={110} h={30} />
+            <Skel w={90} h={30} />
           </span>
         )}
         {nothingPending && (

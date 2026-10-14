@@ -34,6 +34,7 @@ import {
   TASK_SETTINGS_VIEW_ACCESS_KEY,
   CREATE_TASK_SETTINGS_ACCESS_KEY,
   EDIT_TASK_SETTINGS_ACCESS_KEY,
+  PAYROLL_VIEW_ACCESS_KEY,
 } from "../../common/constant/RoleConstants";
 import { useSelector } from "react-redux";
 
@@ -120,23 +121,42 @@ const Navdata = () => {
     const path = location.pathname;
 
     const reportPaths = ["/attendancereport", "/leavereport", "/breakreport"];
-    const crmPaths = ["/clients", "/projects", "/tasks", "/task-settings"];
+    const crmPaths = [
+      "/crm-dashboard",
+      "/clients",
+      "/projects",
+      "/tasks",
+      "/task-settings",
+      "/project-overview",
+      "/client-overview",
+      "/status",
+      "/priorities",
+    ];
+    // Every page reachable from the Attendance submenu (including pages it
+    // links on to) must be listed, or the submenu collapses on navigation.
     const attendancePaths = [
       "/attendance",
+      "/attendance-bulk-edit",
+      "/admin-attendance-bulk-edit",
       "/holidays",
       "/leaves",
       "/approval",
+      "/attendanceapproval",
+      "/leave-approval",
       "/leavetype",
       "/workschedule",
+      "/face-profiles",
     ];
+    // Exact match, or a detail route underneath it (e.g. /project-overview/12).
+    const matches = (list) => list.some((p) => path === p || path.startsWith(`${p}/`));
 
-    if (reportPaths.includes(path)) {
+    if (matches(reportPaths)) {
       setIsReport(true);
       setIscurrentState("Report");
-    } else if (crmPaths.includes(path)) {
+    } else if (matches(crmPaths)) {
       setIsControlPanel(true);
       setIscurrentState("Control Panel");
-    } else if (attendancePaths.includes(path)) {
+    } else if (matches(attendancePaths)) {
       setIsAttendance(true);
       setIscurrentState("Attendance");
     } else {
@@ -237,7 +257,8 @@ const Navdata = () => {
       {
         id: "dashboard",
         label: "Dashboards",
-        icon: "ri-dashboard-2-line",
+        icon: "ri-dashboard-3-line",
+        tone: "primary",
         link: "/dashboard",
         parentId: "dashboard",
         perm: "all",
@@ -257,12 +278,14 @@ const Navdata = () => {
           VIEW_HIERARCHY_EMPLOYEE_ACCESS_KEY,
           VIEW_TEAM_EMPLOYEE_ACCESS_KEY,
         ],
-        icon: "ri-account-circle-line",
+        icon: "ri-team-line",
+        tone: "violet",
       },
       {
         id: "attendance",
         label: "Attendance",
-        icon: " ri-user-follow-line",
+        icon: "ri-fingerprint-line",
+        tone: "success",
         perm: "all",
         link: "/#",
         click: function (e) {
@@ -275,10 +298,24 @@ const Navdata = () => {
         subItems: [
           {
             id: "attendance",
-            label: "Att.Overview",
+            label: "Attendance Overview",
             link: "/attendance",
             parentId: "baseUi",
             perm: "all",
+          },
+          {
+            id: "attendancebulkedit",
+            label: "Attendance Bulk Edit",
+            link: "/attendance-bulk-edit",
+            parentId: "baseUi",
+            perm: "all",
+          },
+          {
+            id: "adminattendancebulkedit",
+            label: "Update Bulk Attendance",
+            link: "/admin-attendance-bulk-edit",
+            parentId: "baseUi",
+            perm: [],
           },
           {
             id: "holidays",
@@ -324,6 +361,13 @@ const Navdata = () => {
             parentId: "baseUi",
             perm: [ATTENDANCE_CONFIGURATION_VIEW_ACCESS_KEY],
           },
+          {
+            id: "faceprofiles",
+            label: "Face Profiles",
+            link: "/face-profiles",
+            parentId: "baseUi",
+            perm: [],
+          },
         ],
       },
       {
@@ -332,22 +376,34 @@ const Navdata = () => {
         link: "/my-reimbursements",
         parentId: "baseUi",
         perm: "all",
-        icon: "ri-wallet-3-line",
+        icon: "ri-hand-coin-line",
+        tone: "orange",
+      },
+      {
+        id: "payslip",
+        label: "Payslip",
+        link: "/payslip",
+        parentId: "baseUi",
+        perm: "all",
+        icon: "ri-bill-line",
+        tone: "info",
       },
       {
         id: "payroll",
-        label: "Pay Roll",
+        label: "Payroll",
         link: "/payroll",
-        parentId: "payroll",
-        perm: "all",
-        icon: " ri-currency-line",
+        parentId: "baseUi",
+        perm: [PAYROLL_VIEW_ACCESS_KEY],
+        icon: "ri-money-dollar-circle-line",
+        tone: "teal",
       },
       {
         id: "report",
         label: "Report",
         parentId: "baseUi",
         perm: ["c77528b2-5d9f-49ad-b6d1-5f95e61a66a0"],
-        icon: "ri-file-chart-line",
+        icon: "ri-bar-chart-box-line",
+        tone: "pink",
         link: "/#",
         click: function (e) {
           e.preventDefault();
@@ -383,7 +439,8 @@ const Navdata = () => {
       {
         id: "configuration",
         label: "Configuration",
-        icon: "ri-settings-3-line",
+        icon: "ri-settings-4-line",
+        tone: "secondary",
         link: "/organization",
         parentId: "baseUi",
         perm: [
@@ -410,6 +467,7 @@ const Navdata = () => {
         parentId: "baseUi",
         perm: "all",
         icon: "ri-notification-3-line",
+        tone: "danger",
         badgeName:
           unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined,
         badgeColor: "danger",
@@ -417,7 +475,8 @@ const Navdata = () => {
       {
         id: "control-panel",
         label: "CRM",
-        icon: " ri-list-settings-line",
+        icon: "ri-briefcase-4-line",
+        tone: "warning",
         perm: [
           CLIENT_VIEW_ACCESS_KEY,
           CREATE_CLIENT_ACCESS_KEY,
@@ -441,6 +500,23 @@ const Navdata = () => {
         },
         stateVariables: isControlPanel,
         subItems: [
+          {
+            id: "crm-dashboard",
+            label: "Dashboard",
+            link: "/crm-dashboard",
+            parentId: "baseUi",
+            perm: [
+              CLIENT_VIEW_ACCESS_KEY,
+              CREATE_CLIENT_ACCESS_KEY,
+              EDIT_CLIENT_ACCESS_KEY,
+              PROJECT_VIEW_ACCESS_KEY,
+              CREATE_PROJECT_ACCESS_KEY,
+              EDIT_PROJECT_ACCESS_KEY,
+              TASK_VIEW_ACCESS_KEY,
+              CREATE_TASK_ACCESS_KEY,
+              EDIT_TASK_ACCESS_KEY,
+            ],
+          },
           {
             id: "clients",
             label: "Clients",

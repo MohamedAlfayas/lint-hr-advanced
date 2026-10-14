@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { TableSkeletonBlock } from "../../../component/common/skeleton/Skeleton";
 import {
   Card, CardHeader, CardBody, CardTitle, Table, Spinner, Badge,
   Button, Modal, ModalHeader, ModalBody, ModalFooter, Input, FormGroup, Label,
@@ -8,6 +9,8 @@ import classnames from "classnames";
 import { Api } from "../../../common/api/Api";
 import { toast } from "react-toastify";
 import CompOffLedger from "./CompOffLedger";
+import { testId, itemTestKey } from "../../../shared/testing/testId";
+import ModalCloseButton from "../../../shared/ui/ModalCloseButton";
 
 const STATUS_BADGE = {
   present:     "success",
@@ -60,7 +63,7 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
   return (
     <React.Fragment>
       <Card className="shadow-none border">
-        <CardHeader className="bg-light">
+        <CardHeader className="surface-muted">
           <CardTitle tag="h6" className="mb-0">
             {employeeName ? `Attendance — ${employeeName}` : "Attendance"}
           </CardTitle>
@@ -73,7 +76,7 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
         <CardBody className="p-0">
           <div className="table-responsive" style={{ maxHeight: "58vh", overflow: "auto" }}>
             <Table className="table-bordered align-middle mb-0" style={{ fontSize: 13 }}>
-              <thead className="table-light text-muted text-uppercase" style={{ fontSize: 11 }}>
+              <thead className="table-surface text-muted text-uppercase" style={{ fontSize: 11 }}>
                 <tr>
                   <th>Date</th><th>Worked Hrs</th><th>Leave Hrs</th><th>Week Off</th>
                   <th>Holiday</th><th>Computed Status</th><th>Regularized</th><th>Remarks</th>
@@ -108,7 +111,7 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
                     </td>
                     <td className="text-muted" style={{ maxWidth: 160 }}>{d.remarks || "—"}</td>
                     <td className="text-end">
-                      <Button color="light" size="sm" className="border py-1 px-2" onClick={() => openEdit(d)}>
+                      <Button data-testid={testId("payroll-regularization-edit", itemTestKey(d), "button")} color="light" size="sm" className="border py-1 px-2" onClick={() => openEdit(d)}>
                         <i className="ri-edit-line align-middle me-1"></i>Edit
                       </Button>
                     </td>
@@ -121,8 +124,8 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
       </Card>
 
       {editDay && (
-        <Modal isOpen toggle={closeEdit} centered>
-          <ModalHeader toggle={closeEdit} className="bg-light p-3">Regularize {editDay.date}</ModalHeader>
+        <Modal data-testid="payroll-regularization-regularize-dialog" isOpen toggle={closeEdit} centered>
+          <ModalHeader close={<ModalCloseButton onClick={closeEdit} testId="payroll-regularization-regularize-close-button" />} toggle={closeEdit} className="surface-muted p-3">Regularize {editDay.date}</ModalHeader>
           <ModalBody className="p-4">
             <p className="text-muted mb-3" style={{ fontSize: 12 }}>
               System computed status:{" "}
@@ -135,16 +138,16 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
             </p>
             <FormGroup>
               <Label style={{ fontSize: 13 }}>Set As</Label>
-              <Input type="select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="paid">Paid (no LOP)</option>
-                <option value="unpaid">Unpaid / LOP</option>
+              <Input data-testid="payroll-regularization-regularize-set-as-select" type="select" value={status} onChange={(e) => setStatus(e.target.value)}>
+                <option data-testid="payroll-regularization-regularize-set-as-option-paid" value="paid">Paid (no LOP)</option>
+                <option data-testid="payroll-regularization-regularize-set-as-option-unpaid" value="unpaid">Unpaid / LOP</option>
               </Input>
             </FormGroup>
             <FormGroup>
               <Label style={{ fontSize: 13 }}>Day Type</Label>
-              <Input type="select" value={dayType} onChange={(e) => setDayType(e.target.value)}>
-                <option value="full">Full Day</option>
-                <option value="half">Half Day</option>
+              <Input data-testid="payroll-regularization-regularize-day-type-select" type="select" value={dayType} onChange={(e) => setDayType(e.target.value)}>
+                <option data-testid="payroll-regularization-regularize-day-type-option-full" value="full">Full Day</option>
+                <option data-testid="payroll-regularization-regularize-day-type-option-half" value="half">Half Day</option>
               </Input>
               {status === "unpaid" && (
                 <small className="text-muted d-block mt-1">
@@ -161,13 +164,14 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
             </FormGroup>
             <FormGroup className="mb-0">
               <Label style={{ fontSize: 13 }}>Remarks <span className="text-danger">*</span></Label>
-              <Input type="textarea" rows="3" value={remarks} onChange={(e) => setRemarks(e.target.value)}
+              <Input
+                data-testid="payroll-regularization-regularize-reason-textarea" type="textarea" rows="3" value={remarks} onChange={(e) => setRemarks(e.target.value)}
                 placeholder="Reason for regularization... (minimum 3 words)" />
             </FormGroup>
           </ModalBody>
-          <ModalFooter className="bg-light p-3">
-            <Button color="secondary" outline size="sm" onClick={closeEdit} disabled={saving}>Cancel</Button>
-            <Button color="success" size="sm" onClick={handleSave} disabled={saving}>
+          <ModalFooter className="surface-muted p-3">
+            <Button data-testid="payroll-regularization-regularize-cancel-button" color="secondary" outline size="sm" onClick={closeEdit} disabled={saving}>Cancel</Button>
+            <Button data-testid="payroll-regularization-regularize-save-button" color="success" size="sm" onClick={handleSave} disabled={saving}>
               {saving ? <Spinner size="sm" className="me-1" /> : null}Save
             </Button>
           </ModalFooter>
@@ -183,6 +187,7 @@ const AttendanceEditTab = ({ days, period, employeeName, onRegularize }) => {
 // ───────────────────────────────────────────────────────────────────────────
 const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved }) => {
   const [activeTab, setActiveTab] = useState("1");
+  const [mountedTabs, setMountedTabs] = useState({ 1: true });
   const [loading, setLoading] = useState(false);
   const [days, setDays]       = useState([]);
   const [period, setPeriod]   = useState(null);
@@ -190,7 +195,9 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
   const [ledgerRefresh, setLedgerRefresh] = useState(0);
 
   const toggleTab = (tab) => {
-    if (activeTab !== tab) setActiveTab(tab);
+    if (activeTab === tab) return;
+    setActiveTab(tab);
+    setMountedTabs((prev) => (prev[tab] ? prev : { ...prev, [tab]: true }));
   };
 
   const fetchData = () => {
@@ -232,14 +239,16 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
     <React.Fragment>
       <Nav tabs className="nav nav-tabs nav-tabs-custom nav-success nav-justified mb-3">
         <NavItem>
-          <NavLink style={{ cursor: "pointer" }}
+          <NavLink
+            data-testid="payroll-regularization-attendance-link" style={{ cursor: "pointer" }}
             className={classnames({ active: activeTab === "1" })}
             onClick={() => toggleTab("1")}>
             Attendance
           </NavLink>
         </NavItem>
         <NavItem>
-          <NavLink style={{ cursor: "pointer" }}
+          <NavLink
+            data-testid="payroll-regularization-comp-off-ledger-link" style={{ cursor: "pointer" }}
             className={classnames({ active: activeTab === "2" })}
             onClick={() => toggleTab("2")}>
             Comp-Off Ledger
@@ -250,9 +259,8 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
       <TabContent activeTab={activeTab}>
         <TabPane tabId="1">
           {loading ? (
-            <div className="text-center py-5">
-              <Spinner color="primary" />
-              <p className="text-muted mt-2" style={{ fontSize: 13 }}>Loading attendance & leave records...</p>
+            <div className="py-3">
+              <TableSkeletonBlock rows={8} cols={5} avatar={false} testId="employee-regularization-loading-skeleton" label="Loading attendance and leave records" />
             </div>
           ) : (
             <AttendanceEditTab
@@ -264,15 +272,17 @@ const EmployeeAttendanceEdit = ({ employeeId, employeeName, month, year, onSaved
           )}
         </TabPane>
 
-        <TabPane tabId="2">
-          <CompOffLedger
-            key={ledgerRefresh}
-            employeeId={employeeId}
-            employeeName={employeeName}
-            month={month}
-            year={year}
-          />
-        </TabPane>
+        {mountedTabs["2"] && (
+          <TabPane tabId="2">
+            <CompOffLedger
+              key={ledgerRefresh}
+              employeeId={employeeId}
+              employeeName={employeeName}
+              month={month}
+              year={year}
+            />
+          </TabPane>
+        )}
       </TabContent>
     </React.Fragment>
   );

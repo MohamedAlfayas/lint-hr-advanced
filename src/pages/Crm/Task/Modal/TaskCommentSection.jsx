@@ -12,6 +12,7 @@ import {
   addComment,
   deleteComment,
 } from "../../../../redux/reducers/ChildReducer/CommentReducer";
+import { testId, itemTestKey } from "../../../../shared/testing/testId";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -303,8 +304,8 @@ const Avatar = ({ emp, size = 28 }) => {
           borderRadius: "50%",
           objectFit: "cover",
           flexShrink: 0,
-          border: "2px solid #fff",
-          boxShadow: "0 0 0 1px #dee2e6",
+          border: "2px solid var(--vz-secondary-bg)",
+          boxShadow: "0 0 0 1px var(--vz-border-color)",
         }}
       />
     );
@@ -324,8 +325,8 @@ const Avatar = ({ emp, size = 28 }) => {
         fontSize: size * 0.38,
         fontWeight: 700,
         flexShrink: 0,
-        border: "2px solid #fff",
-        boxShadow: "0 0 0 1px #dee2e6",
+        border: "2px solid var(--vz-secondary-bg)",
+        boxShadow: "0 0 0 1px var(--vz-border-color)",
       }}
     >
       {initials}
@@ -358,8 +359,8 @@ const InitialsAvatar = ({ name = "", id = 0, size = 28 }) => {
         fontSize: size * 0.38,
         fontWeight: 700,
         flexShrink: 0,
-        border: "2px solid #fff",
-        boxShadow: "0 0 0 1px #dee2e6",
+        border: "2px solid var(--vz-secondary-bg)",
+        boxShadow: "0 0 0 1px var(--vz-border-color)",
       }}
     >
       {initials}
@@ -400,6 +401,7 @@ const Lightbox = ({ items, startIndex, onClose }) => {
       }}
     >
       <button
+        data-testid="task-comment-close-button"
         onClick={onClose}
         style={{
           position: "absolute",
@@ -443,6 +445,7 @@ const Lightbox = ({ items, startIndex, onClose }) => {
 
       {items.length > 1 && (
         <button
+          data-testid="task-comment-back-button"
           onClick={(e) => {
             e.stopPropagation();
             setCurrent((c) => (c - 1 + items.length) % items.length);
@@ -496,7 +499,7 @@ const Lightbox = ({ items, startIndex, onClose }) => {
         {item.name && (
           <span
             style={{
-              color: "#d1d5db",
+              color: "var(--vz-secondary-color)",
               fontSize: "0.78rem",
               textAlign: "center",
             }}
@@ -508,6 +511,7 @@ const Lightbox = ({ items, startIndex, onClose }) => {
 
       {items.length > 1 && (
         <button
+          data-testid="task-comment-next-button"
           onClick={(e) => {
             e.stopPropagation();
             setCurrent((c) => (c + 1) % items.length);
@@ -643,7 +647,7 @@ const AttachmentGrid = ({
                     width: 64,
                     height: 64,
                     borderRadius: 8,
-                    background: "#fff3f3",
+                    background: "rgba(var(--vz-danger-rgb), .08)",
                     border: "1px solid #fca5a5",
                     display: "flex",
                     flexDirection: "column",
@@ -685,7 +689,7 @@ const AttachmentGrid = ({
                     height: 64,
                     borderRadius: 8,
                     overflow: "hidden",
-                    border: "1px solid #e2e8f0",
+                    border: "1px solid var(--vz-border-color)",
                     cursor: "pointer",
                     transition: "transform .15s, box-shadow .15s",
                   }}
@@ -713,6 +717,7 @@ const AttachmentGrid = ({
 
               {isPreview && onRemoveIndex && (
                 <button
+                  data-testid={testId("task-comment-close", itemTestKey(att), "button")}
                   type="button"
                   onClick={() => onRemoveIndex(idx)}
                   style={{
@@ -740,7 +745,7 @@ const AttachmentGrid = ({
               <span
                 style={{
                   fontSize: "0.6rem",
-                  color: "#6b7280",
+                  color: "var(--vz-secondary-color)",
                   marginTop: 3,
                   maxWidth: 68,
                   overflow: "hidden",
@@ -975,7 +980,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
-      cancelButtonColor: "#6c757d",
+      cancelButtonColor: "var(--vz-secondary-color)",
       confirmButtonText: "Yes, delete it!",
       cancelButtonText: "Cancel",
     });
@@ -1014,7 +1019,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-4 border-bottom bg-white">
+    <div className="p-4 border-bottom">
       {/* Section header */}
       <h6
         className="fw-bold mb-3 d-flex align-items-center gap-2"
@@ -1022,7 +1027,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
           fontSize: "0.8rem",
           textTransform: "uppercase",
           letterSpacing: ".6px",
-          color: "#6c757d",
+          color: "var(--vz-secondary-color)",
         }}
       >
         <i className="ri-chat-3-line text-primary" />
@@ -1044,12 +1049,12 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
         <div
           onClick={() => setEditorOpen(true)}
           style={{
-            border: "1px solid #dee2e6",
+            border: "1px solid var(--vz-border-color)",
             borderRadius: "8px",
             padding: "12px 15px",
-            background: "#f8fafc",
+            background: "var(--vz-tertiary-bg)",
             cursor: "pointer",
-            color: "#adb5bd",
+            color: "var(--vz-secondary-color)",
             fontSize: "0.9rem",
           }}
         >
@@ -1063,8 +1068,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
         <div
           className="mb-4 rounded"
           style={{
-            border: "1px solid #e2e8f0",
-            background: "#fff",
+            border: "1px solid var(--vz-border-color)",
+            background: "var(--vz-secondary-bg)",
             overflow: "hidden",
           }}
         >
@@ -1078,8 +1083,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
           <div
             className="d-flex align-items-center justify-content-between px-3 py-1"
             style={{
-              borderTop: "1px solid #f1f5f9",
-              background: commentError ? "#fff5f5" : "#f8fafc",
+              borderTop: "1px solid var(--vz-border-color)",
+              background: commentError ? "rgba(var(--vz-danger-rgb), .08)" : "var(--vz-tertiary-bg)",
             }}
           >
             <span
@@ -1106,7 +1111,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                     ? "#ef4444"
                     : commentLength > MAX_COMMENT_LENGTH * 0.9
                       ? "#f59e0b"
-                      : "#9ca3af",
+                      : "var(--vz-secondary-color)",
                 whiteSpace: "nowrap",
               }}
             >
@@ -1118,7 +1123,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
           {selectedFiles.length > 0 && (
             <div
               className="px-3 py-2"
-              style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
+              style={{ borderTop: "1px solid var(--vz-border-color)", background: "var(--vz-tertiary-bg)" }}
             >
               <AttachmentGrid
                 attachments={previewAttachments}
@@ -1132,7 +1137,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
           {fileError && (
             <div
               className="px-3 py-1 text-danger"
-              style={{ fontSize: "0.75rem", background: "#fff5f5" }}
+              style={{ fontSize: "0.75rem", background: "rgba(var(--vz-danger-rgb), .08)" }}
             >
               <i className="ri-error-warning-line me-1" />
               {fileError}
@@ -1142,12 +1147,13 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
           {/* Toolbar row */}
           <div
             className="d-flex align-items-center justify-content-between px-3 py-2 flex-wrap gap-2"
-            style={{ borderTop: "1px solid #f1f5f9", background: "#f8fafc" }}
+            style={{ borderTop: "1px solid var(--vz-border-color)", background: "var(--vz-tertiary-bg)" }}
           >
             {/* Left: attach */}
             <div className="d-flex align-items-center gap-2">
               <input
                 ref={fileInputRef}
+                data-testid="task-comment-attachment-file-input"
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                 multiple
@@ -1155,6 +1161,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                 onChange={handleFileChange}
               />
               <button
+                data-testid="task-comment-attach-button"
                 type="button"
                 className="btn btn-sm btn-light border"
                 onClick={() => fileInputRef.current?.click()}
@@ -1164,7 +1171,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                 <i className="ri-attachment-2 me-1" />
                 Attach
               </button>
-              <span style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
+              <span style={{ fontSize: "0.7rem", color: "var(--vz-secondary-color)" }}>
                 Images &amp; PDF · max 2 MB
               </span>
             </div>
@@ -1172,6 +1179,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
             {/* Right: action buttons */}
             <div className="d-flex gap-2">
               <button
+                data-testid="task-comment-cancel-button"
                 type="button"
                 className="btn btn-outline-secondary btn-sm"
                 onClick={handleCancel}
@@ -1180,6 +1188,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
               </button>
 
               <button
+                data-testid="task-comment-clear-button"
                 type="button"
                 className="btn btn-outline-danger btn-sm"
                 onClick={handleClear}
@@ -1189,6 +1198,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
               </button>
 
               <button
+                data-testid="task-comment-send-button"
                 type="button"
                 className="btn btn-primary btn-sm"
                 onClick={handleSaveComment}
@@ -1248,8 +1258,8 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
                   <div
                     className="rounded p-3"
                     style={{
-                      background: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      background: "var(--vz-tertiary-bg)",
+                      border: "1px solid var(--vz-border-color)",
                     }}
                   >
                     {/* Comment header */}
@@ -1269,6 +1279,7 @@ const TaskCommentSection = ({ taskId, allEmployees = [] }) => {
 
                       {/* Delete button */}
                       <button
+                        data-testid={testId("task-comment-delete-comment", itemTestKey(c), "button")}
                         type="button"
                         className="btn btn-link p-0 text-danger ms-1"
                         title="Delete comment"
