@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { MetaTitle } from "../../common/data/MetaTitle";
 import InfoTable from "../../component/common/table/InfoTable";
 import { useDispatch, useSelector } from "react-redux";
@@ -64,6 +63,33 @@ const AttendanceApproval = ({
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const EmployeeData = GetLocalStorageData("employee") || [];
+
+  const employeeById = useMemo(() => {
+    const map = {};
+    (EmployeeData || []).forEach((e) => {
+      map[String(e.id)] = e;
+    });
+    return map;
+  }, [EmployeeData]);
+
+  const resolveEmployee = (row) => {
+    const id = row?.employee_id ?? row?.employee?.id ?? row?.emp_id;
+    return (
+      (id != null ? employeeById[String(id)] : null) ||
+      (row?.employee && typeof row.employee === "object" ? row.employee : null)
+    );
+  };
+
+  const resolveDepartments = (emp) => {
+    if (Array.isArray(emp?.departments) && emp.departments.length) {
+      return emp.departments;
+    }
+    const ids = emp?.primary_department_id_list || [];
+    if (!ids.length) return [];
+    return (DepartmentData || []).filter((d) =>
+      ids.some((id) => String(id) === String(d.id)),
+    );
+  };
 
   // Permission logic merged from the previous AttendanceApproval version.
   // Data fetching remains in ApprovalFilter to preserve server-side pagination.
@@ -191,7 +217,10 @@ const AttendanceApproval = ({
       id: "employee_id",
       filterable: false,
       accessor: (obj) => (
-        <ApvEmployee employee={obj?.employee} className="lc_sticky_first_additional_col" />
+        <ApvEmployee
+          employee={resolveEmployee(obj)}
+          className="lc_sticky_first_additional_col"
+        />
       ),
     },
     {
@@ -199,7 +228,10 @@ const AttendanceApproval = ({
       id: "department",
       filterable: false,
       accessor: (obj) => (
-        <ApvDepartment departments={obj?.employee?.departments} refId={obj.id} />
+        <ApvDepartment
+          departments={resolveDepartments(resolveEmployee(obj))}
+          refId={obj.id}
+        />
       ),
     },
     {

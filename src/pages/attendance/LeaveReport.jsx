@@ -26,6 +26,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import { Api } from "../../common/api/Api";
 import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { TableSkeletonBlock } from "../../component/common/skeleton/Skeleton";
 import "../../common/css/lc_style.css";
 import "./reports.scss";
 import ModalCloseButton from "../../shared/ui/ModalCloseButton";
@@ -90,6 +92,22 @@ const LeaveReport = () => {
   // Employee local storage
   // ----------------------------------------------------
   const employee_data = GetLocalStorageData("employee") || [];
+
+  const resolveEmployee = (row) => {
+    const id = row?.employee_id ?? row?.employee?.id ?? row?.emp_id;
+    const fromStore = (employee_data || []).find(
+      (e) => String(e.id) === String(id),
+    );
+    if (fromStore) return fromStore;
+    if (
+      row?.employee &&
+      typeof row.employee === "object" &&
+      (row.employee.first_name || row.employee.id)
+    ) {
+      return row.employee;
+    }
+    return null;
+  };
 
   // ----------------------------------------------------
   // Main report state
@@ -180,6 +198,7 @@ const LeaveReport = () => {
   // ====================================================
   const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     setLoading(true);
+    dispatch(setLoaderVisible(true));
 
     let url =
       "report/get-team-monthly-leave-report/?thisMonth=" +
@@ -218,6 +237,7 @@ const LeaveReport = () => {
         }
 
         setLoading(false);
+        dispatch(setLoaderVisible(false));
       })
       .catch((error) => {
         console.error("Team monthly leave report API error:", error);
@@ -227,6 +247,7 @@ const LeaveReport = () => {
         setTotalPages(1);
 
         setLoading(false);
+        dispatch(setLoaderVisible(false));
       });
   };
 
@@ -347,9 +368,7 @@ const LeaveReport = () => {
   // ====================================================
 
   const FixedColumns = ({ rowData, ...props }) => {
-    // const emp = employee_data.find((e) => rowData.employee_id === e.id) || {};
-    const emp = rowData.employee || {};
-
+    const emp = resolveEmployee(rowData);
     const html_tag = <ApvEmployee employee={emp} />;
 
     const rowBg = layoutModeType === "dark" ? "#242933" : "#e6f7ff";
@@ -449,13 +468,9 @@ const LeaveReport = () => {
 
   const DownloadCell = ({ rowData, ...props }) => {
     const exportEmp = () => {
-      // const found = employee_data.find((e) => rowData.employee_id === e.id);
-
-      // const name = found ? found.first_name : "Employee";
-
-      // const empId = found ? found.emp_id : "";
-      const emp = rowData.employee || {};
-      const name = emp.first_name || "Employee";
+      const emp = resolveEmployee(rowData) || {};
+      const name =
+        [emp.first_name, emp.last_name].filter(Boolean).join(" ") || "Employee";
       const empId = emp.emp_id || "";
 
       const wb = new ExcelJs.Workbook();
@@ -664,7 +679,7 @@ const LeaveReport = () => {
     //   datesForExport.forEach((d) => {
     //     const day = (emp.daily_leave_data || []).find((x) => x.date === d);
     reportData.forEach((item) => {
-        const emp = item.employee || {};
+        const emp = resolveEmployee(item) || {};
 
         const row = [
           [emp.first_name, emp.last_name].filter(Boolean).join(" "),
@@ -1197,38 +1212,49 @@ const LeaveReport = () => {
             LEAVE REPORT TABLE
         ================================================== */}
 
-        <Table
-          bordered
-          cellBordered
-          height={500}
-          headerHeight={60}
-          data={report || []}
-          rowHeight={60}
-          autoHeight
-          loading={loading}
-          className="mb-3 rpt-table"
-          affixHeader={70}
-          affixHorizontalScrollbar
-        >
-          <Column width={250} fixed="left" align="center">
-            <HeaderCell
-              style={{
-                background: headerColor,
-                borderRadius: "1px",
-                padding: "18px",
-                fontWeight: "bold",
-              }}
-            >
-              Employee
-            </HeaderCell>
+        {loading && report.length === 0 ? (
+          <div className="mb-3 px-2">
+            <TableSkeletonBlock
+              rows={8}
+              cols={8}
+              testId="leave-report-loading-skeleton"
+              label="Loading leave report"
+            />
+          </div>
+        ) : (
+          <Table
+            bordered
+            cellBordered
+            height={500}
+            headerHeight={60}
+            data={report || []}
+            rowHeight={60}
+            autoHeight
+            loading={loading}
+            className="mb-3 rpt-table"
+            affixHeader={70}
+            affixHorizontalScrollbar
+          >
+            <Column width={250} fixed="left" align="center">
+              <HeaderCell
+                style={{
+                  background: headerColor,
+                  borderRadius: "1px",
+                  padding: "18px",
+                  fontWeight: "bold",
+                }}
+              >
+                Employee
+              </HeaderCell>
 
-            <FixedColumns />
-          </Column>
+              <FixedColumns />
+            </Column>
 
-          {dynamicColumns}
+            {dynamicColumns}
 
-          {summaryColumns}
-        </Table>
+            {summaryColumns}
+          </Table>
+        )}
 
         {/* ==================================================
             PAGINATION

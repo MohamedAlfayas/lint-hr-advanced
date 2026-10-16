@@ -26,6 +26,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { DatePicker } from "antd";
 import { Api } from "../../common/api/Api";
 import { changeLayoutMode } from "../../layout/HtmlLayoutHelpers";
+import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
+import { TableSkeletonBlock } from "../../component/common/skeleton/Skeleton";
 const ExcelJs = require("exceljs");
 import "../../common/css/lc_style.css";
 import "./reports.scss";
@@ -66,6 +69,38 @@ const BreakReport = () => {
   useEffect(() => {
     if (layoutModeType) dispatch(changeLayoutMode(layoutModeType));
   }, []);
+
+  const employee_data = GetLocalStorageData("employee") || [];
+  const department_data = GetLocalStorageData("department") || [];
+
+  const resolveEmployee = (row) => {
+    const id = row?.employee_id ?? row?.employee?.id ?? row?.emp_id;
+    const fromStore = (employee_data || []).find(
+      (e) => String(e.id) === String(id),
+    );
+    if (fromStore) return fromStore;
+    if (
+      row?.employee &&
+      typeof row.employee === "object" &&
+      (row.employee.first_name || row.employee.id)
+    ) {
+      return row.employee;
+    }
+    return null;
+  };
+
+  const resolveDepartmentNames = (emp) => {
+    if (Array.isArray(emp?.departments) && emp.departments.length) {
+      return emp.departments.map((d) => d.name).filter(Boolean).join(", ");
+    }
+    const ids = emp?.primary_department_id_list || [];
+    if (!ids.length) return "";
+    return (department_data || [])
+      .filter((d) => ids.some((id) => String(id) === String(d.id)))
+      .map((d) => d.name)
+      .filter(Boolean)
+      .join(", ");
+  };
 
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState([]);
@@ -127,6 +162,7 @@ const BreakReport = () => {
   // GET /report/get-employee-break-report/v2/?thisMonth=2026-09&page=1&page_size=20&search=john
   const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
     setLoading(true);
+    dispatch(setLoaderVisible(true));
 
     let url =
       "report/get-employee-break-report/v2/?thisMonth=" +
@@ -162,8 +198,12 @@ const BreakReport = () => {
           setPage(targetPage - 1);
         }
         setLoading(false);
+        dispatch(setLoaderVisible(false));
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        dispatch(setLoaderVisible(false));
+      });
   };
 
   // fetch on mount and whenever month / page / page size / search changes
@@ -293,19 +333,18 @@ const BreakReport = () => {
   // };
 
   const FixedColumns = ({ rowData, ...props }) => {
-    const emp = rowData.employee || {};
-    const departmentNames = Array.isArray(emp.departments)
-      ? emp.departments.map((d) => d.name).join(", ")
-      : "";
+    const emp = resolveEmployee(rowData) || {};
+    const departmentNames = resolveDepartmentNames(emp);
+    const displayName = [emp.first_name, emp.last_name]
+      .filter(Boolean)
+      .join(" ");
 
     const html_tag = (
       <div className="apv-emp">
-        <ApvAvatar url={emp.profile_url} name={emp.first_name} />
+        <ApvAvatar url={emp.profile_url} name={emp.first_name || displayName} />
         <span className="apv-emp-text">
           <span className="apv-emp-name">
-            <span className="apv-emp-name-text">
-              {[emp.first_name, emp.last_name].filter(Boolean).join(" ")}
-            </span>
+            <span className="apv-emp-name-text">{displayName || "—"}</span>
           </span>
           {emp.email && <span className="apv-emp-mail">{emp.email}</span>}
           {departmentNames && (
@@ -388,8 +427,9 @@ const BreakReport = () => {
   // ----- per-employee export -----
   const DownloadCell = ({ rowData, ...props }) => {
     const exportEmp = () => {
-      const emp = rowData.employee || {};
-      const name = emp.first_name || "Employee";
+      const emp = resolveEmployee(rowData) || {};
+      const name =
+        [emp.first_name, emp.last_name].filter(Boolean).join(" ") || "Employee";
 
       const wb = new ExcelJs.Workbook();
       const sheet = wb.addWorksheet("Breaks");
@@ -518,11 +558,11 @@ const BreakReport = () => {
     headerRow.font = { bold: true };
 
     reportData.forEach((emp) => {
-      const e = emp.employee || {};
+      const e = resolveEmployee(emp) || {};
       const row = [
         `${e.first_name || ""} ${e.last_name || ""}`.trim(),
         e.email || "",
-        (e.departments || []).map((d) => d.name).join(", "),
+        resolveDepartmentNames(e),
       ];
       datesForExport.forEach((d) => {
         const day = (emp.break_status_data || []).find((x) => x.date === d);
@@ -912,35 +952,46 @@ const BreakReport = () => {
           </Card>
         </Container>
 
-        <Table
-          bordered
-          cellBordered
-          height={500}
-          headerHeight={60}
-          data={report || []}
-          rowHeight={60}
-          autoHeight
-          loading={loading}
-          className="mb-3 rpt-table"
-          affixHeader={70}
-          affixHorizontalScrollbar
-        >
-          <Column width={250} fixed="left" align="center">
-            <HeaderCell
-              style={{
-                background: headerColor,
-                borderRadius: "1px",
-                padding: "18px",
-                fontWeight: "bold",
-              }}
-            >
-              Employee
-            </HeaderCell>
-            <FixedColumns />
-          </Column>
-          {dynamicColumns}
-          {summaryColumns}
-        </Table>
+        {loading && report.length === 0 ? (
+          <div className="mb-3 px-2">
+            <TableSkeletonBlock
+              rows={8}
+              cols={8}
+              testId="break-report-loading-skeleton"
+              label="Loading break report"
+            />
+          </div>
+        ) : (
+          <Table
+            bordered
+            cellBordered
+            height={500}
+            headerHeight={60}
+            data={report || []}
+            rowHeight={60}
+            autoHeight
+            loading={loading}
+            className="mb-3 rpt-table"
+            affixHeader={70}
+            affixHorizontalScrollbar
+          >
+            <Column width={250} fixed="left" align="center">
+              <HeaderCell
+                style={{
+                  background: headerColor,
+                  borderRadius: "1px",
+                  padding: "18px",
+                  fontWeight: "bold",
+                }}
+              >
+                Employee
+              </HeaderCell>
+              <FixedColumns />
+            </Column>
+            {dynamicColumns}
+            {summaryColumns}
+          </Table>
+        )}
 
         {/* ── Pagination ── */}
         <Container fluid>

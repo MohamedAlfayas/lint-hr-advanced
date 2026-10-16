@@ -104,9 +104,16 @@ const LeaveApprovalPending = ({ onDataLengthChange }) => {
       filterable: false,
       id: "employee_id",
 
-      accessor: (obj) => (
-        <ApvEmployee employee={EmployeeData.find((data) => data.id === obj.employee_id)} />
-      ),
+      accessor: (obj) => {
+        const emp =
+          (EmployeeData || []).find(
+            (data) => String(data.id) === String(obj.employee_id),
+          ) ||
+          (obj?.employee && typeof obj.employee === "object"
+            ? obj.employee
+            : null);
+        return <ApvEmployee employee={emp} />;
+      },
     },
     {
       Header: "Start Date",

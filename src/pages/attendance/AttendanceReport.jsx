@@ -29,6 +29,7 @@ import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReduce
 import { Api } from "../../common/api/Api";
 import { setTeamDailyAttendanceReport } from "../../redux/reducers/ChildReducer/TeamDailyAttendanceReportReducer";
 import { ParseTime } from "../../common/js/ParseTime";
+import { TableSkeletonBlock } from "../../component/common/skeleton/Skeleton";
 import "../../common/css/lc_style.css";
 import "./reports.scss";
 import {
@@ -81,7 +82,7 @@ const AttendanceReport = () => {
   document.title = `Attendance Report | ${MetaTitle}`;
 
   const { Column, HeaderCell, Cell, ColumnGroup } = Table;
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [exportType, setExportType] = useState("page"); // "page" | "all"
   const [exportingAll, setExportingAll] = useState(false);
@@ -96,6 +97,22 @@ const AttendanceReport = () => {
   };
 
   const employee_data = GetLocalStorageData("employee") || [];
+
+  const resolveEmployee = (row) => {
+    const id = row?.employee_id ?? row?.employee?.id ?? row?.emp_id;
+    const fromStore = (employee_data || []).find(
+      (e) => String(e.id) === String(id),
+    );
+    if (fromStore) return fromStore;
+    if (
+      row?.employee &&
+      typeof row.employee === "object" &&
+      (row.employee.first_name || row.employee.id)
+    ) {
+      return row.employee;
+    }
+    return null;
+  };
 
   const { team_daily_attendance_report } = useSelector(
     (state) => state.TeamDailyAttendanceReportReducer,
@@ -130,6 +147,7 @@ const AttendanceReport = () => {
 
   // GET /report/get-team-daily-attendance-report/?thisMonth=2026-09&page=1&page_size=10&search=john
   const getReportData = (thisMonth, targetPage, targetPageSize, searchTerm) => {
+    setLoading(true);
     dispatch(setLoaderVisible(true));
 
     let url =
@@ -162,6 +180,7 @@ const AttendanceReport = () => {
           setPage(targetPage - 1);
         }
 
+        setLoading(false);
         dispatch(setLoaderVisible(false));
       })
       .catch((error) => {
@@ -169,6 +188,7 @@ const AttendanceReport = () => {
 
         dispatch(setTeamDailyAttendanceReport([]));
         setTotalCount(0);
+        setLoading(false);
         dispatch(setLoaderVisible(false));
       });
   };
@@ -281,9 +301,7 @@ const AttendanceReport = () => {
       //   (emp) => rowData.employee_id === emp.id,
       // );
 
-      const foundEmployee =
-        rowData?.employee ||
-        employee_data.find((emp) => rowData.employee_id === emp.id);
+      const foundEmployee = resolveEmployee(rowData);
 
       const emp_name = foundEmployee ? foundEmployee.first_name : "";
       const employee_id = foundEmployee ? foundEmployee.emp_id : "";
@@ -718,9 +736,7 @@ const AttendanceReport = () => {
       // const foundEmployee = employee_data.find(
       //   (emp) => rowData.employee_id === emp.id,
       // );
-      const foundEmployee =
-        rowData?.employee ||
-        employee_data.find((emp) => rowData.employee_id === emp.id);
+      const foundEmployee = resolveEmployee(rowData);
       const emp_name = foundEmployee ? foundEmployee.first_name : "";
       row.push(emp_name);
       row.push(foundEmployee ? foundEmployee.email : "");
@@ -929,13 +945,7 @@ const AttendanceReport = () => {
   };
 
   const FixedColumns = ({ rowData, dataKey, ...props }) => {
-    // const emp_name = employee_data.find(
-    //   (emp) => rowData.employee_id === emp.id,
-    // );
-
-    const emp_name =
-      rowData?.employee ||
-      employee_data.find((emp) => rowData.employee_id === emp.id);
+    const emp_name = resolveEmployee(rowData);
 
     if (!emp_name) {
       return <Cell {...props} dataKey="id" />;
@@ -1451,34 +1461,45 @@ const AttendanceReport = () => {
           </Card>
         </Container>
 
-        <Table
-          bordered
-          cellBordered
-          height={420}
-          headerHeight={60}
-          data={team_daily_attendance_report || []}
-          rowHeight={60}
-          autoHeight={true}
-          loading={loading}
-          className="mb-3 rpt-table"
-          affixHeader={70}
-          affixHorizontalScrollbar
-        >
-          <Column width={250} fixed="left" align="center">
-            <HeaderCell
-              style={{
-                background: headerColor,
-                borderRadius: "1px",
-                padding: "18px",
-                fontWeight: "bold",
-              }}
-            >
-              Employee
-            </HeaderCell>
-            <FixedColumns />
-          </Column>
-          {allColumns}
-        </Table>
+        {loading && !(team_daily_attendance_report || []).length ? (
+          <div className="mb-3 px-2">
+            <TableSkeletonBlock
+              rows={8}
+              cols={8}
+              testId="attendance-report-loading-skeleton"
+              label="Loading attendance report"
+            />
+          </div>
+        ) : (
+          <Table
+            bordered
+            cellBordered
+            height={420}
+            headerHeight={60}
+            data={team_daily_attendance_report || []}
+            rowHeight={60}
+            autoHeight={true}
+            loading={loading}
+            className="mb-3 rpt-table"
+            affixHeader={70}
+            affixHorizontalScrollbar
+          >
+            <Column width={250} fixed="left" align="center">
+              <HeaderCell
+                style={{
+                  background: headerColor,
+                  borderRadius: "1px",
+                  padding: "18px",
+                  fontWeight: "bold",
+                }}
+              >
+                Employee
+              </HeaderCell>
+              <FixedColumns />
+            </Column>
+            {allColumns}
+          </Table>
+        )}
 
         <Container fluid>
           <Row className="align-items-center g-3 text-center text-sm-start mb-5">

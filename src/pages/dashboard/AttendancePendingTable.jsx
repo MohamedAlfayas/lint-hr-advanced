@@ -23,6 +23,7 @@ import { ParseTime } from "../../common/js/ParseTime";
 import {
   ApvCheckIn,
   ApvDate,
+  ApvDepartment,
   ApvDiff,
   ApvEmployee,
   ApvNotesButton,
@@ -48,6 +49,25 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
 
   const DepartmentData = GetLocalStorageData("department") || [];
   const EmployeeData = GetLocalStorageData("employee") || [];
+
+  const resolveEmployee = (row) => {
+    const id = row?.employee_id ?? row?.employee?.id ?? row?.emp_id;
+    return (
+      (EmployeeData || []).find((e) => String(e.id) === String(id)) ||
+      (row?.employee && typeof row.employee === "object" ? row.employee : null)
+    );
+  };
+
+  const resolveDepartments = (emp) => {
+    if (Array.isArray(emp?.departments) && emp.departments.length) {
+      return emp.departments;
+    }
+    const ids = emp?.primary_department_id_list || [];
+    if (!ids.length) return [];
+    return (DepartmentData || []).filter((d) =>
+      ids.some((id) => String(id) === String(d.id)),
+    );
+  };
 
   useEffect(() => {
     dispatch(
@@ -145,9 +165,17 @@ const AttendancePendingTable = ({ onDataLengthChange }) => {
       accessor: "employee_id",
       filterable: false,
       id: "employee_id",
-
+      accessor: (obj) => <ApvEmployee employee={resolveEmployee(obj)} />,
+    },
+    {
+      Header: "Department",
+      id: "department",
+      filterable: false,
       accessor: (obj) => (
-        <ApvEmployee employee={EmployeeData.find((data) => data.id === obj.employee_id)} />
+        <ApvDepartment
+          departments={resolveDepartments(resolveEmployee(obj))}
+          refId={obj.id}
+        />
       ),
     },
     {

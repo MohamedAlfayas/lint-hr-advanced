@@ -29,6 +29,35 @@ const LeaveApproval = ({
   );
 
   const LeaveTypeData = GetLocalStorageData("leave_types") || [];
+  const EmployeeData = GetLocalStorageData("employee") || [];
+  const DepartmentData = GetLocalStorageData("department") || [];
+
+  const employeeById = useMemo(() => {
+    const map = {};
+    (EmployeeData || []).forEach((e) => {
+      map[String(e.id)] = e;
+    });
+    return map;
+  }, [EmployeeData]);
+
+  const resolveEmployee = (row) => {
+    const id = row?.employee_id ?? row?.employee?.id ?? row?.emp_id;
+    return (
+      (id != null ? employeeById[String(id)] : null) ||
+      (row?.employee && typeof row.employee === "object" ? row.employee : null)
+    );
+  };
+
+  const resolveDepartments = (emp) => {
+    if (Array.isArray(emp?.departments) && emp.departments.length) {
+      return emp.departments;
+    }
+    const ids = emp?.primary_department_id_list || [];
+    if (!ids.length) return [];
+    return (DepartmentData || []).filter((d) =>
+      ids.some((id) => String(id) === String(d.id)),
+    );
+  };
 
   // unit 1 = days, otherwise hours
   const isDayUnit = (id) =>
@@ -42,14 +71,17 @@ const LeaveApproval = ({
       Header: "Name",
       filterable: false,
       id: "employee_id",
-      accessor: (obj) => <ApvEmployee employee={obj?.employee} />,
+      accessor: (obj) => <ApvEmployee employee={resolveEmployee(obj)} />,
     },
     {
       Header: "Department",
       id: "department",
       filterable: false,
       accessor: (obj) => (
-        <ApvDepartment departments={obj?.employee?.departments} refId={obj.id} />
+        <ApvDepartment
+          departments={resolveDepartments(resolveEmployee(obj))}
+          refId={obj.id}
+        />
       ),
     },
     {
