@@ -17,6 +17,7 @@ import { TruncatedCell } from "./cells";
 import { TestIdModule, rowBusinessId, testId, useTestIdModule } from "../../testing/testId";
 
 const PAGE_SIZES = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_VISIBLE_COLUMNS = 6;
 const ALWAYS_VISIBLE_HEADER = /status|action/i;
 const STORAGE_PREFIX = "lint_hr_table_columns_";
@@ -71,14 +72,23 @@ const TRUNCATE_MIN_WIDTH = 120;
 // filter; matching them in the search box makes "d" return "Digital …" rows.
 const CATEGORY_FILTER_VARIANTS = ["select", "multi-select"];
 
-const withTruncation = (columns = []) =>
+/** Strip per-column filter UI and keep search lean for every table. */
+const withPerformanceDefaults = (columns = []) =>
   columns.map((rawCol) => {
-    if (rawCol.columns?.length) return { ...rawCol, columns: withTruncation(rawCol.columns) };
-    const col =
-      rawCol.enableGlobalFilter === undefined &&
-      CATEGORY_FILTER_VARIANTS.includes(rawCol.filterVariant)
-        ? { ...rawCol, enableGlobalFilter: false }
-        : rawCol;
+    if (rawCol.columns?.length) {
+      return { ...rawCol, columns: withPerformanceDefaults(rawCol.columns) };
+    }
+    const { filterVariant, filterSelectOptions, ...rest } = rawCol;
+    const col = {
+      ...rest,
+      enableColumnFilter: false,
+    };
+    if (
+      rest.enableGlobalFilter === undefined &&
+      CATEGORY_FILTER_VARIANTS.includes(filterVariant)
+    ) {
+      col.enableGlobalFilter = false;
+    }
     if (col.columnDefType === "display" || col.truncate === false) return col;
     const RenderCell = col.Cell;
     return {
@@ -119,10 +129,10 @@ const EmptyState = ({ message }) => (
 /**
  * App-wide data table (Material React Table).
  *
- * Common features are on by default: global search, column filters, sorting,
- * column hide / pin / reorder, density, full screen and pagination. Row
- * checkboxes are off unless `enableRowSelection` is passed. Pass any MRT
- * option to override.
+ * Fast defaults: global search + sorting + pagination. Per-column filters,
+ * faceted values, column drag/reorder/resize, density and fullscreen are off
+ * (pass any MRT option to re-enable). Row checkboxes stay off unless
+ * `enableRowSelection` is passed.
  *
  * Extra props:
  * - `isLoading` / `isFetching`: skeleton on first load, progress bar on refetch
@@ -178,8 +188,25 @@ const AppTable = ({
   const resolveVisibility = () => {
     const stored = readStoredVisibility(storageKey);
     if (!stored) return defaultVisibility;
+    const leaves = leafColumns(columns);
+    const dataCols = leaves.filter((col) => {
+      const header = typeof col.header === "string" ? col.header : "";
+      return (
+        col.columnDefType !== "display" &&
+        !ALWAYS_VISIBLE_HEADER.test(header)
+      );
+    });
+    // Ignore corrupted storage that would hide every data column (e.g. after an
+    // Action-only first paint on Employees revisit).
+    const anyDataVisible = dataCols.some((col) => {
+      const id = columnIdOf(col);
+      return id && stored[id] !== false;
+    });
+    if (dataCols.length > 0 && !anyDataVisible) {
+      return defaultVisibility;
+    }
     const visibility = { ...stored };
-    leafColumns(columns).forEach((col) => {
+    leaves.forEach((col) => {
       if (col.enableHiding === false) delete visibility[columnIdOf(col)];
     });
     return visibility;
@@ -201,16 +228,21 @@ const AppTable = ({
     });
   };
 
-  const tableColumns = useMemo(() => withTruncation(columns), [columns]);
+  const tableColumns = useMemo(() => withPerformanceDefaults(columns), [columns]);
 
   const table = useMaterialReactTable({
     columns: tableColumns,
     data: data ?? [],
     enableRowSelection: false,
+    enableColumnFilters: false,
+    enableFilters: true,
+    enableFacetedValues: false,
+    enableColumnFilterModes: false,
+    enableColumnOrdering: false,
+    enableColumnResizing: false,
     enableColumnPinning: true,
-    enableColumnOrdering: true,
-    enableColumnResizing: true,
-    enableFacetedValues: true,
+    enableDensityToggle: false,
+    enableFullScreenToggle: false,
     enableStickyHeader: true,
     columnFilterDisplayMode: "popover",
     positionGlobalFilter: "left",
@@ -218,6 +250,7 @@ const AppTable = ({
     // loose hits and re-sorts rows by rank.
     globalFilterFn: "startsWith",
     enableGlobalFilterRankedResults: false,
+    enableFilterMatchHighlighting: false,
     paginationDisplayMode: "pages",
     layoutMode: "semantic",
 
@@ -233,8 +266,9 @@ const AppTable = ({
 
     initialState: {
       showGlobalFilter: true,
+      showColumnFilters: false,
       density: "comfortable",
-      pagination: { pageIndex: 0, pageSize: 10 },
+      pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE },
       columnPinning: { right: ["mrt-row-actions"] },
       ...initialState,
     },
@@ -505,4 +539,4 @@ const AppTable = ({
   );
 };
 
-export default AppTable;
+export default React.memo(AppTable);

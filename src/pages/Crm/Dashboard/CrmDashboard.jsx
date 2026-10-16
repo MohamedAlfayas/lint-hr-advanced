@@ -1,15 +1,29 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Container } from "reactstrap";
 import { CardGridSkeleton } from "../../../component/common/skeleton/Skeleton";
-import ReactApexChart from "react-apexcharts";
 import { Api } from "../../../common/api/Api";
 import { MetaTitle } from "../../../common/data/MetaTitle";
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { setProjects } from "../../../redux/reducers/ChildReducer/ProjectsReducer";
+import {
+  hasPageCache,
+  readPageCache,
+  writePageCache,
+} from "../../../common/js/pageLoadCache";
 
-const TASK_FETCH_SIZE = 500;
+const ReactApexChart = lazy(() => import("react-apexcharts"));
+
+const TASK_FETCH_SIZE = 300;
+const CRM_TASKS_CACHE_KEY = "crm-dashboard:tasks";
 const DAY = 24 * 60 * 60 * 1000;
 
 const pickList = (node, depth = 0) => {
@@ -132,38 +146,64 @@ const CrmDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { project_data } = useSelector((state) => state.ProjectsReducer);
+  const reduxTasks = useSelector((state) => state.TaskReducer?.tasks);
 
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedTasks = readPageCache(CRM_TASKS_CACHE_KEY);
+  const seedTasks = Array.isArray(cachedTasks)
+    ? cachedTasks
+    : Array.isArray(reduxTasks) && reduxTasks.length
+      ? reduxTasks
+      : [];
 
-  const clients = GetLocalStorageData("clients") || [];
-  const employees = GetLocalStorageData("employee") || [];
-  const statuses = GetLocalStorageData("task_status") || [];
-  const priorities = GetLocalStorageData("task_priority") || [];
-  const profile = GetLocalStorageData("my_profile") || {};
+  const [tasks, setTasks] = useState(seedTasks);
+  const [loading, setLoading] = useState(
+    () => seedTasks.length === 0 && !hasPageCache("crm-dashboard:visited"),
+  );
+  const [showCharts, setShowCharts] = useState(() => seedTasks.length > 0);
+
+  const clients = useMemo(() => GetLocalStorageData("clients") || [], []);
+  const employees = useMemo(() => GetLocalStorageData("employee") || [], []);
+  const statuses = useMemo(() => GetLocalStorageData("task_status") || [], []);
+  const priorities = useMemo(
+    () => GetLocalStorageData("task_priority") || [],
+    [],
+  );
+  const profile = useMemo(() => GetLocalStorageData("my_profile") || {}, []);
 
   document.title = `CRM Dashboard | ${MetaTitle}`;
 
+  const seededProjectsRef = useRef(false);
   useEffect(() => {
+    if (seededProjectsRef.current) return;
+    seededProjectsRef.current = true;
     if (!project_data || project_data.length === 0) {
       dispatch(setProjects(GetLocalStorageData("projects") || []));
     }
-  }, [dispatch]);
+  }, [dispatch, project_data]);
 
   useEffect(() => {
     let alive = true;
+    const paintTimer = setTimeout(() => {
+      if (alive) setShowCharts(true);
+    }, 120);
+
     (async () => {
       try {
         const res = await Api.get(`/task/?page=1&page_size=${TASK_FETCH_SIZE}`);
-        if (alive) setTasks(pickList(res?.data) || []);
+        if (!alive) return;
+        const list = pickList(res?.data) || [];
+        setTasks(list);
+        writePageCache(CRM_TASKS_CACHE_KEY, list);
+        writePageCache("crm-dashboard:visited");
+        setLoading(false);
       } catch (e) {
         console.log("CRM dashboard task fetch error:", e);
-      } finally {
         if (alive) setLoading(false);
       }
     })();
     return () => {
       alive = false;
+      clearTimeout(paintTimer);
     };
   }, []);
 
@@ -173,13 +213,13 @@ const CrmDashboard = () => {
     const map = {};
     statuses.forEach((s) => (map[String(s.id)] = s));
     return map;
-  }, [statuses.length]);
+  }, [statuses]);
 
   const employeeById = useMemo(() => {
     const map = {};
     employees.forEach((e) => (map[String(e.id)] = e));
     return map;
-  }, [employees.length]);
+  }, [employees]);
 
   const isDone = (t) => statusById[String(t.task_status)]?.category === "done";
 
@@ -321,58 +361,140 @@ const CrmDashboard = () => {
   const chartText = "#878a99";
   const gridColor = "rgba(135,138,153,0.15)";
 
-  const trendOptions = {
-    chart: { type: "area", toolbar: { show: false }, fontFamily: "inherit", foreColor: chartText },
-    colors: ["#405189", "#0ab39c"],
-    dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 3 },
-    fill: { type: "gradient", gradient: { opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 95] } },
-    grid: { borderColor: gridColor, strokeDashArray: 4 },
-    xaxis: { categories: trend.map((m) => m.label), axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { formatter: (v) => Math.round(v) }, min: 0, forceNiceScale: true },
-    legend: { position: "top", horizontalAlign: "right", markers: { radius: 12 } },
-    tooltip: { theme: "dark" },
-  };
+  const trendOptions = useMemo(
+    () => ({
+      chart: {
+        type: "area",
+        toolbar: { show: false },
+        fontFamily: "inherit",
+        foreColor: chartText,
+        animations: { enabled: false },
+      },
+      colors: ["#405189", "#0ab39c"],
+      dataLabels: { enabled: false },
+      stroke: { curve: "smooth", width: 3 },
+      fill: {
+        type: "gradient",
+        gradient: { opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 95] },
+      },
+      grid: { borderColor: gridColor, strokeDashArray: 4 },
+      xaxis: {
+        categories: trend.map((m) => m.label),
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+      },
+      yaxis: {
+        labels: { formatter: (v) => Math.round(v) },
+        min: 0,
+        forceNiceScale: true,
+      },
+      legend: {
+        position: "top",
+        horizontalAlign: "right",
+        markers: { radius: 12 },
+      },
+      tooltip: { theme: "dark" },
+    }),
+    [trend],
+  );
 
-  const donutOptions = {
-    chart: { type: "donut", fontFamily: "inherit", foreColor: chartText },
-    labels: statusSeries.map((s) => s.name),
-    colors: statusSeries.map((s) => s.color),
-    legend: { show: false },
-    dataLabels: { enabled: false },
-    stroke: { width: 3, colors: ["transparent"] },
-    plotOptions: {
-      pie: {
-        donut: {
-          size: "74%",
-          labels: {
-            show: true,
-            total: { show: true, label: "Tasks", color: chartText, formatter: () => stats.total },
-            value: { fontSize: "26px", fontWeight: 700 },
+  const trendSeries = useMemo(
+    () => [
+      { name: "Created", data: trend.map((m) => m.created) },
+      { name: "Completed", data: trend.map((m) => m.done) },
+    ],
+    [trend],
+  );
+
+  const donutOptions = useMemo(
+    () => ({
+      chart: {
+        type: "donut",
+        fontFamily: "inherit",
+        foreColor: chartText,
+        animations: { enabled: false },
+      },
+      labels: statusSeries.map((s) => s.name),
+      colors: statusSeries.map((s) => s.color),
+      legend: { show: false },
+      dataLabels: { enabled: false },
+      stroke: { width: 3, colors: ["transparent"] },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: "74%",
+            labels: {
+              show: true,
+              total: {
+                show: true,
+                label: "Tasks",
+                color: chartText,
+                formatter: () => stats.total,
+              },
+              value: { fontSize: "26px", fontWeight: 700 },
+            },
           },
         },
       },
-    },
-    tooltip: { theme: "dark" },
-  };
+      tooltip: { theme: "dark" },
+    }),
+    [statusSeries, stats.total],
+  );
 
-  const radialOptions = {
-    chart: { type: "radialBar", fontFamily: "inherit", sparkline: { enabled: true } },
-    colors: ["#0ab39c"],
-    fill: { type: "gradient", gradient: { shade: "light", type: "horizontal", gradientToColors: ["#299cdb"], stops: [0, 100] } },
-    plotOptions: {
-      radialBar: {
-        hollow: { size: "64%" },
-        track: { background: gridColor, strokeWidth: "100%" },
-        dataLabels: {
-          name: { show: true, offsetY: 22, color: chartText, fontSize: "12px" },
-          value: { offsetY: -10, fontSize: "28px", fontWeight: 700, formatter: (v) => `${Math.round(v)}%` },
+  const donutSeries = useMemo(
+    () => statusSeries.map((s) => s.count),
+    [statusSeries],
+  );
+
+  const radialOptions = useMemo(
+    () => ({
+      chart: {
+        type: "radialBar",
+        fontFamily: "inherit",
+        sparkline: { enabled: true },
+        animations: { enabled: false },
+      },
+      colors: ["#0ab39c"],
+      fill: {
+        type: "gradient",
+        gradient: {
+          shade: "light",
+          type: "horizontal",
+          gradientToColors: ["#299cdb"],
+          stops: [0, 100],
         },
       },
-    },
-    stroke: { lineCap: "round" },
-    labels: ["Completed"],
-  };
+      plotOptions: {
+        radialBar: {
+          hollow: { size: "64%" },
+          track: { background: gridColor, strokeWidth: "100%" },
+          dataLabels: {
+            name: {
+              show: true,
+              offsetY: 22,
+              color: chartText,
+              fontSize: "12px",
+            },
+            value: {
+              offsetY: -10,
+              fontSize: "28px",
+              fontWeight: 700,
+              formatter: (v) => `${Math.round(v)}%`,
+            },
+          },
+        },
+      },
+      stroke: { lineCap: "round" },
+      labels: ["Completed"],
+    }),
+    [],
+  );
+
+  const ChartFallback = (
+    <div className="crd-loading" style={{ padding: "40px 0" }}>
+      Loading chart…
+    </div>
+  );
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -456,33 +578,42 @@ const CrmDashboard = () => {
           />
         </div>
 
-        {loading ? (
+        {loading && tasks.length === 0 ? (
           <CardGridSkeleton count={6} min={280} testId="crm-dashboard-loading-skeleton" label="Loading CRM insights" />
         ) : (
           <>
             <div className="crd-grid crd-grid-2-1">
               <Panel title="Task Activity" icon="ri-line-chart-line" tone="primary"
                 action={<span className="crd-chip">Last 6 months</span>}>
-                <ReactApexChart
-                  type="area"
-                  height={290}
-                  options={trendOptions}
-                  series={[
-                    { name: "Created", data: trend.map((m) => m.created) },
-                    { name: "Completed", data: trend.map((m) => m.done) },
-                  ]}
-                />
+                {showCharts ? (
+                  <Suspense fallback={ChartFallback}>
+                    <ReactApexChart
+                      type="area"
+                      height={290}
+                      options={trendOptions}
+                      series={trendSeries}
+                    />
+                  </Suspense>
+                ) : (
+                  ChartFallback
+                )}
               </Panel>
 
               <Panel title="Tasks by Status" icon="ri-donut-chart-line" tone="info">
                 {statusSeries.length ? (
                   <>
-                    <ReactApexChart
-                      type="donut"
-                      height={220}
-                      options={donutOptions}
-                      series={statusSeries.map((s) => s.count)}
-                    />
+                    {showCharts ? (
+                      <Suspense fallback={ChartFallback}>
+                        <ReactApexChart
+                          type="donut"
+                          height={220}
+                          options={donutOptions}
+                          series={donutSeries}
+                        />
+                      </Suspense>
+                    ) : (
+                      ChartFallback
+                    )}
                     <div className="crd-legend">
                       {statusSeries.map((s) => (
                         <div key={s.name} className="crd-legend-row">
@@ -504,7 +635,18 @@ const CrmDashboard = () => {
 
             <div className="crd-grid crd-grid-1-1-1">
               <Panel title="Completion Rate" icon="ri-checkbox-circle-line" tone="success">
-                <ReactApexChart type="radialBar" height={210} options={radialOptions} series={[stats.completion]} />
+                {showCharts ? (
+                  <Suspense fallback={ChartFallback}>
+                    <ReactApexChart
+                      type="radialBar"
+                      height={210}
+                      options={radialOptions}
+                      series={[stats.completion]}
+                    />
+                  </Suspense>
+                ) : (
+                  ChartFallback
+                )}
                 <div className="crd-mini-stats">
                   <div>
                     <strong>{stats.done}</strong>

@@ -50,6 +50,9 @@ const getMonthName = (month) => {
   return MONTH_NAMES[parseInt(month, 10)] || String(month);
 };
 
+/** Session set: employee views already opened render immediately on revisit. */
+const openedEmployeeViews = new Set();
+
 const EMPLOYEE_TABS = [
   { id: "1", label: "Overview", icon: "ri-dashboard-line" },
   { id: "2", label: "Attendance", icon: "ri-calendar-check-line" },
@@ -197,7 +200,11 @@ const EmployeeView = () => {
   };
 
   const GetInitialApi = async (id) => {
-    dispatch(setLoaderVisible(true));
+    const alreadyOpened = openedEmployeeViews.has(String(id));
+    if (!alreadyOpened) {
+      dispatch(setLoaderVisible(true));
+    }
+
     const EmployeeData = GetLocalStorageData("employee") || [];
     if (id && EmployeeData.length) {
       const thisEmployeeData = EmployeeData.find((d) => d.emp_uuid === id);
@@ -230,16 +237,12 @@ const EmployeeView = () => {
           false,
         );
         if (Att_Report_Api.status && Att_Report_Api.status === 200) {
-          dispatch(
-            setIndividualAttendanceReportData(
-              Att_Report_Api?.data?.data?.individual_attendance_report,
-            ),
-          );
-
-          BuildAttendanceReportChart(
-            Att_Report_Api?.data?.data?.individual_attendance_report,
-            dispatch,
-          );
+          const rows =
+            Att_Report_Api?.data?.data?.individual_attendance_report || [];
+          dispatch(setIndividualAttendanceReportData(rows));
+          openedEmployeeViews.add(String(id));
+          dispatch(setLoaderVisible(false));
+          setTimeout(() => BuildAttendanceReportChart(rows, dispatch), 0);
 
           Api({
             type: "GET",
@@ -247,12 +250,9 @@ const EmployeeView = () => {
           })
             .then((res) => {
               dispatch(setEmployeeLeaveType(res?.data?.data));
-              dispatch(setLoaderVisible(false));
             })
-            .catch((err) => {
+            .catch(() => {
               dispatch(setEmployeeLeaveType([]));
-
-              dispatch(setLoaderVisible(false));
             });
         } else {
           toast.error(

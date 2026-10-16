@@ -5,16 +5,11 @@ import { Card, CardBody, CardHeader, Col, Row } from "reactstrap";
 import {
   MonthFormat,
   hr_status_options,
-  record_options,
 } from "../../common/constant/Constants";
 import AttendanceOverview from "../attendance/AttendanceOverview";
 import AttendanceEmployeeTable from "../../component/common/table/AttendanceEmployeeTable";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  setIndividualAttendanceReportData,
-  setShowTeamTable,
-  setTeamAttendanceReportData,
-} from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
+import { setIndividualAttendanceReportData } from "../../redux/reducers/ChildReducer/AttendanceReportReducer";
 import dayjs from "dayjs";
 import { setLoaderVisible } from "../../redux/reducers/ChildReducer/LoaderReducer";
 import { PostApi } from "../../common/api/PostApi";
@@ -50,10 +45,11 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
     dispatch(setLoaderVisible(false));
   };
 
-  const handleDateRangeChange = (e, monthStr) => {
+  const handleDateRangeChange = (date) => {
+    if (!date) return;
     setFilterKeys({
       ...filterKeys,
-      thisMonth: monthStr,
+      thisMonth: date.format(MonthFormat),
     });
   };
 
@@ -61,13 +57,6 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
     setFilterKeys({
       ...filterKeys,
       hr_status: e.value,
-    });
-  };
-
-  const handleRecordChange = (e) => {
-    setFilterKeys({
-      ...filterKeys,
-      record: e.value,
     });
   };
 
@@ -100,91 +89,107 @@ const EmployeeAttendance = ({ profileObj, filterKeys, setFilterKeys }) => {
   }, [attendanceRefreshTick]);
 
   return (
-    <div>
+    <div className="emp-attendance">
       <React.Fragment>
         <Card>
           <CardHeader className="border-0 rounded">
-            <CardBody>
-              <Row className="g-2">
-                <Col xl={2}>
-                  <div className="form-icon right">
-                    <DatePicker
-                      value={dayjs(filterKeys?.thisMonth, MonthFormat)}
-                      format={MonthFormat}
-                      picker="month"
-                      allowClear={false}
-                      className="form-control"
-                      placeholder="Select Month"
-                      onChange={handleDateRangeChange}
-                      data-testid="employee-attendance-month-input"
-                    />
-                  </div>
+            <CardBody className="pb-2">
+              <Row className="g-2 emp-attendance-filters align-items-end">
+                <Col xs={12} sm={6} md={4} lg={3} xl={3}>
+                  <label className="emp-attendance-label" htmlFor="emp-att-month">
+                    Month
+                  </label>
+                  <DatePicker
+                    id="emp-att-month"
+                    value={dayjs(filterKeys?.thisMonth, MonthFormat)}
+                    format="MMM YYYY"
+                    picker="month"
+                    allowClear={false}
+                    className="emp-attendance-picker w-100"
+                    placeholder="Select Month"
+                    onChange={handleDateRangeChange}
+                    data-testid="employee-attendance-month-input"
+                  />
                 </Col>
-                <Col xl={2}>
-                  <div className="form-icon right">
-                    <Select
-                      name="status_attendance"
-                      id="status_attendance"
-                      testId="employee-attendance-status-filter"
-                      options={hr_status_options || []}
-                      placeholder="Select a Status"
-                      value={
-                        !!filterKeys?.hr_status
-                          ? hr_status_options.find(
-                              (d) => d.id === filterKeys?.hr_status,
-                            )
-                          : []
-                      }
-                      Select
-                      onChange={handleHRStatusChange}
-                      style={{ width: "150px", height: "40px" }}
-                    />
-                  </div>
+                <Col xs={12} sm={6} md={4} lg={3} xl={3}>
+                  <label
+                    className="emp-attendance-label"
+                    htmlFor="status_attendance"
+                  >
+                    Status
+                  </label>
+                  <Select
+                    name="status_attendance"
+                    id="status_attendance"
+                    testId="employee-attendance-status-filter"
+                    className="emp-attendance-select"
+                    classNamePrefix="emp-att-rs"
+                    options={hr_status_options || []}
+                    placeholder="Select a Status"
+                    value={
+                      filterKeys?.hr_status
+                        ? hr_status_options.find(
+                            (d) => d.id === filterKeys?.hr_status,
+                          )
+                        : null
+                    }
+                    onChange={handleHRStatusChange}
+                    isSearchable={false}
+                    menuPortalTarget={
+                      typeof document !== "undefined" ? document.body : null
+                    }
+                    menuPosition="fixed"
+                    styles={{
+                      menuPortal: (base) => ({ ...base, zIndex: 1600 }),
+                      control: (base) => ({
+                        ...base,
+                        minHeight: 38,
+                        borderRadius: 10,
+                      }),
+                    }}
+                  />
                 </Col>
-                {/* <Col xl={2}>
-                  <div className="form-icon right">
-                    <Select
-                      name="record_attendance"
-                      id="record_attendance"
-                      options={record_options || []}
-                      placeholder="Select a Record"
-                      value={
-                        !!filterKeys?.record
-                          ? record_options.find(
-                              (d) => d.id === filterKeys?.record
-                            )
-                          : []
-                      }
-                      onChange={handleRecordChange}
-                      style={{ width: "150px", height: "40px" }}
-                    />
-                  </div>
-                </Col> */}
-
-                {/* <div className="col-lg-auto">
-                  <div className="hstack gap-2">
-                    <button
-                      type="button"
-                      onClick={handleFilter}
-                      className="btn btn-danger"
-                    >
-                      <i className="ri-equalizer-fill me-1 align-bottom"></i>{" "}
-                      Filters
-                    </button>
-                  </div>
-                </div> */}
               </Row>
             </CardBody>
           </CardHeader>
 
-          <Col xxl={12}>
+          <div className="px-3 px-md-4">
             <AttendanceOverview />
-          </Col>
+          </div>
 
-          <Col xxl={12}>
+          <div className="px-3 px-md-4 pb-3">
             <AttendanceEmployeeTable />
-          </Col>
+          </div>
         </Card>
+
+        <style>{`
+          .emp-attendance-label{
+            display:block;font-size:.66rem;font-weight:600;text-transform:uppercase;
+            letter-spacing:.6px;color:var(--vz-secondary-color);margin-bottom:5px;padding-left:2px;
+          }
+          .emp-attendance-picker.ant-picker{
+            width:100%;min-height:38px;border-radius:10px;
+            padding-inline:12px 10px;
+          }
+          .emp-attendance-picker .ant-picker-input{min-width:0}
+          .emp-attendance-picker .ant-picker-input > input{
+            font-size:.85rem;font-weight:600;min-width:0;
+            overflow:visible;text-overflow:clip;
+          }
+          .emp-attendance-select .emp-att-rs__control{
+            min-height:38px;border-radius:10px;border-color:var(--vz-border-color);
+            background:var(--vz-secondary-bg);box-shadow:none;cursor:pointer;
+          }
+          .emp-attendance-select .emp-att-rs__single-value{
+            font-size:.85rem;font-weight:500;color:var(--vz-heading-color);
+            max-width:100%;overflow:visible;text-overflow:clip;white-space:nowrap;
+          }
+          .emp-attendance-select .emp-att-rs__indicator-separator{display:none}
+          .emp-attendance-select .emp-att-rs__value-container{overflow:visible}
+          @media (max-width:575.98px){
+            .emp-attendance-filters > [class*="col-"]{flex:0 0 100%;max-width:100%}
+          }
+        `}</style>
       </React.Fragment>
     </div>
   );

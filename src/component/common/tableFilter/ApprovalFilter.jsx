@@ -920,6 +920,10 @@ import {
 import { GetLocalStorageData } from "../../../meta/GetLocalStorageData";
 import { setEmployeeTableFilterKeys } from "../../../redux/reducers/ChildReducer/TableFilterReducer";
 import { EmployeeDisplayInSelect } from "../../../common/js/EmployeeDisplayInSelect";
+import {
+  hasPageCache,
+  writePageCache,
+} from "../../../common/js/pageLoadCache";
 
 dayjs.extend(customParseFormat);
 
@@ -979,7 +983,9 @@ const ApprovalFilter = ({ formname }) => {
   };
 
   const [selectedEmployees, setSelectedEmployees] = useState([]);
-  const [tableLoading, setTableLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(
+    () => !hasPageCache("approval:visited"),
+  );
   // Only the latest table request may update the table (filters can change mid-flight).
   const requestIdRef = useRef(0);
 
@@ -1219,6 +1225,8 @@ const ApprovalFilter = ({ formname }) => {
       dispatch(setApprovalEmployeeTypeFilter(effectiveScope));
       dispatch(setLeaveApproval(data));
       setTotalCount(total);
+      writePageCache(url);
+      writePageCache("approval:visited");
     } catch (error) {
       console.error(error);
     } finally {
@@ -1245,6 +1253,8 @@ const ApprovalFilter = ({ formname }) => {
       dispatch(setApprovalEmployeeTypeFilter(effectiveScope));
       dispatch(setAttendanceApprovalData(data));
       setTotalCount(total);
+      writePageCache(url);
+      writePageCache("approval:visited");
     } catch (error) {
       console.error(error);
     } finally {
@@ -1323,7 +1333,26 @@ const ApprovalFilter = ({ formname }) => {
   ) => {
     requestIdRef.current += 1;
     const requestId = requestIdRef.current;
-    setTableLoading(true);
+    const url = buildUrl(
+      tab === "2" || (!showAttendanceApproval && tab === "1")
+        ? "leave"
+        : "attendance",
+      targetPage,
+      targetPageSize,
+    );
+    const hasCachedRows =
+      (tab === "1" &&
+        showAttendanceApproval &&
+        Array.isArray(attendance_approval_data) &&
+        attendance_approval_data.length > 0) ||
+      ((tab === "2" || (!showAttendanceApproval && tab === "1")) &&
+        showLeaveApproval &&
+        Array.isArray(leave_approval_data) &&
+        leave_approval_data.length > 0);
+
+    if (!hasPageCache(url) && !hasCachedRows) {
+      setTableLoading(true);
+    }
 
     if (tab === "2" || (!showAttendanceApproval && tab === "1")) {
       if (showLeaveApproval) {
@@ -1669,10 +1698,11 @@ const ApprovalFilter = ({ formname }) => {
             .apf-month:focus-within{border-color:var(--vz-primary);box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
             .apf-month-btn{width:34px;height:100%;display:grid;place-items:center;border:0;background:transparent;color:var(--vz-secondary-color);font-size:18px;transition:all .15s}
             .apf-month-btn:hover{color:var(--vz-primary);background:rgba(var(--vz-primary-rgb),.08)}
-            .apf-month-picker{display:flex;align-items:center;gap:2px;height:100%;padding-left:10px;border-left:1px solid var(--vz-border-color);border-right:1px solid var(--vz-border-color)}
-            .apf-month-picker > i{color:var(--vz-primary);font-size:15px}
-            .apf-month-picker .ant-picker{width:104px;padding:0 6px;cursor:pointer}
-            .apf-month-picker .ant-picker input{font-size:.85rem;font-weight:600;color:var(--vz-heading-color) !important;cursor:pointer}
+            .apf-month-picker{display:flex;align-items:center;gap:4px;height:100%;padding:0 8px 0 10px;border-left:1px solid var(--vz-border-color);border-right:1px solid var(--vz-border-color);min-width:0;flex:1 1 auto}
+            .apf-month-picker > i{color:var(--vz-primary);font-size:15px;flex-shrink:0}
+            .apf-month-picker .ant-picker{width:auto;min-width:108px;flex:1 1 auto;padding:0 4px;cursor:pointer}
+            .apf-month-picker .ant-picker-input{min-width:0}
+            .apf-month-picker .ant-picker input{font-size:.85rem;font-weight:600;color:var(--vz-heading-color) !important;cursor:pointer;min-width:0}
 
             .apf-fields{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 14px;padding:14px 16px}
             .apf-field{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1 1 190px;max-width:260px}

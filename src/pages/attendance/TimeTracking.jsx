@@ -1,14 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardBody } from "reactstrap";
 import { useSelector } from "react-redux";
+import { loadAnimation } from "lottie-web";
+import { defineElement } from "lord-icon-element";
 import WebCheckInOut from "../../component/common/timer/WebCheckInOut";
 import { Api } from "../../common/api/Api";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 
-const RING_SIZE = 188;
-const RING_STROKE = 10;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+defineElement(loadAnimation);
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -128,17 +127,7 @@ const TimeTracking = ({ hideTimer }) => {
         : goalPct >= 40
           ? "info"
           : "warning";
-  const goalFraction = Math.min(1, worked / targetSeconds);
-  const arcFraction = worked > 0 ? Math.max(goalFraction, 0.015) : 0;
   const [hh, mm, ss] = timeParts(total_seconds);
-
-  // Seconds hand: 6° per second, cumulative so the 59→0 wrap keeps moving forward.
-  // Larger jumps (initial sync / refetch) snap instead of spinning around.
-  const prevSecondsRef = useRef(worked);
-  const handJumped = Math.abs(worked - prevSecondsRef.current) > 2;
-  useEffect(() => {
-    prevSecondsRef.current = worked;
-  }, [worked]);
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "2-digit",
@@ -167,51 +156,13 @@ const TimeTracking = ({ hideTimer }) => {
           </div>
 
           <div className="tt-ring-zone">
-          <div className={`tt-ring ${running ? "is-running" : "is-idle"} tt-${status.tone}`}>
-            <span className="tt-ring-orbit" />
-            <svg width={RING_SIZE} height={RING_SIZE} viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
-              <defs>
-                <linearGradient id="ttArcGradient" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" style={{ stopColor: "var(--tt-c)", stopOpacity: 0.55 }} />
-                  <stop offset="100%" style={{ stopColor: "var(--tt-c)", stopOpacity: 1 }} />
-                </linearGradient>
-              </defs>
-              <circle
-                className="tt-ring-track"
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={RING_RADIUS}
-                strokeWidth={RING_STROKE}
-                fill="none"
+            <div className={`tt-clock ${running ? "is-running" : "is-idle"} tt-${status.tone}`}>
+              <lord-icon
+                src="https://cdn.lordicon.com/kbtmbyzy.json"
+                trigger={running ? "loop" : "hover"}
+                colors="primary:#405189,secondary:#02a8b5"
+                style={{ width: "110px", height: "110px" }}
               />
-              {arcFraction > 0 && (
-                <circle
-                  className="tt-ring-arc"
-                  cx={RING_SIZE / 2}
-                  cy={RING_SIZE / 2}
-                  r={RING_RADIUS}
-                  strokeWidth={RING_STROKE}
-                  fill="none"
-                  stroke="url(#ttArcGradient)"
-                  strokeLinecap="round"
-                  strokeDasharray={RING_CIRCUMFERENCE}
-                  strokeDashoffset={RING_CIRCUMFERENCE * (1 - arcFraction)}
-                  transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
-                />
-              )}
-            </svg>
-            {running && (
-              <span
-                className="tt-ring-hand"
-                style={{
-                  transform: `rotate(${worked * 6}deg)`,
-                  transition: handJumped ? "none" : "transform 1s linear",
-                }}
-              >
-                <i />
-              </span>
-            )}
-            <div className="tt-ring-center">
               <div className="tt-time">
                 <Digits value={hh} />
                 <span className="tt-colon">:</span>
@@ -224,7 +175,6 @@ const TimeTracking = ({ hideTimer }) => {
               <div className="tt-time-label">Worked today</div>
               <div className="tt-ring-goal">{goalPct}% of goal</div>
             </div>
-          </div>
           </div>
 
           <div className={`tt-goal tt-${goalTone}`}>
@@ -327,47 +277,16 @@ const TimeTracking = ({ hideTimer }) => {
         @keyframes tt-ping { 0% { box-shadow:0 0 0 0 rgba(var(--tt-rgb), .55); } 80%,100% { box-shadow:0 0 0 7px rgba(var(--tt-rgb), 0); } }
         @keyframes tt-blink { 0%,100% { opacity:1; } 50% { opacity:.35; } }
 
-        /* ring */
-        .tt-ring { position:relative; width:${RING_SIZE}px; height:${RING_SIZE}px; animation:tt-pop .7s cubic-bezier(.2,.9,.3,1.2) .1s both; }
+        /* old lord-icon clock animation */
+        .tt-clock {
+          display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+          animation:tt-pop .7s cubic-bezier(.2,.9,.3,1.2) .1s both;
+        }
         @keyframes tt-pop { from { opacity:0; transform:scale(.85); } to { opacity:1; transform:none; } }
-        .tt-ring svg { position:relative; z-index:1; }
-        .tt-ring-track { stroke:rgba(var(--tt-rgb), .12); }
-        .tt-ring.is-idle .tt-ring-track { stroke:var(--vz-border-color); stroke-dasharray:2 7; stroke-linecap:round; }
-        .tt-ring-arc {
-          transition:stroke-dashoffset .9s ease;
-          animation:tt-arc-in 1.4s cubic-bezier(.2,.8,.2,1) .2s both;
-          filter:drop-shadow(0 0 6px rgba(var(--tt-rgb), .45));
-        }
-        @keyframes tt-arc-in { from { stroke-dashoffset:${RING_CIRCUMFERENCE}; } }
-
-        .tt-ring-orbit {
-          position:absolute; inset:-9px; border-radius:50%;
-          border:1.5px dashed rgba(var(--tt-rgb), .35);
-          animation:tt-spin 40s linear infinite;
-        }
-        .tt-ring.is-running .tt-ring-orbit { border-style:solid; border-color:transparent; border-top-color:rgba(var(--tt-rgb), .55); border-right-color:rgba(var(--tt-rgb), .2); animation-duration:3.5s; }
-        @keyframes tt-spin { to { transform:rotate(360deg); } }
-
-        .tt-ring-hand { position:absolute; inset:0; z-index:2; pointer-events:none; will-change:transform; }
-        .tt-ring-hand i {
-          position:absolute; left:50%; top:${RING_STROKE / 2}px; width:14px; height:14px; margin:-7px 0 0 -7px;
-          border-radius:50%; background:#fff; border:3px solid var(--tt-c);
-          box-shadow:0 0 0 4px rgba(var(--tt-rgb), .2), 0 0 12px rgba(var(--tt-rgb), .6);
-        }
-
-        .tt-ring::before {
-          content:""; position:absolute; inset:${RING_STROKE + 6}px; border-radius:50%;
-          background:radial-gradient(circle, rgba(var(--tt-rgb), .14) 0%, rgba(var(--tt-rgb), 0) 70%);
-          animation:tt-breathe 4s ease-in-out infinite;
-        }
-        .tt-ring.is-running::before { animation-duration:2.2s; }
-        @keyframes tt-breathe { 0%,100% { opacity:.5; transform:scale(.94); } 50% { opacity:1; transform:scale(1.04); } }
-
-        .tt-ring-center { position:absolute; inset:0; z-index:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-        .tt-time { font-size:26px; font-weight:800; letter-spacing:.5px; font-variant-numeric:tabular-nums; color:var(--vz-heading-color, var(--vz-body-color)); }
+        .tt-clock.is-running lord-icon { filter:drop-shadow(0 0 10px rgba(2,168,181,.35)); }
+        .tt-time { font-size:26px; font-weight:800; letter-spacing:.5px; font-variant-numeric:tabular-nums; color:var(--vz-heading-color, var(--vz-body-color)); display:inline-flex; align-items:baseline; white-space:nowrap; }
         .tt-colon { display:inline-block; margin:0 4px; opacity:.55; }
-        .tt-ring.is-running .tt-colon { animation:tt-blink 1s steps(1) infinite; }
-        .tt-time { display:inline-flex; align-items:baseline; white-space:nowrap; }
+        .tt-clock.is-running .tt-colon { animation:tt-blink 1s steps(1) infinite; }
         .tt-d { display:inline-block; width:.64em; text-align:center; }
         .tt-sec { display:inline-flex; color:var(--tt-c); }
         .tt-time-label { font-size:11px; color:var(--vz-secondary-color); margin-top:2px; text-transform:uppercase; letter-spacing:.6px; }

@@ -75,6 +75,7 @@ export const fromLegacyColumns = (columns = []) =>
         ...base,
         accessorKey: accessor,
         enableSorting: !disableSortBy,
+        enableColumnFilter: false,
         ...(Cell && {
           Cell: ({ row, cell }) => Cell(legacyCellProps(row, cell.getValue())),
         }),
@@ -88,6 +89,7 @@ export const fromLegacyColumns = (columns = []) =>
         return React.isValidElement(out) || Array.isArray(out) ? toText(out) : out;
       },
       enableSorting: !disableSortBy,
+      enableColumnFilter: false,
       Cell: ({ row }) => {
         const raw = accessor(row.original);
         return Cell ? Cell(legacyCellProps(row, raw)) : raw;

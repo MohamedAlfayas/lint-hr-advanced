@@ -324,7 +324,7 @@ const ProfileViewMin = () => {
 
         {activeTab === "attendance" &&
           (attendanceEmpReport.length ? (
-            <Stack divider={<Divider flexItem />} sx={{ maxHeight: 280, overflowY: "auto" }}>
+            <Stack divider={<Divider flexItem />} sx={{ maxHeight: 280, overflow: "auto" }}>
               {attendanceEmpReport.map((item) => {
                 const d = new Date(item.date);
                 const status = dayStatus(item);
@@ -381,16 +381,9 @@ const ProfileViewMin = () => {
         direction="row"
         spacing={1.5}
         sx={{
-          position: "sticky",
-          bottom: 0,
-          mx: -3,
-          mb: -3,
-          px: 3,
-          py: 2,
-          bgcolor: "background.paper",
+          pt: 2,
           borderTop: 1,
           borderColor: "divider",
-          zIndex: 1,
         }}
       >
         <Button

@@ -27,8 +27,12 @@ import {
   ApvStatus,
   ApvTitle,
 } from "../../../component/common/approval/ApprovalCells";
+import {
+  hasPageCache,
+  writePageCache,
+} from "../../../common/js/pageLoadCache";
 
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 25;
 
 // ─── Helper: find the task array in any API response shape ───────────────────
 // Handles: [..] | {data:[..]} | {results:[..]} | {data:{results:[..]}} | ...
@@ -75,8 +79,8 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   const [totalCount, setTotalCount] = useState(0);
 
   // ── Loading + stale-response guard ──────────────────────────────────────────
-  const [isLoading, setIsLoading] = useState(false);
   const requestIdRef = useRef(0);
+  const tasksRef = useRef([]);
 
   const handlePaginationChange = useCallback((newPage, newPageSize) => {
     setPage(newPage);
@@ -87,6 +91,11 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
   const { tasks: task_data } = useSelector((state) => state.TaskReducer);
   const { task_list_filter_keys, task_date_range } = useSelector(
     (state) => state.TableFilterReducer,
+  );
+
+  tasksRef.current = Array.isArray(task_data) ? task_data : [];
+  const [isLoading, setIsLoading] = useState(
+    () => !hasPageCache("tasks:visited"),
   );
 
   // Date range filter (server-side) — YYYY-MM-DD, kept outside
@@ -170,23 +179,24 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
     // only the latest request may update the table (prevents an older,
     // filtered response from overwriting the unfiltered list after clearing)
     const requestId = ++requestIdRef.current;
-    setIsLoading(true);
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+    });
+    if (startDate) params.append("start_date", startDate);
+    if (endDate) params.append("end_date", endDate);
+    const url = `/task/?${params.toString()}`;
+
+    // Keep existing rows on screen; skeleton only when there is nothing to show.
+    if (tasksRef.current.length === 0) {
+      setIsLoading(true);
+    }
 
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize),
-      });
-      if (startDate) params.append("start_date", startDate);
-      if (endDate) params.append("end_date", endDate);
-
-      const url = `/task/?${params.toString()}`;
       const response = await Api.get(url);
       if (requestId !== requestIdRef.current) return;
 
       const body = response?.data;
-      console.log("Task API call :", url, body); // check this in DevTools console
-
       const list = pickList(body) || [];
       const total =
         body?.count ??
@@ -197,6 +207,8 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
 
       dispatch(setTasks(list));
       setTotalCount(total);
+      writePageCache("tasks:visited");
+      setIsLoading(false);
 
       // current page became empty (e.g. last task deleted) -> step back
       if (list.length === 0 && page > 1) {
@@ -204,7 +216,6 @@ const Tasks = ({ projectId = null, clientId = null, searchQuery = "" }) => {
       }
     } catch (error) {
       console.log("Task Fetch Error :", error);
-    } finally {
       if (requestId === requestIdRef.current) setIsLoading(false);
     }
   }, [dispatch, page, pageSize, startDate, endDate]);

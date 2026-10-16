@@ -175,16 +175,17 @@ const AttendanceLeaveApprovalTable = () => {
           </CardHeader>
           <div className="card-body p-0">
             <TabContent activeTab={activeTab} className="p-0">
-              {showAttendanceApproval && (
-                <TabPane tabId={showAttendanceApproval ? "1" : "0"}>
+              {showAttendanceApproval && activeTab === "1" && (
+                <TabPane tabId="1">
                   <AttendancePendingTable
                     onDataLengthChange={handleAttendLengthChange}
                   />
                 </TabPane>
               )}
 
-              {showLeaveApproval && (
-                <TabPane tabId={!showAttendanceApproval ? "1" : "2"}>
+              {showLeaveApproval &&
+                activeTab === (showAttendanceApproval ? "2" : "1") && (
+                <TabPane tabId={showAttendanceApproval ? "2" : "1"}>
                   <LeaveApprovalPending
                     onDataLengthChange={handleLeaveLengthChange}
                   />

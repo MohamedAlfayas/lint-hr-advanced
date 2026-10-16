@@ -28,6 +28,10 @@ import { PostApi } from "../../common/api/PostApi";
 import { toast } from "react-toastify";
 import { EmployeeDisplayInSelect } from "../../common/js/EmployeeDisplayInSelect";
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
+import {
+  hasPageCache,
+  writePageCache,
+} from "../../common/js/pageLoadCache";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 import { testId, itemTestKey } from "../../shared/testing/testId";
 
@@ -134,7 +138,10 @@ const AttendanceFilter = () => {
   // 🔹 API Call
   const handleFilter = async (keys, currentPage, currentPageSize) => {
     const requestId = ++requestIdRef.current;
-    dispatch(setAttendanceLoading(true));
+    const requestKey = `attendance-report:${keys.thisMonth}:${keys.hr_status}:${keys.type}:${keys.employee}:${currentPage}:${currentPageSize}`;
+    if (!hasPageCache(requestKey)) {
+      dispatch(setAttendanceLoading(true));
+    }
 
     try {
       const attendanceApi = await PostApi(
@@ -178,10 +185,21 @@ const AttendanceFilter = () => {
           setIndividualAttendanceReportData(data?.individual_attendance_report),
         );
         dispatch(setAttendanceSummary(data?.summary));
-
-        BuildAttendanceReportChart(
-          data?.individual_attendance_report,
-          dispatch,
+        dispatch(setTeamAttendanceReportData(data?.team_attendance_report));
+        dispatch(
+          setShowTeamTable(
+            (keys.type === "2" && keys.employee === "0") || keys.type === "3",
+          ),
+        );
+        writePageCache(requestKey);
+        dispatch(setAttendanceLoading(false));
+        setTimeout(
+          () =>
+            BuildAttendanceReportChart(
+              data?.individual_attendance_report,
+              dispatch,
+            ),
+          0,
         );
 
         // Leave API
@@ -202,14 +220,6 @@ const AttendanceFilter = () => {
             dispatch(setEmployeeLeaveType(res?.data?.data));
           });
         }
-
-        dispatch(setTeamAttendanceReportData(data?.team_attendance_report));
-
-        dispatch(
-          setShowTeamTable(
-            (keys.type === "2" && keys.employee === "0") || keys.type === "3",
-          ),
-        );
       } else {
         toast.error(
           attendanceApi?.data?.message ||
@@ -397,28 +407,31 @@ const AttendanceFilter = () => {
         .af-bar{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px 14px;padding:14px 16px;margin-bottom:1.25rem;border-radius:14px;
           background:var(--vz-secondary-bg);border:1px solid var(--vz-border-color);box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 22px -16px rgba(0,0,0,.25)}
         .af-group{display:flex;flex-direction:column;gap:5px;min-width:0}
-        .af-grow{flex:0 1 200px;min-width:170px}
-        .af-employee{flex-basis:240px}
+        .af-grow{flex:1 1 200px;min-width:min(100%,180px);max-width:100%}
+        .af-employee{flex:1 1 240px;min-width:min(100%,200px)}
         .af-label{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--vz-secondary-color);padding-left:2px}
 
-        .af-month{display:flex;align-items:center;height:38px;border-radius:10px;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+        .af-month{display:flex;align-items:center;height:38px;border-radius:10px;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg);overflow:hidden;transition:border-color .15s,box-shadow .15s;min-width:0;max-width:100%}
         .af-month:hover{border-color:rgba(var(--vz-primary-rgb),.45)}
         .af-month:focus-within{border-color:var(--vz-primary);box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
-        .af-month-btn{width:34px;height:100%;display:grid;place-items:center;border:0;background:transparent;color:var(--vz-secondary-color);font-size:18px;transition:all .15s}
+        .af-month-btn{width:34px;flex:0 0 34px;height:100%;display:grid;place-items:center;border:0;background:transparent;color:var(--vz-secondary-color);font-size:18px;transition:all .15s}
         .af-month-btn:hover:not(:disabled){color:var(--vz-primary);background:rgba(var(--vz-primary-rgb),.08)}
         .af-month-btn:disabled{opacity:.35;cursor:not-allowed}
-        .af-month-picker{display:flex;align-items:center;gap:2px;height:100%;padding-left:10px;border-left:1px solid var(--vz-border-color);border-right:1px solid var(--vz-border-color)}
-        .af-month-picker > i{color:var(--vz-primary);font-size:15px}
-        .af-month-picker .ant-picker{width:104px;padding:0 6px;cursor:pointer}
-        .af-month-picker .ant-picker input{font-size:.85rem;font-weight:600;color:var(--vz-heading-color) !important;cursor:pointer}
+        .af-month-picker{display:flex;align-items:center;gap:4px;height:100%;padding:0 8px 0 10px;border-left:1px solid var(--vz-border-color);border-right:1px solid var(--vz-border-color);min-width:0;flex:1 1 auto}
+        .af-month-picker > i{color:var(--vz-primary);font-size:15px;flex-shrink:0}
+        .af-month-picker .ant-picker{width:auto;min-width:108px;flex:1 1 auto;padding:0 4px;cursor:pointer}
+        .af-month-picker .ant-picker-input{min-width:0}
+        .af-month-picker .ant-picker input{font-size:.85rem;font-weight:600;color:var(--vz-heading-color) !important;cursor:pointer;min-width:0}
 
+        .af-select{width:100%;min-width:0}
         .af-select .af-rs__control{min-height:38px;border-radius:10px;border-color:var(--vz-border-color);background:var(--vz-secondary-bg);box-shadow:none;cursor:pointer;transition:border-color .15s,box-shadow .15s}
         .af-select .af-rs__control:hover{border-color:rgba(var(--vz-primary-rgb),.45)}
         .af-select .af-rs__control--is-focused{border-color:var(--vz-primary) !important;box-shadow:0 0 0 3px rgba(var(--vz-primary-rgb),.15)}
-        .af-select .af-rs__single-value,.af-select .af-rs__input-container{font-size:.85rem;font-weight:500;color:var(--vz-heading-color)}
+        .af-select .af-rs__value-container{overflow:visible;min-width:0}
+        .af-select .af-rs__single-value,.af-select .af-rs__input-container{font-size:.85rem;font-weight:500;color:var(--vz-heading-color);max-width:100%;overflow:visible;text-overflow:clip}
         .af-select .af-rs__placeholder{font-size:.85rem;color:var(--vz-secondary-color)}
         .af-select .af-rs__indicator-separator{display:none}
-        .af-select .af-rs__indicator{color:var(--vz-secondary-color);padding:0 10px;transition:transform .2s}
+        .af-select .af-rs__indicator{color:var(--vz-secondary-color);padding:0 10px;flex-shrink:0;transition:transform .2s}
         .af-select .af-rs__control--menu-is-open .af-rs__dropdown-indicator{transform:rotate(180deg);color:var(--vz-primary)}
         .af-rs__menu{border-radius:12px !important;overflow:hidden;border:1px solid var(--vz-border-color);background:var(--vz-secondary-bg) !important;box-shadow:0 16px 40px -12px rgba(0,0,0,.3) !important;margin-top:6px !important}
         .af-rs__menu-list{padding:6px !important}
@@ -428,7 +441,7 @@ const AttendanceFilter = () => {
         .af-opt{display:inline-flex;align-items:center;gap:8px}
         .af-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
-        .af-seg{display:inline-flex;align-items:center;gap:2px;height:38px;padding:3px;border-radius:10px;background:var(--vz-tertiary-bg);border:1px solid var(--vz-border-color)}
+        .af-seg{display:inline-flex;align-items:center;gap:2px;height:38px;padding:3px;border-radius:10px;background:var(--vz-tertiary-bg);border:1px solid var(--vz-border-color);max-width:100%;overflow:auto}
         .af-seg-btn{display:inline-flex;align-items:center;gap:6px;height:100%;padding:0 12px;border:0;border-radius:8px;background:transparent;
           font-size:.82rem;font-weight:500;color:var(--vz-secondary-color);white-space:nowrap;transition:all .15s}
         .af-seg-btn i{font-size:15px;line-height:1}
@@ -439,7 +452,12 @@ const AttendanceFilter = () => {
           border:1px dashed rgba(var(--vz-danger-rgb),.45);background:rgba(var(--vz-danger-rgb),.06);color:var(--vz-danger);transition:all .15s}
         .af-reset:hover{background:rgba(var(--vz-danger-rgb),.12);border-style:solid}
         .af-reset i{font-size:15px;line-height:1}
-        @media (max-width:575.98px){.af-grow,.af-employee{flex:1 1 100%}.af-seg-btn span{display:none}}
+        @media (max-width:767.98px){
+          .af-bar{padding:12px}
+          .af-grow,.af-employee{flex:1 1 100%;min-width:100%}
+          .af-reset{margin-left:0;width:100%;justify-content:center}
+        }
+        @media (max-width:575.98px){.af-seg-btn span{display:none}.af-seg-btn{padding:0 10px}}
       `}</style>
     </div>
   );

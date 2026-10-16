@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Header from "../component/header/Header";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -20,17 +20,25 @@ import { PageSkeleton } from "../component/common/skeleton/Skeleton";
 import { GetGlobalVersion } from "../meta/GetGlobalVersion";
 import { GetTotalWorkDuration } from "../common/js/GetTotalWorkDuration";
 import { setMyProfileDataReducer } from "../redux/reducers/ChildReducer/MyProfileReducer";
-import { GetLocalStorageData } from "../meta/GetLocalStorageData";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 const Layout = ({ children }) => {
   const dispatch = useDispatch();
 
   const location = useLocation();
+  const durationInFlight = useRef(false);
 
   useEffect(() => {
-    GetTotalWorkDuration(dispatch);
-  }, [location]);
+    if (durationInFlight.current) return undefined;
+    const timer = setTimeout(() => {
+      if (durationInFlight.current) return;
+      durationInFlight.current = true;
+      Promise.resolve(GetTotalWorkDuration(dispatch)).finally(() => {
+        durationInFlight.current = false;
+      });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [location, dispatch]);
 
   const [headerClass, setHeaderClass] = useState("");
 
@@ -122,12 +130,17 @@ const Layout = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    GetGlobalVersion(dispatch);
+    const firstTimer = setTimeout(() => {
+      GetGlobalVersion(dispatch);
+    }, 0);
     const interval = setInterval(() => {
       GetGlobalVersion(dispatch);
     }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearTimeout(firstTimer);
+      clearInterval(interval);
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     // let my_profile_data = GetLocalStorageData("my_profile");

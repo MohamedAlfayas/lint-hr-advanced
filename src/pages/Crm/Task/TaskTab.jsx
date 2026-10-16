@@ -1,16 +1,5 @@
 import React, { useState } from "react";
-import {
-  Row,
-  Col,
-  Card,
-  CardBody,
-  Input,
-  Button,
-  Dropdown,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownItem,
-} from "reactstrap";
+import { Row, Col, Card, CardBody, Input, Button } from "reactstrap";
 
 import { MetaTitle } from "../../../common/data/MetaTitle";
 
@@ -23,10 +12,6 @@ const TaskTab = () => {
   // grid = kanban | list = task list
   const [viewType, setViewType] = useState("list");
   const [searchQuery, setSearchQuery] = useState("");
-
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
 
   return (
     <React.Fragment>
@@ -55,9 +40,6 @@ const TaskTab = () => {
               {/* Right Actions */}
               <Col sm="auto" className="ms-auto">
                 <div className="list-grid-nav hstack gap-1">
-                  {/* Grid / Kanban View */}
-
-                  {/* List View */}
                   <Button
                     type="button"
                     color="soft-info"
@@ -86,7 +68,6 @@ const TaskTab = () => {
           </CardBody>
         </Card>
 
-        {/* Content */}
         <div className="mt-3">
           {viewType === "list" ? (
             <TaskList searchQuery={searchQuery} />

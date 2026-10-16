@@ -1,6 +1,5 @@
 // src/component/maps/UsersClusterMapGoogle.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { MapShell, MapSkeleton } from "../../component/common/skeleton/Skeleton";
 import {
   GoogleMap,
   useJsApiLoader,
@@ -25,7 +24,8 @@ const indiaCenter = {
   lng: 78.6677428,
 };
 
-// ✅ Loader Config
+// Must match every other useJsApiLoader with id "google-map-script"
+// (places is required elsewhere; mismatched libraries crash the Loader).
 const GOOGLE_MAPS_CONFIG = {
   id: "google-map-script",
   googleMapsApiKey: process.env.REACT_APP_MAP_API_KEY,
@@ -43,6 +43,27 @@ const getPrecision = (z) => {
   return 5; // zoomed in -> near-exact, markers separate
 };
 
+const groupMarkers = (validMarkers, currentZoom) => {
+  const grouped = {};
+  if (currentZoom <= 3) {
+    grouped.world = validMarkers;
+  } else {
+    const precision = getPrecision(currentZoom);
+    validMarkers.forEach((m) => {
+      const key = `${m.lat.toFixed(precision)}-${m.lng.toFixed(precision)}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(m);
+    });
+  }
+
+  return Object.keys(grouped).map((key) => {
+    const group = grouped[key];
+    const lat = group.reduce((s, m) => s + m.lat, 0) / group.length;
+    const lng = group.reduce((s, m) => s + m.lng, 0) / group.length;
+    return { lat, lng, count: group.length, users: group };
+  });
+};
+
 const UsersClusterMapGoogle = ({ locations }) => {
   const { isLoaded } = useJsApiLoader(GOOGLE_MAPS_CONFIG);
   const attendanceData = useSelector(
@@ -52,11 +73,12 @@ const UsersClusterMapGoogle = ({ locations }) => {
   const [groupedMarkers, setGroupedMarkers] = useState([]);
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [zoom, setZoom] = useState(5);
-  const [tilesReady, setTilesReady] = useState(false);
   const mapRef = useRef(null);
+  const markersRef = useRef([]);
+  const zoomRafRef = useRef(0);
   const mapStyles = useMapThemeStyles();
 
-  // ✅ Build marker data and group by lat/lng (grouping precision depends on zoom)
+  // Build flat markers once when data changes; regroup cheaply on zoom.
   useEffect(() => {
     const allData =
       Array.isArray(locations) && locations.length > 0
@@ -73,7 +95,6 @@ const UsersClusterMapGoogle = ({ locations }) => {
               });
             }
 
-            // ✅ Clean address: remove the first comma part if it looks like a plus code
             let cleanedAddress = "";
             if (loc?.accurate_address) {
               const parts = loc.accurate_address.split(",");
@@ -123,33 +144,13 @@ const UsersClusterMapGoogle = ({ locations }) => {
           : [];
 
     const validMarkers = allData.filter((m) => !isNaN(m.lat) && !isNaN(m.lng));
+    markersRef.current = validMarkers;
+    setGroupedMarkers(groupMarkers(validMarkers, zoom));
+  }, [locations, attendanceData]);
 
-    // ✅ Group markers by rounded coordinate (precision depends on current zoom).
-    // At very low zoom (whole world view), force everything into ONE cluster
-    // showing the total count, regardless of how far apart the coordinates are.
-    const grouped = {};
-    if (zoom <= 3) {
-      grouped["world"] = validMarkers;
-    } else {
-      const precision = getPrecision(zoom);
-      validMarkers.forEach((m) => {
-        const key = `${m.lat.toFixed(precision)}-${m.lng.toFixed(precision)}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(m);
-      });
-    }
-
-    const groupedArray = Object.keys(grouped).map((key) => {
-      const group = grouped[key];
-      // Use the average position so the cluster marker sits centered among its
-      // members rather than snapped to the rounded grid key.
-      const lat = group.reduce((s, m) => s + m.lat, 0) / group.length;
-      const lng = group.reduce((s, m) => s + m.lng, 0) / group.length;
-      return { lat, lng, count: group.length, users: group };
-    });
-
-    setGroupedMarkers(groupedArray);
-  }, [locations, attendanceData, zoom]);
+  useEffect(() => {
+    setGroupedMarkers(groupMarkers(markersRef.current, zoom));
+  }, [zoom]);
 
   // ✅ Fit map bounds automatically — only when the underlying data changes,
   // not on every zoom-driven regroup (otherwise zooming in/out fights itself)
@@ -164,13 +165,11 @@ const UsersClusterMapGoogle = ({ locations }) => {
   const handleMarkerClick = (marker) => setSelectedMarker(marker);
   const handleCloseClick = () => setSelectedMarker(null);
 
-  if (!isLoaded) return <MapSkeleton style={{ minHeight: 300, borderRadius: 6 }} />;
+  if (!isLoaded) return null;
 
   return (
-    <MapShell ready={tilesReady} style={{ borderRadius: 6 }}>
     <GoogleMap
       mapContainerStyle={containerStyle}
-      onTilesLoaded={() => setTilesReady(true)}
       center={groupedMarkers.length ? undefined : indiaCenter}
       zoom={groupedMarkers.length ? 10 : 5}
       onLoad={(map) => {
@@ -178,7 +177,12 @@ const UsersClusterMapGoogle = ({ locations }) => {
         setZoom(map.getZoom());
       }}
       onZoomChanged={() => {
-        if (mapRef.current) setZoom(mapRef.current.getZoom());
+        if (!mapRef.current) return;
+        cancelAnimationFrame(zoomRafRef.current);
+        zoomRafRef.current = requestAnimationFrame(() => {
+          const nextZoom = mapRef.current.getZoom();
+          setZoom((prev) => (prev === nextZoom ? prev : nextZoom));
+        });
       }}
       options={{
         streetViewControl: false,
@@ -282,7 +286,6 @@ const UsersClusterMapGoogle = ({ locations }) => {
         </InfoWindow>
       )}
     </GoogleMap>
-    </MapShell>
   );
 };
 

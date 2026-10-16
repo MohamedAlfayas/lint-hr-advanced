@@ -1,12 +1,11 @@
 import React, {
+  Suspense,
+  lazy,
   useState,
   useMemo,
   useEffect,
-  useLayoutEffect,
   useRef,
 } from "react";
-
-const VISIBLE_ROWS = 5;
 import {
   Card,
   CardBody,
@@ -28,8 +27,6 @@ import moment from "moment";
 import { Api } from "../../common/api/Api";
 import { setTodayAttendance } from "../../redux/reducers/ChildReducer/TodayAttendanceReducer";
 import { useDispatch } from "react-redux";
-import Lottie from "react-lottie";
-import noLocationFind from "../auth/loader/animation/no-location.json";
 import { DateFormat, profile_view_component_name } from "../../common/constant/Constants";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
 import {
@@ -45,7 +42,6 @@ import {
   ConvertDateFormat,
   ConvertISODateFormat,
 } from "../../common/js/ConvertDateFormat";
-import UsersClusterMapAll from "./useClusterMapAll";
 import AppTable from "../../shared/ui/table/AppTable";
 import PillTabs from "../../shared/ui/PillTabs";
 import {
@@ -62,6 +58,34 @@ import {
 } from "./LocationWebSocket/WebSocket";
 
 dayjs.extend(customParseFormat);
+
+const UsersClusterMapAll = lazy(() => import("./useClusterMapAll"));
+
+/** Session cache so revisiting dashboard paints rows immediately. */
+const entryStatusCache = {
+  key: "",
+  rows: null,
+  mapPayload: null,
+  counts: null,
+};
+
+const readGlobalDepartments = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("lint_hr_globaldata") || "{}");
+    return Array.isArray(parsed.department) ? parsed.department : [];
+  } catch {
+    return [];
+  }
+};
+
+const readGlobalCustomStatuses = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem("lint_hr_globaldata") || "{}");
+    return Array.isArray(parsed.custom_statuses) ? parsed.custom_statuses : [];
+  } catch {
+    return [];
+  }
+};
 
 // ─── Check-in device icon (punched_by: 1 = desktop, 2 = mobile) ──────────
 const PunchDeviceIcon = ({ punchedBy }) => {
@@ -224,12 +248,6 @@ const ATTENDANCE_STATUS = {
   default: { tone: "danger", icon: "ri-close-circle-line" },
 };
 
-const timeSortValue = (value) =>
-  value ? new Date(`1970-01-01 ${value}`).getTime() || 0 : 0;
-
-const timeSortingFn = (key) => (a, b) =>
-  timeSortValue(a.original[key]) - timeSortValue(b.original[key]);
-
 // ─── Leave type label (for status filter matching) ────────────────────────
 const getLeaveTypeLabel = (row) => {
   if (row.halfday) return "Half Day Leave";
@@ -378,12 +396,17 @@ const TodayAttendanceTable = () => {
   const [dateFilter, setDateFilter] = useState(
     new Date().toISOString().split("T")[0].split("-").reverse().join("-"),
   );
-  const [search, setSearch] = useState("");
-  const tableScrollRef = useRef(null);
-  const [tableMaxHeight, setTableMaxHeight] = useState(420);
-  const [departments, setDepartments] = useState([]);
-  const [customStatuses, setCustomStatuses] = useState([]);
-  const [attendanceData, setAttendanceData] = useState([]);
+  const initialCacheKey = ConvertISODateFormat(ConvertDateFormat(
+    new Date().toISOString().split("T")[0].split("-").reverse().join("-"),
+  ));
+  const hasInitialCache = entryStatusCache.key === initialCacheKey && entryStatusCache.rows;
+
+  const [departments, setDepartments] = useState(readGlobalDepartments);
+  const [customStatuses, setCustomStatuses] = useState(readGlobalCustomStatuses);
+  const departmentsRef = useRef(departments);
+  const [attendanceData, setAttendanceData] = useState(
+    () => (hasInitialCache ? entryStatusCache.rows : []),
+  );
 
   // ── Map modal state ──
   const [mapEmployees, setMapEmployees] = useState([]);
@@ -396,67 +419,78 @@ const TodayAttendanceTable = () => {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isMapFull, setIsMapFull] = useState(false);
 
-  const [countIn, setCountIn] = useState(0);
-  const [countNotCheckIn, setCountNotCheckIn] = useState(0);
-  const [countLeave, setCountLeave] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [countIn, setCountIn] = useState(
+    () => (hasInitialCache ? entryStatusCache.counts.in : 0),
+  );
+  const [countNotCheckIn, setCountNotCheckIn] = useState(
+    () => (hasInitialCache ? entryStatusCache.counts.notIn : 0),
+  );
+  const [countLeave, setCountLeave] = useState(
+    () => (hasInitialCache ? entryStatusCache.counts.leave : 0),
+  );
+  const [loading, setLoading] = useState(!hasInitialCache);
 
-  // ✅ Load departments + custom_statuses from localStorage
   useEffect(() => {
-    const globalData = localStorage.getItem("lint_hr_globaldata");
-    if (globalData) {
-      try {
-        const parsedData = JSON.parse(globalData);
-        if (Array.isArray(parsedData.department)) {
-          setDepartments(parsedData.department);
-        }
-        if (Array.isArray(parsedData.custom_statuses)) {
-          setCustomStatuses(parsedData.custom_statuses);
-        }
-      } catch (error) {
-        console.error("Failed to parse global data", error);
-      }
-    }
-  }, []);
+    departmentsRef.current = departments;
+  }, [departments]);
 
   // ✅ Fetch attendance data
   useEffect(() => {
+    const requestKey = ConvertISODateFormat(ConvertDateFormat(dateFilter));
+    const cached =
+      entryStatusCache.key === requestKey && entryStatusCache.rows
+        ? entryStatusCache
+        : null;
+
+    if (cached) {
+      setAttendanceData(cached.rows);
+      setCountIn(cached.counts.in);
+      setCountNotCheckIn(cached.counts.notIn);
+      setCountLeave(cached.counts.leave);
+      setLoading(false);
+      if (cached.mapPayload) {
+        dispatch(setTodayAttendance(cached.mapPayload));
+      }
+    } else {
+      setLoading(true);
+    }
+
+    let cancelled = false;
+
     const fetchAttendance = async () => {
       try {
-        setLoading(true);
-        setAttendanceData([]);
-        setCountIn(0);
-        setCountNotCheckIn(0);
-        setCountLeave(0);
-        dispatch(setTodayAttendance([]));
-
         const response = await Api.get(
-          `/attendance/get-attendance-status?date=${ConvertISODateFormat(
-            ConvertDateFormat(dateFilter),
-          )}`,
+          `/attendance/get-attendance-status?date=${requestKey}`,
         );
+        if (cancelled) return;
         const result = response.data;
 
         if (!Array.isArray(result) || result.length === 0) {
+          entryStatusCache.key = requestKey;
+          entryStatusCache.rows = [];
+          entryStatusCache.mapPayload = [];
+          entryStatusCache.counts = { in: 0, notIn: 0, leave: 0 };
           setAttendanceData([]);
-          dispatch(setTodayAttendance([]));
+          setCountIn(0);
+          setCountNotCheckIn(0);
+          setCountLeave(0);
+          setLoading(false);
+          setTimeout(() => dispatch(setTodayAttendance([])), 0);
           return;
         }
 
-        const formattedData = result.map((item) => {
-          // ─── Determine which leave records exist ──────────────────────
-          // full_day  → is_on_leave true, full_day object present
-          // half_day  → half_day object present
-          // permission → permission object present
-          // An employee can be BOTH present AND have leave records.
+        const deptList = departmentsRef.current;
+        let inCount = 0;
+        let notCheckInCount = 0;
+        let leaveCount = 0;
 
+        const formattedData = result.map((item) => {
           const hasFullDay = !!item.full_day;
           const hasHalfDay = !!item.half_day;
           const hasPermission = !!item.permission;
           const hasAnyLeave =
             item.is_on_leave || hasHalfDay || hasPermission || hasFullDay;
 
-          // Primary attendance status (Tab 1 / Tab 2 gate)
           let attendanceStatus;
           if (item.is_present) {
             attendanceStatus = item.is_late ? "Late" : "On Time";
@@ -466,15 +500,19 @@ const TodayAttendanceTable = () => {
             attendanceStatus = "Not Check In";
           }
 
-          // ✅ First check-in device: punched_by 1 = desktop, 2 = mobile
           const firstCheckIn =
+            item.first_check_in ||
             (Array.isArray(item.location_history) &&
               item.location_history[0]) ||
-            item.first_check_in ||
             null;
           const punchedBy = firstCheckIn?.punched_by ?? null;
 
-          return {
+          const totalSeconds =
+            item.total_time_worked_till_last_checkout || 0;
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+          const row = {
             emp_id: item.employee.emp_id,
             employee_id: item.employee.id,
             first_name: item.employee.first_name || "-",
@@ -483,7 +521,7 @@ const TodayAttendanceTable = () => {
             department:
               Array.isArray(item.employee.primary_department_id_list) &&
               item.employee.primary_department_id_list.length > 0
-                ? departments.find(
+                ? deptList.find(
                     (d) => d.id === item.employee.primary_department_id_list[0],
                   )?.name || ""
                 : "",
@@ -491,27 +529,13 @@ const TodayAttendanceTable = () => {
             inTime: item.first_check_in_time || null,
             outTime: item.last_check_out_time || null,
             punchedBy,
-
-            totalSeconds: item.total_time_worked_till_last_checkout || 0,
-
-            totalHours: (() => {
-              const totalSeconds =
-                item.total_time_worked_till_last_checkout || 0;
-              const hours = Math.floor(totalSeconds / 3600);
-              const minutes = Math.floor((totalSeconds % 3600) / 60);
-              return `${hours}h ${minutes}m`;
-            })(),
-
+            totalSeconds,
+            totalHours: `${hours}h ${minutes}m`,
             status: attendanceStatus,
-
-            // ✅ showInLeaveTab: true when any leave record exists
             showInLeaveTab: hasAnyLeave,
-
             isOnLeave: item.is_on_leave || false,
             checkInStatus: item.status || null,
             date: item.date,
-            location_history: item.location_history,
-
             progress:
               item.total_work_duration && item.total_time_worked
                 ? Math.min(
@@ -521,17 +545,14 @@ const TodayAttendanceTable = () => {
                     ),
                   )
                 : 0,
-
-            // ✅ full_day mapped from API
             fullday: item.full_day
               ? {
-                  start: item.full_day.start || null, // e.g. "2026-04-23"
-                  end: item.full_day.end || null, // e.g. "2026-04-24"
+                  start: item.full_day.start || null,
+                  end: item.full_day.end || null,
                   reason: item.full_day.reason || "-",
                   status: item.full_day.status,
                 }
               : null,
-
             halfday: item.half_day
               ? {
                   start: item.half_day.start || null,
@@ -540,7 +561,6 @@ const TodayAttendanceTable = () => {
                   status: item.half_day.status,
                 }
               : null,
-
             permission: item.permission
               ? {
                   start: item.permission.start || null,
@@ -550,23 +570,68 @@ const TodayAttendanceTable = () => {
                 }
               : null,
           };
+
+          if (row.status === "On Time" || row.status === "Late") inCount += 1;
+          if (row.status === "Not Check In") notCheckInCount += 1;
+          if (row.showInLeaveTab) leaveCount += 1;
+
+          return row;
         });
 
+        const mapPayload = result
+          .filter((item) => item.first_check_in)
+          .map((item) => ({
+            first_check_in: {
+              latitude: item.first_check_in.latitude,
+              longitude: item.first_check_in.longitude,
+              location: item.first_check_in.location,
+            },
+            first_check_in_time: item.first_check_in_time,
+            employee: {
+              first_name: item.employee?.first_name,
+              department_name: item.employee?.department_name,
+              profile_url: item.employee?.profile_url,
+            },
+          }));
+
+        const counts = {
+          in: inCount,
+          notIn: notCheckInCount,
+          leave: leaveCount,
+        };
+        entryStatusCache.key = requestKey;
+        entryStatusCache.rows = formattedData;
+        entryStatusCache.mapPayload = mapPayload;
+        entryStatusCache.counts = counts;
+
         setAttendanceData(formattedData);
-        dispatch(setTodayAttendance(result));
+        setCountIn(inCount);
+        setCountNotCheckIn(notCheckInCount);
+        setCountLeave(leaveCount);
+        setLoading(false);
+        // Push map markers after the table paints so Google work does not block rows.
+        setTimeout(() => dispatch(setTodayAttendance(mapPayload)), 0);
       } catch (error) {
+        if (cancelled) return;
         console.error("Error fetching attendance data:", error);
-        setAttendanceData([]);
-        dispatch(setTodayAttendance([]));
-      } finally {
+        if (!cached) {
+          setAttendanceData([]);
+          setCountIn(0);
+          setCountNotCheckIn(0);
+          setCountLeave(0);
+          setTimeout(() => dispatch(setTodayAttendance([])), 0);
+        }
         setLoading(false);
       }
     };
 
     fetchAttendance();
-  }, [dateFilter, departments, dispatch]);
+    return () => {
+      cancelled = true;
+    };
+  }, [dateFilter, dispatch]);
 
-  // ✅ Recalculate tab badge counts
+  // Recalculate tab badge counts when department filter changes
   useEffect(() => {
     if (attendanceData.length === 0) {
       setCountIn(0);
@@ -583,14 +648,11 @@ const TodayAttendanceTable = () => {
       filtered.filter((i) => i.status === "On Time" || i.status === "Late")
         .length,
     );
-
     setCountNotCheckIn(
       filtered.filter((i) => i.status === "Not Check In").length,
     );
-
-    // ✅ Leave count: everyone with any leave record
     setCountLeave(filtered.filter((i) => i.showInLeaveTab).length);
-  }, [attendanceData, departmentFilter]);
+  }, [departmentFilter, attendanceData]);
 
   // ─── Status filter options ────────────────────────────────────────────────
   const statusFilterOptions = useMemo(() => {
@@ -679,7 +741,7 @@ const TodayAttendanceTable = () => {
     }
   };
 
-  // ✅ Filtered data
+  // ✅ Filtered data (tab / department / status). Text search is AppTable global filter.
   const filteredData = useMemo(() => {
     return attendanceData.filter((item) => {
       if (activeTab === "1" && !["On Time", "Late"].includes(item.status))
@@ -705,15 +767,7 @@ const TodayAttendanceTable = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    setSearch("");
     setStatusFilter("All");
-  };
-
-  const defaultOptions = {
-    loop: true,
-    autoplay: true,
-    animationData: noLocationFind,
-    rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
   };
 
   // ─── Leave type pills renderer ────────────────────────────────────────────
@@ -899,14 +953,13 @@ const TodayAttendanceTable = () => {
     );
   };
 
-  // ─── Table columns ────────────────────────────────────────────────────────
   const columns = useMemo(() => {
     const nameColumn = {
       id: "first_name",
       accessorFn: (row) => `${row.first_name} #${row.emp_id}`,
       header: "Name",
       size: 260,
-      exportValue: (row) => row.first_name,
+      enableColumnFilter: false,
       Cell: ({ row: { original: row } }) => (
         <div className="apv-emp align-items-start">
           <ApvAvatar url={row.profile_url} name={row.first_name} />
@@ -947,8 +1000,12 @@ const TodayAttendanceTable = () => {
       id: "department",
       accessorFn: (row) => row.department || "-",
       header: "Department",
-      filterVariant: "select",
-      Cell: ({ cell }) => <ApvChip icon="ri-building-line">{cell.getValue() === "-" ? "" : cell.getValue()}</ApvChip>,
+      enableColumnFilter: false,
+      Cell: ({ cell }) => (
+        <ApvChip icon="ri-building-line">
+          {cell.getValue() === "-" ? "" : cell.getValue()}
+        </ApvChip>
+      ),
     };
 
     if (activeTab === "3") {
@@ -959,18 +1016,7 @@ const TodayAttendanceTable = () => {
           id: "leave_type",
           accessorFn: getLeaveTypeLabel,
           header: "Leave Type",
-          filterVariant: "select",
-          Header: () => (
-            <span
-              style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
-            >
-              <i
-                className="bx bx-calendar-x"
-                style={{ color: "#ef4444", fontSize: "14px" }}
-              ></i>
-              Leave Type
-            </span>
-          ),
+          enableColumnFilter: false,
           Cell: ({ row }) => renderLeaveTypePills(row.original),
         },
         {
@@ -983,6 +1029,7 @@ const TodayAttendanceTable = () => {
           header: "Info",
           size: 320,
           enableSorting: false,
+          enableColumnFilter: false,
           enableGlobalFilter: false,
           Cell: ({ row }) => renderInfoCell(row.original),
         },
@@ -996,19 +1043,20 @@ const TodayAttendanceTable = () => {
         id: "inTime",
         accessorFn: (row) => formatTime(row.inTime),
         header: "In Time",
-        sortingFn: timeSortingFn("inTime"),
+        enableColumnFilter: false,
         Cell: ({ cell }) => <ApvTime value={cell.getValue()} kind="in" />,
       },
       {
         id: "outTime",
         accessorFn: (row) => formatTime(row.outTime),
         header: "Out Time",
-        sortingFn: timeSortingFn("outTime"),
+        enableColumnFilter: false,
         Cell: ({ cell }) => <ApvTime value={cell.getValue()} kind="out" />,
       },
       {
         accessorKey: "totalHours",
         header: "Total Hours",
+        enableColumnFilter: false,
         sortingFn: (a, b) => a.original.totalSeconds - b.original.totalSeconds,
         Cell: ({ cell, row }) =>
           row.original.totalSeconds ? (
@@ -1020,7 +1068,7 @@ const TodayAttendanceTable = () => {
       {
         accessorKey: "status",
         header: "Status",
-        filterVariant: "select",
+        enableColumnFilter: false,
         Cell: ({ cell }) => {
           const s = ATTENDANCE_STATUS[cell.getValue()] || ATTENDANCE_STATUS.default;
           return <ApvStatus tone={s.tone} icon={s.icon} label={cell.getValue()} />;
@@ -1028,19 +1076,6 @@ const TodayAttendanceTable = () => {
       },
     ];
   }, [activeTab, customStatuses]);
-
-  // Size the scroll area to exactly the header + first VISIBLE_ROWS rows.
-  useLayoutEffect(() => {
-    const el = tableScrollRef.current;
-    if (!el) return;
-    const head = el.querySelector("thead");
-    const rows = Array.from(el.querySelectorAll("tbody tr")).slice(0, VISIBLE_ROWS);
-    if (!head || rows.length === 0) return;
-    const rowsHeight = rows.reduce((sum, r) => sum + r.getBoundingClientRect().height, 0);
-    const avgRow = rowsHeight / rows.length;
-    const height = Math.ceil(head.getBoundingClientRect().height + avgRow * VISIBLE_ROWS) + 2;
-    setTableMaxHeight((prev) => (Math.abs(prev - height) > 1 ? height : prev));
-  }, [filteredData, activeTab, loading]);
 
   return (
     <>
@@ -1097,24 +1132,24 @@ const TodayAttendanceTable = () => {
                 </Box>
 
                 <AppTable
-                  key={activeTab}
                   columns={columns}
                   data={filteredData}
                   isLoading={loading}
-                  exportFileName={`attendance-${dateFilter}`}
                   emptyMessage="No Data Found!"
-                  state={{ globalFilter: search }}
-                  onGlobalFilterChange={(value) => setSearch(value ?? "")}
-                  muiTablePaperProps={{ elevation: 0, sx: { border: 0, borderRadius: 0 } }}
-                  enablePagination={false}
-                  enableColumnDragging={false}
+                  enableHiding={false}
+                  initialState={{
+                    pagination: { pageIndex: 0, pageSize: 25 },
+                    showGlobalFilter: true,
+                  }}
+                  muiTablePaperProps={{
+                    elevation: 0,
+                    sx: { border: 0, borderRadius: 0 },
+                  }}
                   muiTableContainerProps={{
-                    ref: tableScrollRef,
                     sx: {
-                      maxHeight: tableMaxHeight,
+                      maxHeight: 420,
                       maxWidth: "100%",
                       overflow: "auto",
-                      scrollbarWidth: "thin",
                     },
                   }}
                   toolbarActions={
@@ -1154,8 +1189,12 @@ const TodayAttendanceTable = () => {
                         label="Date"
                         format={DateFormat}
                         value={dayjs(dateFilter, DateFormat)}
-                        onChange={(d) => d?.isValid() && setDateFilter(d.format(DateFormat))}
-                        slotProps={{ textField: { size: "small", sx: { width: 160 } } }}
+                        onChange={(d) =>
+                          d?.isValid() && setDateFilter(d.format(DateFormat))
+                        }
+                        slotProps={{
+                          textField: { size: "small", sx: { width: 160 } },
+                        }}
                       />
                     </>
                   }
@@ -1167,7 +1206,7 @@ const TodayAttendanceTable = () => {
                   renderRowActions={({ row }) => (
                     <Tooltip title="View Locations">
                       <Button
-                        data-testid="today-attendance-view-button"
+                        data-testid={`today-attendance-row-${row.original.emp_id || row.original.employee_id}-view-button`}
                         size="small"
                         color="info"
                         variant="text"
@@ -1269,16 +1308,31 @@ const TodayAttendanceTable = () => {
             }}
           >
             {mapEmployees && mapEmployees.length > 0 ? (
-              <UsersClusterMapAll
-                employees={mapEmployees}
-                initialEmpId={mapSelectedEmpId}
-                initialDate={mapSelectedDate}
-                departments={departments.map((d) => d.name)}
-                onSelectEmployee={(emp) => {
-                  setMapSelectedEmpName(emp?.first_name || "");
-                  setMapSelectedEmpProfileUrl(emp?.profile_url || null);
-                }}
-              />
+              <Suspense
+                fallback={
+                  <div
+                    style={{
+                      height: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    Loading map…
+                  </div>
+                }
+              >
+                <UsersClusterMapAll
+                  employees={mapEmployees}
+                  initialEmpId={mapSelectedEmpId}
+                  initialDate={mapSelectedDate}
+                  departments={departments.map((d) => d.name)}
+                  onSelectEmployee={(emp) => {
+                    setMapSelectedEmpName(emp?.first_name || "");
+                    setMapSelectedEmpProfileUrl(emp?.profile_url || null);
+                  }}
+                />
+              </Suspense>
             ) : (
               <div
                 style={{
@@ -1289,7 +1343,6 @@ const TodayAttendanceTable = () => {
                   flexDirection: "column",
                 }}
               >
-                <Lottie options={defaultOptions} height={250} width={250} />
                 <p className="lhm-empty-text">
                   No location history available
                 </p>

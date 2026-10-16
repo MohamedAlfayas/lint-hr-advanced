@@ -22,7 +22,7 @@ import { fromLegacyColumns } from "../../../shared/ui/table/fromLegacyColumns";
 import { testIdModuleFor } from "../../../shared/testing/testIdModules";
 import "../../../common/css/lc_style.css";
 
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 25;
 
 const FORMS_WITHOUT_SEARCH = [
   attendance_pending_table,
@@ -124,6 +124,12 @@ const TableContainer = ({
       exportFileName={isGlobalFilter ? label.replace(/\s+/g, "-") : undefined}
       toolbarActions={toolbarActions || undefined}
       enableRowSelection={false}
+      enableColumnFilters={false}
+      enableFacetedValues={false}
+      enableColumnOrdering={false}
+      enableColumnResizing={false}
+      enableDensityToggle={false}
+      enableFullScreenToggle={false}
       enableGlobalFilter={showSearch}
       // InfoTable already filters rows with the search text (some tables
       // search server-side), so the table's own search must not filter again.
@@ -139,7 +145,7 @@ const TableContainer = ({
       enablePagination={showInfo !== false}
       enableBottomToolbar={showInfo !== false}
       enableTopToolbar
-      storageKey={formname}
+      storageKey={formname ? `${formname}-cols-v2` : undefined}
       muiTablePaperProps={{
         elevation: 0,
         sx: {

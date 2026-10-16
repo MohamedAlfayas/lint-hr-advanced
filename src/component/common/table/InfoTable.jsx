@@ -524,7 +524,9 @@ const InfoTable = ({
     !!initialActiveTab ? initialActiveTab : 1,
   );
 
-  const [dataList, setDataList] = useState([]);
+  const [dataList, setDataList] = useState(() =>
+    Array.isArray(tabledata) && tabledata.length ? [...tabledata] : [],
+  );
   const [isExportCSV, setIsExportCSV] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteModalMulti, setDeleteModalMulti] = useState(false);
@@ -535,27 +537,13 @@ const InfoTable = ({
   const [typeFilter, setTypeFilter] = useState("all");
   const [showContainer, setShowContainer] = useState(false);
   const [selectedGroupIds, setSelectedGroupIds] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(
+    () => !(Array.isArray(tabledata) && tabledata.length),
+  );
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [reorderList, setReorderList] = useState([]);
 
   const tidModule = testIdModuleFor(formname);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setDataList([]);
-      } catch (error) {
-        console.error(error);
-        setDataList([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   const deleteHandler = async (id) => {
     let url = "";
@@ -2337,17 +2325,18 @@ const InfoTable = ({
     setShowExportBtn(canCreate);
   };
 
-  const [tableColumn, setTableColumn] = useState(initialColumns);
+  // Data columns first — never start with Action alone (revisit used to flash
+  // the pencil on the left before permissions resolved).
+  const [tableColumn, setTableColumn] = useState(
+    () => (additionalColumn?.length ? [...additionalColumn] : []),
+  );
 
   useEffect(() => {
+    const dataCols = Array.isArray(additionalColumn) ? additionalColumn : [];
     if (showEditBtn === true) {
-      const newColumns = [...initialColumns];
-      newColumns.splice(0, 0, ...additionalColumn);
-      setTableColumn(newColumns);
+      setTableColumn([...dataCols, ...initialColumns]);
     } else {
-      const newColumns = [...additionalColumn];
-      // newColumns.splice(1, 1, ...additionalColumn);
-      setTableColumn(newColumns);
+      setTableColumn([...dataCols]);
     }
   }, [showEditBtn]);
 
@@ -2440,10 +2429,12 @@ const InfoTable = ({
           : [...sortedTableData].filter((data) => data[filterKey] == type);
 
       setDataList(filtered_table_data);
-    } else {
+      setIsLoading(false);
+    } else if (!loading) {
       setDataList([]);
+      setIsLoading(false);
     }
-  }, [tabledata, sortedTableData]);
+  }, [tabledata, sortedTableData, loading]);
 
   const handleDataClicks = () => {
     setData("");
@@ -2933,7 +2924,7 @@ const InfoTable = ({
                     </div>
                   );
                 })()}
-                {isLoading || loading ? (
+                {(isLoading || loading) && !(dataList && dataList.length) ? (
                   <TableSkeleton />
                 ) : (
                   // ✅ FIX: TableContainer (which renders the filter row, e.g.

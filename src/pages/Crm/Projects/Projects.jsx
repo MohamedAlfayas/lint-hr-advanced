@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import "react-toastify/dist/ReactToastify.css";
 import InfoTable from "../../../component/common/table/InfoTable";
 import { MetaTitle } from "../../../common/data/MetaTitle";
@@ -15,6 +15,12 @@ import {
   ApvTitle,
   initialsOf,
 } from "../../../component/common/approval/ApprovalCells";
+import { writePageCache } from "../../../common/js/pageLoadCache";
+
+const PROJECT_TYPE_MAP = {
+  1: { label: "Internal", tone: "info", icon: "ri-building-2-line" },
+  2: { label: "Client", tone: "primary", icon: "ri-user-star-line" },
+};
 
 const Projects = ({ clientId }) => {
   const dispatch = useDispatch();
@@ -26,20 +32,20 @@ const Projects = ({ clientId }) => {
   const { project_data } = useSelector((state) => state.ProjectsReducer);
 
   // ================= CLIENT LOCAL STORAGE =================
-  const ClientLocalData = GetLocalStorageData("clients") || [];
-
-  // ================= CLIENT STATE =================
-  const [clientList, setClientList] = useState([]);
+  const clientList = useMemo(() => GetLocalStorageData("clients") || [], []);
 
   // ================= LOAD DATA ON MOUNT =================
+  const seededRef = useRef(false);
   useEffect(() => {
+    if (seededRef.current) return;
+    seededRef.current = true;
     // Seed Redux from localStorage on first load if store is empty
     if (!project_data || project_data.length === 0) {
       const ProjectLocalData = GetLocalStorageData("projects") || [];
       dispatch(setProjects(ProjectLocalData));
     }
-    setClientList(ClientLocalData);
-  }, [dispatch]);
+    writePageCache("projects:visited");
+  }, [dispatch, project_data]);
 
   // ================= FILTER PROJECTS BY CLIENT =================
   // Depends only on Redux project_data — re-renders immediately when
@@ -57,12 +63,6 @@ const Projects = ({ clientId }) => {
         Number(project.client) === Number(clientId),
     );
   }, [project_data, clientId]);
-
-  // ================= PROJECT TYPE =================
-  const PROJECT_TYPE_MAP = {
-    1: { label: "Internal", tone: "info", icon: "ri-building-2-line" },
-    2: { label: "Client", tone: "primary", icon: "ri-user-star-line" },
-  };
 
   // ================= TABLE COLUMNS =================
   const additionalColumn = useMemo(
@@ -183,18 +183,22 @@ const Projects = ({ clientId }) => {
   // ================= FILTER OPTIONS =================
   const filterKey = "status";
 
-  const filterOptions = [
-    {
-      option: true,
-      label: "Active",
-      count: filteredProjects.filter((e) => e[filterKey] === true).length || 0,
-    },
-    {
-      option: false,
-      label: "Inactive",
-      count: filteredProjects.filter((e) => e[filterKey] === false).length || 0,
-    },
-  ];
+  const filterOptions = useMemo(
+    () => [
+      {
+        option: true,
+        label: "Active",
+        count: filteredProjects.filter((e) => e[filterKey] === true).length || 0,
+      },
+      {
+        option: false,
+        label: "Inactive",
+        count:
+          filteredProjects.filter((e) => e[filterKey] === false).length || 0,
+      },
+    ],
+    [filteredProjects],
+  );
 
   document.title = `Projects | ${MetaTitle}`;
 

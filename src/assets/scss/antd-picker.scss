@@ -10,6 +10,18 @@ $pk-cell: 34px;
   border-radius: $pk-radius;
   border-color: var(--vz-border-color);
   transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  max-width: 100%;
+  min-width: 0;
+
+  // Bootstrap form-control on picker often clips YYYY-MM + suffix icon.
+  &.form-control {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    padding-inline: 12px 10px;
+    height: auto;
+    min-height: 38px;
+  }
 
   &:hover:not(.ant-picker-disabled) {
     border-color: color-mix(in srgb, var(--vz-primary) 50%, var(--vz-border-color));
@@ -20,8 +32,14 @@ $pk-cell: 34px;
     box-shadow: 0 0 0 4px rgba(var(--vz-primary-rgb), 0.12);
   }
 
+  .ant-picker-input {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
   .ant-picker-input > input {
     font-weight: 500;
+    min-width: 0;
 
     &::placeholder {
       font-weight: 400;
@@ -33,6 +51,7 @@ $pk-cell: 34px;
   .ant-picker-suffix {
     width: 26px;
     height: 26px;
+    flex-shrink: 0;
     margin-inline-start: 8px;
     border-radius: 8px;
     display: grid;

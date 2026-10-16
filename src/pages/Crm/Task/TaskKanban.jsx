@@ -882,7 +882,13 @@
 
 
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { KanbanSkeleton } from "../../../component/common/skeleton/Skeleton";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -1895,7 +1901,12 @@ const TaskKanban = ({ searchQuery = "" }) => {
       state.TaskReducer?.tasks ?? state.Task?.tasks ?? state.task?.tasks ?? [],
   );
 
-  const [loading, setLoading] = useState(false);
+  const tasksRef = useRef(tasks);
+  tasksRef.current = tasks;
+
+  const [loading, setLoading] = useState(
+    () => !Array.isArray(tasks) || tasks.length === 0,
+  );
   const [error, setError] = useState(null);
   const [updatingIds, setUpdatingIds] = useState(new Set());
   const [draggingId, setDraggingId] = useState(null);
@@ -1907,14 +1918,35 @@ const TaskKanban = ({ searchQuery = "" }) => {
   const panStart = useRef({ x: 0, scrollLeft: 0 });
 
   // ── Lookup maps from localStorage ────────────────────────────────
-  const taskStatusList = GetLocalStorageData("task_status") || [];
-  const taskPriorityList = GetLocalStorageData("task_priority") || [];
-  const employeeList = GetLocalStorageData("employee") || [];
+  const taskStatusList = useMemo(
+    () => GetLocalStorageData("task_status") || [],
+    [],
+  );
+  const taskPriorityList = useMemo(
+    () => GetLocalStorageData("task_priority") || [],
+    [],
+  );
+  const employeeList = useMemo(
+    () => GetLocalStorageData("employee") || [],
+    [],
+  );
 
-  const activeTasks = tasks.filter((t) => t.status === true);
-  const columns = buildColumns(taskStatusList, activeTasks);
-  const priorityMap = buildPriorityMap(taskPriorityList);
-  const employeeMap = buildEmployeeMap(employeeList);
+  const activeTasks = useMemo(
+    () => (Array.isArray(tasks) ? tasks.filter((t) => t.status === true) : []),
+    [tasks],
+  );
+  const columns = useMemo(
+    () => buildColumns(taskStatusList, activeTasks),
+    [taskStatusList, activeTasks],
+  );
+  const priorityMap = useMemo(
+    () => buildPriorityMap(taskPriorityList),
+    [taskPriorityList],
+  );
+  const employeeMap = useMemo(
+    () => buildEmployeeMap(employeeList),
+    [employeeList],
+  );
 
   // ── Column visibility ─────────────────────────────────────────────
   useEffect(() => {
@@ -1924,7 +1956,10 @@ const TaskKanban = ({ searchQuery = "" }) => {
     );
   }, [hiddenKeys]);
 
-  const visibleColumns = columns.filter((c) => !hiddenKeys.includes(c.key));
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => !hiddenKeys.includes(c.key)),
+    [columns, hiddenKeys],
+  );
   const hiddenCount = columns.length - visibleColumns.length;
 
   function toggleColumn(key) {
@@ -1937,15 +1972,18 @@ const TaskKanban = ({ searchQuery = "" }) => {
     setHiddenKeys([]);
   }
 
-  const taskCountByStatus = activeTasks.reduce((acc, t) => {
-    const id = Number(t.task_status);
-    acc[id] = (acc[id] || 0) + 1;
-    return acc;
-  }, {});
+  const taskCountByStatus = useMemo(() => {
+    return activeTasks.reduce((acc, t) => {
+      const id = Number(t.task_status);
+      acc[id] = (acc[id] || 0) + 1;
+      return acc;
+    }, {});
+  }, [activeTasks]);
 
   // ── Fetch tasks ───────────────────────────────────────────────────
   const getAllTasks = useCallback(async () => {
-    setLoading(true);
+    // Keep board visible on revisit; skeleton only when Redux has no rows.
+    if (!tasksRef.current?.length) setLoading(true);
     setError(null);
     try {
       const response = await Api.get("/task/");
@@ -1953,10 +1991,10 @@ const TaskKanban = ({ searchQuery = "" }) => {
         ? response.data.data
         : [];
       dispatch(setTasks(fetchedTasks));
+      setLoading(false);
     } catch (err) {
       console.error("Task Fetch Error:", err);
       setError("Failed to load tasks. Please try again.");
-    } finally {
       setLoading(false);
     }
   }, [dispatch]);
@@ -1966,14 +2004,15 @@ const TaskKanban = ({ searchQuery = "" }) => {
   }, [getAllTasks]);
 
   // ── Filtering ─────────────────────────────────────────────────────
-  const filteredTasks = activeTasks.filter((t) => {
-    if (!searchQuery.trim()) return true;
+  const filteredTasks = useMemo(() => {
+    if (!searchQuery.trim()) return activeTasks;
     const q = searchQuery.toLowerCase();
-    return (
-      t.title?.toLowerCase().includes(q) ||
-      t.description?.toLowerCase().includes(q)
+    return activeTasks.filter(
+      (t) =>
+        t.title?.toLowerCase().includes(q) ||
+        t.description?.toLowerCase().includes(q),
     );
-  });
+  }, [activeTasks, searchQuery]);
 
   function getTasksForColumn(columnId) {
     return filteredTasks.filter(

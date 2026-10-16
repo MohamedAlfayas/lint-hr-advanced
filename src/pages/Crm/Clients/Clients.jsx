@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "react-toastify/dist/ReactToastify.css";
 import { Offcanvas, OffcanvasBody } from "reactstrap";
 import InfoTable from "../../../component/common/table/InfoTable";
@@ -22,6 +28,7 @@ import {
   ApvTitle,
   initialsOf,
 } from "../../../component/common/approval/ApprovalCells";
+import { writePageCache } from "../../../common/js/pageLoadCache";
 
 const DetailItem = ({ icon, label, value, full = false, wrap = false }) => {
   const isEmpty = value === null || value === undefined || value === "";
@@ -65,114 +72,131 @@ const Clients = () => {
 
   const { client_data } = useSelector((state) => state.ClientReducer);
 
-  const employeeData = GetLocalStorageData("employee") || [];
+  const employeeById = useMemo(() => {
+    const list = GetLocalStorageData("employee") || [];
+    const map = {};
+    list.forEach((e) => {
+      map[String(e.id)] = e;
+    });
+    return map;
+  }, []);
 
-  const getEmployee = (empId) => employeeData.find((e) => Number(e.id) === Number(empId));
+  const getEmployee = useCallback(
+    (empId) => employeeById[String(empId)] || null,
+    [employeeById],
+  );
 
-  const getEmployeeName = (empId) => {
-    const emp = employeeData.find((e) => Number(e.id) === Number(empId));
-    if (!emp) return "-";
-    return `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.name || "-";
-  };
+  const getEmployeeName = useCallback(
+    (empId) => {
+      const emp = getEmployee(empId);
+      if (!emp) return "-";
+      return (
+        `${emp.first_name || ""} ${emp.last_name || ""}`.trim() ||
+        emp.name ||
+        "-"
+      );
+    },
+    [getEmployee],
+  );
 
+  const seededRef = useRef(false);
   useEffect(() => {
+    if (seededRef.current) return;
+    seededRef.current = true;
+    // Keep existing Redux clients on revisit — avoid a full table remount.
+    if (Array.isArray(client_data) && client_data.length > 0) {
+      writePageCache("clients:visited");
+      return;
+    }
     const localClients = GetLocalStorageData("clients") || [];
     dispatch(setClients(localClients));
-  }, [dispatch]);
+    writePageCache("clients:visited");
+  }, [dispatch, client_data]);
 
-  const additionalColumn = [
-    {
-      Header: "Client Name",
-      id: "name",
-      filterable: false,
-      accessor: (obj) => (
-        <ApvTitle
-          initials={initialsOf(obj.name) || "C"}
-          title={obj.name}
-          sub={[obj.city, obj.country].filter(Boolean).join(", ") || null}
-          onClick={() => {
-            setSelectedClient(obj);
-            setDrawerOpen(true);
-          }}
-        />
-      ),
-    },
-    // {
-    //   Header: "City",
-    //   accessor: "city",
-    //   filterable: false,
-    //   id: "city",
-    // },
-    // {
-    //   Header: "State",
-    //   accessor: "state",
-    //   filterable: false,
-    //   id: "state",
-    // },
-    // {
-    //   Header: "Country",
-    //   accessor: "country",
-    //   filterable: false,
-    //   id: "country",
-    // },
-    // {
-    //   Header: "Phone",
-    //   accessor: "phone_number",
-    //   filterable: false,
-    //   id: "phone_number",
-    // },
-    {
-      Header: "Owner",
-      id: "owner",
-      filterable: false,
-      accessor: (obj) => <ApvEmployee employee={getEmployee(obj.owner)} />,
-    },
-    {
-      Header: "Managers",
-      id: "managers",
-      filterable: false,
-      accessor: (obj) => <ApvPeople people={(obj.manager_id_list || []).map(getEmployee)} />,
-    },
-    {
-      Header: "Phone",
-      id: "phone_number",
-      filterable: false,
-      accessor: (obj) => {
-        const phone = obj.phone_number ? `${obj.country_code || ""} ${obj.phone_number}`.trim() : "";
-        return (
-          <ApvLink href={`tel:${phone.replace(/\s+/g, "")}`} icon="ri-phone-line">
-            {phone}
-          </ApvLink>
-        );
+  const openClientDrawer = useCallback((obj) => {
+    setSelectedClient(obj);
+    setDrawerOpen(true);
+  }, []);
+
+  const additionalColumn = useMemo(
+    () => [
+      {
+        Header: "Client Name",
+        id: "name",
+        filterable: false,
+        accessor: (obj) => (
+          <ApvTitle
+            initials={initialsOf(obj.name) || "C"}
+            title={obj.name}
+            sub={[obj.city, obj.country].filter(Boolean).join(", ") || null}
+            onClick={() => openClientDrawer(obj)}
+          />
+        ),
       },
-    },
-    {
-      Header: "Website",
-      id: "website",
-      filterable: false,
-      accessor: (obj) => {
-        const site = obj.website || "";
-        const href = site && !/^https?:\/\//i.test(site) ? `https://${site}` : site;
-        return (
-          <ApvLink href={href} icon="ri-global-line">
-            {site.replace(/^https?:\/\//i, "").replace(/\/$/, "")}
-          </ApvLink>
-        );
+      {
+        Header: "Owner",
+        id: "owner",
+        filterable: false,
+        accessor: (obj) => <ApvEmployee employee={getEmployee(obj.owner)} />,
       },
-    },
-    {
-      Header: "GST Number",
-      id: "gst_number",
-      filterable: false,
-      accessor: (obj) => <ApvChip icon="ri-file-text-line">{obj.gst_number}</ApvChip>,
-    },
-    {
-      Header: "Status",
-      id: "status",
-      filterable: false,
-      accessor: (obj) => <ApvActive active={obj.status} />,
-    },
-  ];
+      {
+        Header: "Managers",
+        id: "managers",
+        filterable: false,
+        accessor: (obj) => (
+          <ApvPeople people={(obj.manager_id_list || []).map(getEmployee)} />
+        ),
+      },
+      {
+        Header: "Phone",
+        id: "phone_number",
+        filterable: false,
+        accessor: (obj) => {
+          const phone = obj.phone_number
+            ? `${obj.country_code || ""} ${obj.phone_number}`.trim()
+            : "";
+          return (
+            <ApvLink
+              href={`tel:${phone.replace(/\s+/g, "")}`}
+              icon="ri-phone-line"
+            >
+              {phone}
+            </ApvLink>
+          );
+        },
+      },
+      {
+        Header: "Website",
+        id: "website",
+        filterable: false,
+        accessor: (obj) => {
+          const site = obj.website || "";
+          const href =
+            site && !/^https?:\/\//i.test(site) ? `https://${site}` : site;
+          return (
+            <ApvLink href={href} icon="ri-global-line">
+              {site.replace(/^https?:\/\//i, "").replace(/\/$/, "")}
+            </ApvLink>
+          );
+        },
+      },
+      {
+        Header: "GST Number",
+        id: "gst_number",
+        filterable: false,
+        accessor: (obj) => (
+          <ApvChip icon="ri-file-text-line">{obj.gst_number}</ApvChip>
+        ),
+      },
+      {
+        Header: "Status",
+        id: "status",
+        filterable: false,
+        accessor: (obj) => <ApvActive active={obj.status} />,
+      },
+    ],
+    [getEmployee, openClientDrawer],
+  );
 
   const initialFormObj = useMemo(() => {
     return {
@@ -196,18 +220,21 @@ const Clients = () => {
 
   const filterKey = "status";
 
-  const filterOptions = [
-    {
-      option: true,
-      label: "Active",
-      count: client_data?.filter((e) => e[filterKey] === true).length || 0,
-    },
-    {
-      option: false,
-      label: "Inactive",
-      count: client_data?.filter((e) => e[filterKey] === false).length || 0,
-    },
-  ];
+  const filterOptions = useMemo(
+    () => [
+      {
+        option: true,
+        label: "Active",
+        count: client_data?.filter((e) => e[filterKey] === true).length || 0,
+      },
+      {
+        option: false,
+        label: "Inactive",
+        count: client_data?.filter((e) => e[filterKey] === false).length || 0,
+      },
+    ],
+    [client_data],
+  );
 
   document.title = `Clients | ${MetaTitle}`;
 

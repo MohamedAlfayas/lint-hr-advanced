@@ -33,6 +33,13 @@ import { profile_data } from "../../redux/reducers/ChildReducer/MyProfileReducer
 import { setEmployeeLeaveType } from "../../redux/reducers/ChildReducer/EmployeeLeaveReducer";
 import { BuildAttendanceReportChart } from "../../common/js/BuildAttendanceReportChart";
 import { GetLocalStorageData } from "../../meta/GetLocalStorageData";
+import {
+  hasPageCache,
+  readPageCache,
+  writePageCache,
+} from "../../common/js/pageLoadCache";
+
+const ATTENDANCE_OVERVIEW_CACHE_KEY = "attendance-overview";
 
 const AttendanceDashboard = () => {
   document.title = `Attendance Overview | ${MetaTitle}`;
@@ -45,9 +52,11 @@ const AttendanceDashboard = () => {
 
   const { profile_data } = useSelector((state) => state.MyProfileReducer);
 
-  const { showTeamTable, attendanceLoading } = useSelector(
-    (state) => state.AttendanceReportReducer,
-  );
+  const {
+    showTeamTable,
+    attendanceLoading,
+    individual_attendance_report_data,
+  } = useSelector((state) => state.AttendanceReportReducer);
   const show_attendance_timer = useSelector(
     (state) => state.ClockReducer.show_attendance_timer,
   );
@@ -74,11 +83,27 @@ const AttendanceDashboard = () => {
       : [];
 
   useEffect(() => {
-    dispatch(setAttendanceLoading(true));
     const today = new Date();
     const thisMonth = `${today.getFullYear()}-${(today.getMonth() + 1)
       .toString()
       .padStart(2, "0")}`;
+
+    const cached = readPageCache(ATTENDANCE_OVERVIEW_CACHE_KEY);
+    const hasRows =
+      Array.isArray(individual_attendance_report_data) &&
+      individual_attendance_report_data.length > 0;
+
+    if (cached?.rows?.length || hasRows) {
+      if (cached?.rows?.length) {
+        dispatch(setIndividualAttendanceReportData(cached.rows));
+        dispatch(setAttendanceSummary(cached.summary || {}));
+        dispatch(setShowTeamTable(false));
+        setTimeout(() => BuildAttendanceReportChart(cached.rows, dispatch), 0);
+      }
+      dispatch(setAttendanceLoading(false));
+    } else if (!hasPageCache(ATTENDANCE_OVERVIEW_CACHE_KEY)) {
+      dispatch(setAttendanceLoading(true));
+    }
 
     Api({
       type: "GET",
@@ -90,20 +115,19 @@ const AttendanceDashboard = () => {
           ? payload
           : payload?.individual_attendance_report || [];
         dispatch(setIndividualAttendanceReportData(rows));
-        BuildAttendanceReportChart(rows, dispatch);
         dispatch(setAttendanceSummary(payload?.summary || res?.data?.summary));
         dispatch(setShowTeamTable(false));
+        writePageCache(ATTENDANCE_OVERVIEW_CACHE_KEY, {
+          rows,
+          summary: payload?.summary || res?.data?.summary || {},
+        });
+        dispatch(setAttendanceLoading(false));
+        setTimeout(() => BuildAttendanceReportChart(rows, dispatch), 0);
       })
       .catch(() => {
         console.log("Something Went Wrong !!");
-      })
-      .finally(() => dispatch(setAttendanceLoading(false)));
-
-    // if (profile_data.length > 0) {
-    //   const isMobileCheckinAllowed = profile_data.can_web_checkin || false;
-
-    //   setHideTimer(isMobileCheckinAllowed);
-    // }
+        dispatch(setAttendanceLoading(false));
+      });
 
     if (profile_data?.id) {
       const isMobileCheckinAllowed =
